@@ -133,15 +133,6 @@ export default function Dashboard() {
                     </select>
                 </div>
 
-                <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">SERIE</label>
-                    <select name="series_id" value={filters.series_id || ''} onChange={handleFilterChange} className="block w-48 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white">
-                        <option value="">Todas</option>
-                        {options.series && options.series.map(s => (
-                            <option key={s.id} value={s.id}>{s.name || s.id}</option>
-                        ))}
-                    </select>
-                </div>
 
                 <div className="flex flex-col">
                     <label className="text-sm font-medium text-gray-700 mb-1">División</label>
@@ -181,6 +172,17 @@ export default function Dashboard() {
                             <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                     </select>
+                </div>
+
+                <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-700 mb-1">Buscar Cliente (Código)</label>
+                    <input
+                        type="text"
+                        placeholder="Ej: 430001"
+                        value={filters.client_id || ''}
+                        onChange={(e) => setFilters(prev => ({ ...prev, client_id: e.target.value }))}
+                        className="block w-40 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white"
+                    />
                 </div>
 
                 <div className="flex gap-2 ml-auto">

@@ -98,9 +98,6 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
             query += " AND CodigoCliente = :client_id"
             params['client_id'] = filters.client_id
             
-        if filters.series_id:
-            query += " AND SerieFactura = :series_id"
-            params['series_id'] = filters.series_id
 
         # Execute Query into Pandas DataFrame
         df = pd.read_sql(text(query), db.bind, params=params)
