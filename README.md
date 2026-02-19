@@ -23,3 +23,13 @@
 ## Architecture
 - **Backend**: FastAPI (Python) for data extraction from SQL Server.
 - **Frontend**: React (Vite) for dashboard visualization.
+
+## Key Features
+- **KPIs**: Revenue, Commission, Unique Clients, Invoice count.
+- **Charts**: Sales by Representative, Sales Trend by Day, Commission Distribution.
+- **Filtering**:
+  - Filter by Date Range (Start/End).
+  - Filter by Company.
+  - Filter by Sales Representative (Restricted list).
+  - Filter by Segmentation/Division (using Invoice Series).
+  - Filter by Client.

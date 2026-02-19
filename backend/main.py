@@ -1,19 +1,24 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from .database import get_db, engine
+from database import get_db, engine
 from sqlalchemy import text
+from routers import sales, filters, orders
 
 app = FastAPI(title="Sage200 Dashboard API")
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite default port
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(sales.router)
+app.include_router(filters.router)
+app.include_router(orders.router)
 
 @app.get("/")
 def read_root():
