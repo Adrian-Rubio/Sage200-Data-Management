@@ -25,7 +25,8 @@ class DashboardFilters(BaseModel):
 def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)):
     try:
         # Base Query
-        query = "SELECT * FROM Vis_AEL_DiarioFactxComercial WHERE 1=1"
+        # Exclude old/duplicate company 100 (Cenval S.L.)
+        query = "SELECT * FROM Vis_AEL_DiarioFactxComercial WHERE CodigoEmpresa <> '100'"
         params = {}
 
         # --- Filters ---
@@ -104,49 +105,17 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
         # Execute Query into Pandas DataFrame
         df = pd.read_sql(text(query), db.bind, params=params)
 
-        if df.empty:
-            return {
-                "kpis": {
-                    "revenue": 0,
-                    "commission": 0,
-                    "clients": 0,
-                    "invoices": 0
-                },
-                "charts": {
-                    "sales_by_rep": [],
-                    "sales_by_day": [],
-                    "commission_dist": [],
-                    "top_clients": []
-                }
-            }
-
-        # --- KPIs ---
-        # Handle potential duplicates if one invoice has multiple lines or reps (assuming view is one row per invoice-rep split)
-        # For revenue and commission, simple sum is correct for the filtered view.
-        total_revenue = float(df['BaseImponible'].sum())
-        total_commission = float(df['ImporteComision'].sum())
-        unique_clients = int(df['CodigoCliente'].nunique())
-        # unique invoices might be tricky if an invoice is split across reps, but generally distinct NumeroFactura works
-        unique_invoices = int(df['NumeroFactura'].nunique())
-
-        # --- Charts ---
-
-        # 1. Sales by Rep (Bar Chart)
-        sales_by_rep_df = df.groupby('Comisionista')['BaseImponible'].sum().reset_index()
-        sales_by_rep_df = sales_by_rep_df.sort_values(by='BaseImponible', ascending=False)
-        sales_by_rep_data = sales_by_rep_df.to_dict(orient='records')
-
-        # --- NEW: Pending Invoices Logic ---
+        # --- NEW: Pending Invoices Logic (Moved Up) ---
+        total_pending_amount = 0.0
+        pending_map = {}
+        
         try:
-            # 1. Get Comisionista ID -> Name Mapping first
-            # We need this because Albaranes have IDs (possibly in slots 2,3,4) but Main Sales Data uses Names
+            # 1. Get Comisionista ID -> Name Mapping
             rep_map_query = "SELECT CodigoComisionista, UPPER(RTRIM(LTRIM(Comisionista))) as Comisionista FROM Comisionistas"
             rep_map_df = pd.read_sql(text(rep_map_query), db.bind)
-            # Create dictionary: ID (str) -> Name (str)
-            # Ensure ID is string to match Albaran query output
             rep_map = dict(zip(rep_map_df['CodigoComisionista'].astype(str), rep_map_df['Comisionista']))
 
-            # 2. Query Pending Albaranes with all commission slots
+            # 2. Query Pending Albaranes
             pending_query = """
                 SELECT 
                     k.CodigoComisionista, k.ImporteComision,
@@ -159,9 +128,9 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
                 JOIN Clientes c ON k.CodigoCliente = c.CodigoCliente AND k.CodigoEmpresa = c.CodigoEmpresa
                 WHERE k.StatusFacturado = 0
                 AND k.ImporteLiquido > 100
+                AND k.CodigoEmpresa <> '100'
             """
             
-            # Apply company filter
             pending_params = {}
             if filters.company_id:
                 pending_query += " AND k.CodigoEmpresa = :company_id"
@@ -170,51 +139,69 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
             df_pending = pd.read_sql(text(pending_query), db.bind, params=pending_params)
             
             if not df_pending.empty:
-                # 3. Determine the correct Sales Rep ID for each Albaran
+                # Calculate Total for KPI
+                total_pending_amount = float(df_pending['ImporteLiquido'].sum())
+
+                # 3. Determine correct Rep ID
                 def get_target_rep_id(row):
-                    # Check commission amounts first
-                    if row['ImporteComision'] and row['ImporteComision'] != 0:
-                        return str(row['CodigoComisionista'])
-                    elif row['ImporteComision2_'] and row['ImporteComision2_'] != 0:
-                        return str(row['CodigoComisionista2_'])
-                    elif row['ImporteComision3_'] and row['ImporteComision3_'] != 0:
-                        return str(row['CodigoComisionista3_'])
-                    elif row['ImporteComision4_'] and row['ImporteComision4_'] != 0:
-                        return str(row['CodigoComisionista4_'])
-                    # Fallback to primary rep if no commission is set (or all are 0)
+                    if row['ImporteComision'] and row['ImporteComision'] != 0: return str(row['CodigoComisionista'])
+                    if row['ImporteComision2_'] and row['ImporteComision2_'] != 0: return str(row['CodigoComisionista2_'])
+                    if row['ImporteComision3_'] and row['ImporteComision3_'] != 0: return str(row['CodigoComisionista3_'])
+                    if row['ImporteComision4_'] and row['ImporteComision4_'] != 0: return str(row['CodigoComisionista4_'])
                     return str(row['CodigoComisionista'])
 
                 df_pending['TargetRepID'] = df_pending.apply(get_target_rep_id, axis=1)
                 
-                # 4. Map ID to Name using our pre-fetched map
+                # 4. Map ID to Name
                 df_pending['Comisionista'] = df_pending['TargetRepID'].map(rep_map).fillna('UNKNOWN')
-
-                # Filter out unknown if any
                 df_pending = df_pending[df_pending['Comisionista'] != 'UNKNOWN']
 
-                # 5. Format and Group
-                df_pending['Formatted'] = df_pending.apply(lambda x: f"{x['RazonSocial'][:20]}... - {x['ImporteLiquido']:,.0f}€", axis=1)
-                
+                # 5. Group for Chart Tooltips
                 pending_map = df_pending.groupby('Comisionista')[['RazonSocial', 'ImporteLiquido']].apply(
                     lambda x: x.nlargest(5, 'ImporteLiquido').to_dict('records')
                 ).to_dict()
 
-                # 6. Merge into sales_by_rep_data
-                for item in sales_by_rep_data:
-                    rep_name = item['Comisionista'].strip().upper() if item['Comisionista'] else ""
-                    if rep_name in pending_map:
-                         item['pending_invoices'] = pending_map[rep_name]
-                    else:
-                         item['pending_invoices'] = []
-                 
-                 # Optional: Ensure reps with pending but NO sales are included? 
-                 # Current logic: Only attaches to reps ALREADY in sales_by_rep_data (which comes from Vis_AEL_DiarioFactxComercial)
-                 # If a Rep has 0 invoiced sales but pending albaranes, they won't appear in the chart currently.
-                 # Given user request "tooltip sobre el comercial", we assume they are looking at existing bars.
-                 
         except Exception as e:
             print(f"Error fetching pending invoices: {e}")
             pass
+
+        if df.empty:
+            return {
+                "kpis": {
+                    "revenue": 0,
+                    "commission": 0,
+                    "pending_invoice": total_pending_amount, # Added
+                    "clients": 0,
+                    "invoices": 0
+                },
+                "charts": {
+                    "sales_by_rep": [],
+                    "sales_by_day": [],
+                    "commission_dist": [],
+                    "top_clients": []
+                }
+            }
+
+        # --- KPIs ---
+        total_revenue = float(df['BaseImponible'].sum())
+        total_commission = float(df['ImporteComision'].sum())
+        unique_clients = int(df['CodigoCliente'].nunique())
+        unique_invoices = int(df['NumeroFactura'].nunique())
+
+        # --- Charts ---
+
+        # 1. Sales by Rep (Bar Chart)
+        sales_by_rep_df = df.groupby('Comisionista')['BaseImponible'].sum().reset_index()
+        sales_by_rep_df = sales_by_rep_df.sort_values(by='BaseImponible', ascending=False)
+        sales_by_rep_data = sales_by_rep_df.to_dict(orient='records')
+        
+        # Attach pending invoices to reps
+        for item in sales_by_rep_data:
+            rep_name = item['Comisionista'].strip().upper() if item['Comisionista'] else ""
+            if rep_name in pending_map:
+                 item['pending_invoices'] = pending_map[rep_name]
+            else:
+                 item['pending_invoices'] = []
 
         # 2. Sales by Day (Line Chart) with Calendar Fill
         # Ensure FechaFactura is datetime
@@ -253,6 +240,7 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
             "kpis": {
                 "revenue": total_revenue,
                 "commission": total_commission,
+                "pending_invoice": total_pending_amount,
                 "clients": unique_clients,
                 "invoices": unique_invoices
             },

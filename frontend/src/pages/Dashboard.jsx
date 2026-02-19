@@ -196,7 +196,7 @@ export default function Dashboard() {
             {/* Top Row: KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <KpiCard title="Facturación" value={data?.kpis?.revenue || 0} subtext="Total periodo" />
-                <KpiCard title="Comisión Total" value={data?.kpis?.commission || 0} subtext="Calculada" />
+                <KpiCard title="Pendiente de Facturar" value={data?.kpis?.pending_invoice || 0} subtext="Albaranes pendientes" isWarning={true} />
                 <KpiCard title="Clientes Únicos" value={data?.kpis?.clients || 0} subtext="Activos" />
                 <KpiCard title="Número Facturas" value={data?.kpis?.invoices || 0} subtext="Emitidas" />
             </div>

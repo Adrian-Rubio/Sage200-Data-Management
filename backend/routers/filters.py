@@ -18,15 +18,14 @@ def get_filter_options(db: Session = Depends(get_db)):
         # Let's stick to the view to ensure we only show options that have data.
         
         # Companies
-        companies_query = "SELECT DISTINCT CodigoEmpresa FROM Vis_AEL_DiarioFactxComercial ORDER BY CodigoEmpresa"
+        companies_query = "SELECT DISTINCT CodigoEmpresa FROM Vis_AEL_DiarioFactxComercial WHERE CodigoEmpresa <> '100' ORDER BY CodigoEmpresa"
         companies_df = pd.read_sql(text(companies_query), db.bind)
         
         company_mapping = {
             '2': 'CENVALSA INDUSTRIAL S.L.',
             '4': 'DUBES & MARCEN, S.L.',
             '5': 'EL BALCON DE DUBES&MARCEN',
-            '6': 'SARATUR S.L.',
-            '100': 'CENVAL S.L.'
+            '6': 'SARATUR S.L.'
         }
         
         companies = []
