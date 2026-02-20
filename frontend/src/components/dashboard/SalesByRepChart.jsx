@@ -52,7 +52,7 @@ export function SalesByRepChart({ data }) {
     return (
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
             <h3 className="text-gray-700 font-semibold mb-4 text-center">Facturación Total por Comercial</h3>
-            <div className="flex-grow w-full min-h-[300px]">
+            <div style={{ width: '100%', height: '100%', minHeight: 0, flexGrow: 1 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />

@@ -2,9 +2,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export function SalesByDayChart({ data }) {
     return (
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
             <h3 className="text-gray-700 font-semibold mb-4 text-center">Facturación Total por Día</h3>
-            <div className="h-64 w-full">
+            <div style={{ width: '100%', height: '100%', minHeight: 0, flexGrow: 1 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />

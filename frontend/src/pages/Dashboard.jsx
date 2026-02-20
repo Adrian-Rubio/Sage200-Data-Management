@@ -107,10 +107,15 @@ export default function Dashboard() {
 
     return (
         <div className="w-full min-h-screen bg-[#dcfce7] p-6 text-gray-800">
-            <h1 className="text-3xl font-bold text-green-900 mb-6 flex items-center gap-2">
-                <span className="bg-green-800 text-white p-2 rounded">CENVALSA</span>
-                Dashboard Ventas
-            </h1>
+            {/* Header: Logo and Title */}
+            <div className="relative flex items-center justify-center mb-10 h-20">
+                <div className="absolute left-0 top-0 h-full flex items-center">
+                    <img src="/logo_transparente.png" alt="Cenvalsa Industrial" className="h-full object-contain drop-shadow-md" />
+                </div>
+                <h1 className="text-5xl font-extrabold text-green-900 tracking-tight uppercase drop-shadow-sm">
+                    VENTAS
+                </h1>
+            </div>
 
             {/* Filters */}
             <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end w-full">

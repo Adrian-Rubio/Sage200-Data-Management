@@ -4,9 +4,9 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export function CommissionDonutChart({ data }) {
     return (
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
             <h3 className="text-gray-700 font-semibold mb-4 text-center">Porcentajes de Comisión</h3>
-            <div className="h-64 w-full">
+            <div style={{ width: '100%', height: '100%', minHeight: 0, flexGrow: 1 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
