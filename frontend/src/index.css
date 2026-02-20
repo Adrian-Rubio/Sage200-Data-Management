@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+.bg-home-industrial {
+  background-image: url('/bg-industrial.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }

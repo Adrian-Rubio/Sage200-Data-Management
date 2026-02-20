@@ -109,8 +109,11 @@ export default function Dashboard() {
         <div className="w-full min-h-screen bg-[#dcfce7] p-6 text-gray-800">
             {/* Header: Logo and Title */}
             <div className="relative flex items-center justify-center mb-10 h-20">
-                <div className="absolute left-0 top-0 h-full flex items-center">
-                    <img src="/logo_transparente.png" alt="Cenvalsa Industrial" className="h-full object-contain drop-shadow-md" />
+                <div className="absolute left-0 top-0 h-full flex items-center gap-4">
+                    <Link to="/" className="flex items-center justify-center bg-white/80 hover:bg-white text-gray-800 px-4 py-2 rounded-lg shadow-sm font-medium transition-all text-sm border border-gray-200">
+                        ← Menú Principal
+                    </Link>
+                    <img src="/logo_transparente.png" alt="Cenvalsa Industrial" className="h-full object-contain drop-shadow-md py-1" />
                 </div>
                 <h1 className="text-5xl font-extrabold text-green-900 tracking-tight uppercase drop-shadow-sm">
                     VENTAS
@@ -120,11 +123,11 @@ export default function Dashboard() {
             {/* Filters */}
             <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end w-full">
                 <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Fecha Inicio</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1">Inicio</label>
                     <input type="date" name="start_date" value={filters.start_date || ''} onChange={handleFilterChange} className="block w-40 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white" />
                 </div>
                 <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Fecha Fin</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1">Fin</label>
                     <input type="date" name="end_date" value={filters.end_date || ''} onChange={handleFilterChange} className="block w-40 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white" />
                 </div>
 
@@ -191,9 +194,11 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex gap-2 ml-auto">
+                    {/* Botón de pedidos pendientes temporalmente oculto a petición del usuario
                     <Link to="/pending-orders" className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition font-medium h-10 flex items-center justify-center shadow-sm">
                         Pedidos Pendientes →
                     </Link>
+                    */}
                     <Link to="/comparison" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium h-10 flex items-center justify-center shadow-sm">
                         Comparativa Anual →
                     </Link>

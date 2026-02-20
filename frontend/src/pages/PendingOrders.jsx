@@ -63,7 +63,10 @@ export default function PendingOrders() {
                     Pedidos Pendientes
                 </h1>
                 <div className="flex gap-4">
-                    <Link to="/" className="bg-white text-green-700 border border-green-600 px-4 py-2 rounded hover:bg-green-50 transition font-medium">
+                    <Link to="/" className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition font-medium">
+                        Menú Principal
+                    </Link>
+                    <Link to="/ventas" className="bg-white text-green-700 border border-green-600 px-4 py-2 rounded hover:bg-green-50 transition font-medium">
                         Dashboard Ventas
                     </Link>
                     <Link to="/comparison" className="bg-white text-green-700 border border-green-600 px-4 py-2 rounded hover:bg-green-50 transition font-medium">
