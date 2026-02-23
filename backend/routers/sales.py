@@ -2,10 +2,18 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import get_db
+import auth, models
 import pandas as pd
 from datetime import date, datetime
 from typing import List, Optional
 from pydantic import BaseModel
+from cachetools import TTLCache
+import hashlib
+import json
+
+# Cache dashboard results for 5 minutes (300 seconds)
+# Useful for fast tab-switching or repeated reloads
+dashboard_cache = TTLCache(maxsize=200, ttl=300)
 
 router = APIRouter(
     prefix="/api/sales",
@@ -22,7 +30,25 @@ class DashboardFilters(BaseModel):
     division: Optional[str] = None
 
 @router.post("/dashboard")
-def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)):
+def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    # Create a deterministic cache key from filters and user context
+    filter_dict = filters.dict()
+    # Convert dates to strings for JSON serialization
+    for k, v in filter_dict.items():
+        if isinstance(v, date):
+            filter_dict[k] = v.isoformat()
+            
+    cache_payload = {
+        "filters": filter_dict,
+        "role": current_user.role,
+        "rep": current_user.sales_rep_id
+    }
+    cache_str = json.dumps(cache_payload, sort_keys=True)
+    cache_key = hashlib.md5(cache_str.encode()).hexdigest()
+
+    if cache_key in dashboard_cache:
+        return dashboard_cache[cache_key]
+
     try:
         # Base Query
         # Exclude old/duplicate company 100 (Cenval S.L.)
@@ -58,6 +84,18 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
                 current_allowed_reps = [rep for rep in all_allowed_reps if rep in target_reps]
             else:
                  current_allowed_reps = [] # Should not happen if frontend sends correct values
+
+        # ROLE BASED ACCESS CONTROL
+        # Consider an admin if string role="admin" OR the user's role_obj is admin.
+        has_manage_permission = (current_user.role == "admin") or (
+            current_user.role_obj and current_user.role_obj.name == "admin"
+        ) or (
+            current_user.role_obj and current_user.role_obj.can_manage_users
+        )
+        if not has_manage_permission and current_user.sales_rep_id:
+            current_allowed_reps = [rep for rep in current_allowed_reps if rep == current_user.sales_rep_id.upper()]
+            # Force the filter so it overrides frontend requests
+            filters.sales_rep_id = current_user.sales_rep_id.upper()
 
         
         # We need to filter by names because IDs are not provided in the request
@@ -233,7 +271,7 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
         client_metrics = client_metrics.sort_values(by='revenue', ascending=False).head(15)
         top_clients_data = client_metrics.to_dict(orient='records')
 
-        return {
+        result = {
             "kpis": {
                 "revenue": total_revenue,
                 "commission": total_commission,
@@ -248,6 +286,9 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
                 "top_clients": top_clients_data
             }
         }
+        
+        dashboard_cache[cache_key] = result
+        return result
 
     except Exception as e:
         # print error to console for debugging
@@ -261,7 +302,7 @@ class ComparisonFilters(BaseModel):
     sales_rep_id: Optional[str] = None
 
 @router.post("/comparison")
-def get_sales_comparison(filters: ComparisonFilters, db: Session = Depends(get_db)):
+def get_sales_comparison(filters: ComparisonFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
         combined_data = []
         
@@ -291,6 +332,16 @@ def get_sales_comparison(filters: ComparisonFilters, db: Session = Depends(get_d
 
         if filters.sales_rep_id:
              current_allowed_reps = [r for r in current_allowed_reps if r == filters.sales_rep_id]
+
+        # Consider an admin if string role="admin" OR the user's role_obj is admin.
+        has_manage_permission = (current_user.role == "admin") or (
+            current_user.role_obj and current_user.role_obj.name == "admin"
+        ) or (
+            current_user.role_obj and current_user.role_obj.can_manage_users
+        )
+        if not has_manage_permission and current_user.sales_rep_id:
+            current_allowed_reps = [r for r in current_allowed_reps if r == current_user.sales_rep_id.upper()]
+            filters.sales_rep_id = current_user.sales_rep_id.upper()
 
         if not current_allowed_reps:
             return {"comparison": []}

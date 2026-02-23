@@ -3,7 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import get_db, engine
 from sqlalchemy import text
-from routers import sales, filters, orders
+from routers import sales, filters, orders, users, purchases
+import models
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Sage200 Dashboard API")
 
@@ -19,6 +22,8 @@ app.add_middleware(
 app.include_router(sales.router)
 app.include_router(filters.router)
 app.include_router(orders.router)
+app.include_router(users.router)
+app.include_router(purchases.router)
 
 @app.get("/")
 def read_root():

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import get_db
 import pandas as pd
+import auth, models
 from typing import Optional
 from pydantic import BaseModel
 from datetime import date
@@ -20,7 +21,7 @@ class PendingOrdersFilters(BaseModel):
     division: Optional[str] = None
 
 @router.post("/pending")
-def get_pending_orders(filters: PendingOrdersFilters, db: Session = Depends(get_db)):
+def get_pending_orders(filters: PendingOrdersFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
         # Define Division Mapping (consistent with sales.py)
         # Note: 'Mecánica' in screenshot matches 'Sismecánica' reps
@@ -97,7 +98,9 @@ def get_pending_orders(filters: PendingOrdersFilters, db: Session = Depends(get_
             df = df[df['Division'] == target_division]
             
         # Filter by Rep if requested (using ID from query)
-        if filters.sales_rep_id:
+        if current_user.role == "comercial" and current_user.sales_rep_id:
+             df = df[df['Comisionista'] == current_user.sales_rep_id.upper()]
+        elif filters.sales_rep_id:
              df = df[df['CodigoComisionista'] == filters.sales_rep_id]
 
         if df.empty:

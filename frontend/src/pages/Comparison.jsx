@@ -2,22 +2,30 @@ import { useState, useEffect } from 'react';
 import { fetchSalesComparison, fetchFilterOptions } from '../services/api';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import useDataStore from '../store/dataStore';
+import useAuthStore from '../store/authStore';
 
 const COLORS = ['#9ca3af', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function Comparison() {
-    const [dataByRep, setDataByRep] = useState([]);
-    const [dataByMonth, setDataByMonth] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const { user } = useAuthStore();
+    const { comparisonData, comparisonFiltersHash, setComparisonData, filterOptions, setFilterOptions } = useDataStore();
+    const [dataByRep, setDataByRep] = useState(comparisonData?.by_rep || []);
+    const [dataByMonth, setDataByMonth] = useState(comparisonData?.by_month || []);
+    const [loading, setLoading] = useState(!comparisonData);
     const [error, setError] = useState(null);
-    const [options, setOptions] = useState({ companies: [], reps: [], clients: [], series: [] });
+    const [options, setOptions] = useState(filterOptions || { companies: [], reps: [], clients: [], series: [] });
+
+    const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || user?.role_obj?.name === 'admin' || user?.role_obj?.can_manage_users;
+    const isRestrictedToRep = !hasManagePermission && !!user?.sales_rep_id;
+    const initialSalesRepId = isRestrictedToRep ? user?.sales_rep_id?.toUpperCase() : null;
 
     // Filters
     const [filters, setFilters] = useState({
         start_year: 2023,
         end_year: 2026,
         division: null,
-        sales_rep_id: null
+        sales_rep_id: initialSalesRepId
     });
 
     useEffect(() => {
@@ -29,20 +37,34 @@ export default function Comparison() {
     }, [filters]);
 
     const loadFilters = async () => {
+        if (filterOptions) {
+            setOptions(filterOptions);
+            return;
+        }
         try {
             const opts = await fetchFilterOptions();
             setOptions(opts || { companies: [], reps: [], clients: [], series: [] });
+            setFilterOptions(opts);
         } catch (e) {
             console.error("Failed to load filters", e);
         }
     };
 
     const loadComparison = async () => {
+        const currentHash = JSON.stringify(filters);
+        if (comparisonData && comparisonFiltersHash === currentHash) {
+            setDataByRep(comparisonData.by_rep || []);
+            setDataByMonth(comparisonData.by_month || []);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             const result = await fetchSalesComparison(filters);
             setDataByRep(result.by_rep || []);
             setDataByMonth(result.by_month || []);
+            setComparisonData(result, currentHash);
         } catch (err) {
             setError("Error loading comparison data.");
         } finally {
@@ -166,8 +188,14 @@ export default function Comparison() {
 
                 <div className="flex flex-col">
                     <label className="text-sm font-medium text-gray-700 mb-1">Comercial</label>
-                    <select name="sales_rep_id" value={filters.sales_rep_id || ''} onChange={handleFilterChange} className="block w-48 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white">
-                        <option value="">Todos</option>
+                    <select
+                        name="sales_rep_id"
+                        value={filters.sales_rep_id || ''}
+                        onChange={handleFilterChange}
+                        disabled={isRestrictedToRep}
+                        className={`block w-48 rounded-md border border-gray-300 shadow-sm sm:text-sm p-2 ${isRestrictedToRep ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'focus:border-green-500 focus:ring-green-500 text-gray-900 bg-white'}`}
+                    >
+                        {!isRestrictedToRep && <option value="">Todos</option>}
                         {options.reps
                             .filter(r => {
                                 if (!filters.division) return true;

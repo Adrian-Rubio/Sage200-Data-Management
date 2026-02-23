@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import get_db
+import auth, models
 import pandas as pd
+from cachetools import TTLCache
+
+# Cache filter options for 1 hour (3600 seconds)
+filters_cache = TTLCache(maxsize=100, ttl=3600)
 
 router = APIRouter(
     prefix="/api/filters",
@@ -10,7 +15,12 @@ router = APIRouter(
 )
 
 @router.get("/options")
-def get_filter_options(db: Session = Depends(get_db)):
+def get_filter_options(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    # Generate a cache key based on the user's access level
+    cache_key = f"options_{current_user.role}_{current_user.sales_rep_id}"
+    if cache_key in filters_cache:
+        return filters_cache[cache_key]
+
     try:
         # Get distinct Companies
         # Assuming Vis_AEL_DiarioFactxComercial has all companies we care about
@@ -43,6 +53,15 @@ def get_filter_options(db: Session = Depends(get_db)):
             'JAVIER ALLEN PERKINS',
             'JESUS COLLADO ARAQUE'
         ]
+        
+        has_manage_permission = (current_user.role == "admin") or (
+            current_user.role_obj and current_user.role_obj.name == "admin"
+        ) or (
+            current_user.role_obj and current_user.role_obj.can_manage_users
+        )
+        if not has_manage_permission and current_user.sales_rep_id:
+            allowed_reps = [rep for rep in allowed_reps if rep == current_user.sales_rep_id.upper()]
+
         # We return these static names for now as they are the only ones requested.
         # In future we can query distinct Comisionista where name inside allowed_reps
         reps = [{'id': name, 'name': name} for name in allowed_reps]
@@ -65,12 +84,14 @@ def get_filter_options(db: Session = Depends(get_db)):
         # Display as 'Serie 01', 'Serie 02', or just '01'
         series = [{'id': row['SerieFactura'], 'name': f"Serie {row['SerieFactura']}"} for _, row in series_df.iterrows()]
 
-        return {
+        result = {
             "companies": companies,
             "reps": reps,
             "clients": clients,
             "series": series
         }
+        filters_cache[cache_key] = result
+        return result
 
     except Exception as e:
         print(f"Error fetching filters: {e}")

@@ -6,12 +6,22 @@ import { SalesByRepChart } from '../components/dashboard/SalesByRepChart';
 import { SalesByDayChart } from '../components/dashboard/SalesByDayChart';
 import { CommissionDonutChart } from '../components/dashboard/CommissionDonutChart';
 import { TopClientsTable } from '../components/dashboard/TopClientsTable';
+import useAuthStore from '../store/authStore';
+import useDataStore from '../store/dataStore';
 
 export default function Dashboard() {
-    const [data, setData] = useState(null);
+    const { user, logoutUser } = useAuthStore();
+    const { dashboardData, dashboardFiltersHash, setDashboardData, filterOptions, setFilterOptions } = useDataStore();
+    const [data, setData] = useState(dashboardData);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [options, setOptions] = useState({ companies: [], reps: [], clients: [], series: [] });
+
+    const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || user?.role_obj?.name === 'admin' || user?.role_obj?.can_manage_users;
+
+    // Un usuario solo está restringido a su comercial si NO tiene permisos de admin Y SÍ tiene un sales_rep_id asignado en su cuenta
+    const isRestrictedToRep = !hasManagePermission && !!user?.sales_rep_id;
+    const initialSalesRepId = isRestrictedToRep ? user?.sales_rep_id?.toUpperCase() : null;
 
     // Filters State
     const [filters, setFilters] = useState(() => {
@@ -23,12 +33,13 @@ export default function Dashboard() {
             start_date: firstDay.toISOString().split('T')[0],
             end_date: lastDay.toISOString().split('T')[0],
             company_id: null,
-            sales_rep_id: null,
+            sales_rep_id: initialSalesRepId,
             client_id: null,
             series_id: null,
             division: null
         };
     });
+
 
     useEffect(() => {
         loadFilters();
@@ -39,20 +50,32 @@ export default function Dashboard() {
     }, [filters]);
 
     const loadFilters = async () => {
+        if (filterOptions) {
+            setOptions(filterOptions);
+            return;
+        }
         try {
             const opts = await fetchFilterOptions();
             setOptions(opts || { companies: [], reps: [], clients: [], series: [] });
+            setFilterOptions(opts);
         } catch (e) {
             console.error("Failed to load filters", e);
         }
     };
 
     const loadDashboard = async () => {
+        const currentHash = JSON.stringify(filters);
+        if (dashboardData && dashboardFiltersHash === currentHash) {
+            setData(dashboardData);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             const result = await fetchSalesDashboard(filters);
-            // Backend returns: { kpis: {...}, charts: { sales_by_rep: [], sales_by_day: [], ... } }
             setData(result);
+            setDashboardData(result, currentHash);
         } catch (err) {
             setError("Error loading dashboard data. Please check backend connection.");
         } finally {
@@ -118,6 +141,12 @@ export default function Dashboard() {
                 <h1 className="text-5xl font-extrabold text-green-900 tracking-tight uppercase drop-shadow-sm">
                     VENTAS
                 </h1>
+                <div className="absolute right-0 top-0 h-full flex items-center gap-4">
+                    <span className="text-gray-600 font-medium text-sm">Hola, {user?.username} ({user?.role})</span>
+                    <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 px-4 py-2 rounded-lg shadow-sm font-medium transition-all text-sm">
+                        Cerrar Sesión
+                    </button>
+                </div>
             </div>
 
             {/* Filters */}
@@ -154,8 +183,14 @@ export default function Dashboard() {
 
                 <div className="flex flex-col">
                     <label className="text-sm font-medium text-gray-700 mb-1">Comercial</label>
-                    <select name="sales_rep_id" value={filters.sales_rep_id || ''} onChange={handleFilterChange} className="block w-48 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white">
-                        <option value="">Todos</option>
+                    <select
+                        name="sales_rep_id"
+                        value={filters.sales_rep_id || ''}
+                        onChange={handleFilterChange}
+                        disabled={isRestrictedToRep}
+                        className={`block w-48 rounded-md border border-gray-300 shadow-sm sm:text-sm p-2 ${isRestrictedToRep ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'focus:border-green-500 focus:ring-green-500 text-gray-900 bg-white'}`}
+                    >
+                        {!isRestrictedToRep && <option value="">Todos</option>}
                         {options.reps
                             .filter(r => {
                                 if (!filters.division) return true;
