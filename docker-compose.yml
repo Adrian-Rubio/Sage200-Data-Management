@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sage-dashboard-backend
+    restart: always
+    env_file:
+      - ./backend/.env
+    # Optionally expose port to host for debugging
+    ports:
+      - "8000:8000"
+    networks:
+      - app_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sage-dashboard-frontend
+    restart: always
+    depends_on:
+      - backend
+    # Mapear el puerto público del servidor 80 al Nginx 80
+    ports:
+      - "80:80"
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
