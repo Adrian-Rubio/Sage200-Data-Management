@@ -19,7 +19,7 @@ const StatusBadge = ({ statusId, statusDesc }) => {
     }
 };
 
-const OperationsTable = ({ exercise, workNum }) => {
+const OperationsTable = ({ exercise, workNum, fabNum, series }) => {
     const [ops, setOps] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -33,20 +33,27 @@ const OperationsTable = ({ exercise, workNum }) => {
         loadOps();
     }, [exercise, workNum]);
 
-    if (loading) return <div className="p-4 text-sm text-slate-500 italic flex items-center justify-center gap-2"><div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-indigo-500" /> Cargando operaciones...</div>;
-    if (!ops || ops.length === 0) return <div className="p-4 text-sm text-slate-400 italic text-center">No se han registrado operaciones de taller para esta orden.</div>;
+    if (loading) return <div className="p-4 text-sm text-slate-500 italic flex items-center justify-center gap-2 transition-all"><div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-indigo-500" /> Cargando operaciones de la orden {workNum}...</div>;
+    if (!ops || ops.length === 0 || ops.error) return <div className="p-6 text-sm text-slate-400 italic text-center bg-slate-50">No se han registrado operaciones de taller para la orden de trabajo {workNum} (O.F. {series}/{fabNum}).</div>;
 
     return (
-        <div className="p-4 bg-indigo-50/40 border-y border-indigo-100 shadow-inner">
-            <h4 className="text-xs font-bold text-indigo-800 uppercase mb-3 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                Ruta de Operaciones
+        <div className="p-4 bg-indigo-50/40 border-y border-indigo-100 shadow-inner overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+            <h4 className="text-xs font-bold text-indigo-800 uppercase mb-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Ficha Técnica: Ruta de Operaciones
+                </div>
+                <div className="flex gap-4 font-mono text-[10px] bg-indigo-100/50 px-2 py-1 rounded border border-indigo-200">
+                    <span>Nº TRABAJO: <span className="font-black text-slate-800">{workNum}</span></span>
+                    <span>Nº FABRICACIÓN (O.F.): <span className="font-black text-indigo-700">{series}/{fabNum}</span></span>
+                </div>
             </h4>
             <div className="overflow-hidden rounded border border-indigo-100 bg-white">
                 <table className="min-w-full divide-y divide-slate-200 text-xs">
                     <thead className="bg-indigo-50/50">
                         <tr className="text-left text-slate-500 font-medium">
                             <th className="px-3 py-2">Orden</th>
+                            <th className="px-3 py-2">Operación</th>
                             <th className="px-3 py-2">Artículo</th>
                             <th className="px-3 py-2">Descripción Tarea</th>
                             <th className="px-3 py-2">Operario/s</th>
@@ -60,6 +67,7 @@ const OperationsTable = ({ exercise, workNum }) => {
                         {ops.map((op, idx) => (
                             <tr key={idx} className="hover:bg-slate-50">
                                 <td className="px-3 py-2 text-slate-600 font-mono font-bold">{op.Orden}</td>
+                                <td className="px-3 py-2 text-indigo-600 font-bold border-x border-indigo-50">{op.Operacion}</td>
                                 <td className="px-3 py-2 text-indigo-700 font-medium">{op.CodigoArticulo}</td>
                                 <td className="px-3 py-2 text-slate-700">{op.DescripcionOperacion}</td>
                                 <td className="px-3 py-2 text-slate-500 text-xs italic">{op.Operarios || '-'}</td>
@@ -102,7 +110,7 @@ export default function Produccion() {
         fabrication_num: '',
         article: '',
         status: '',
-        period: ''
+        operator: ''
     });
 
     const [expandedRows, setExpandedRows] = useState({});
@@ -138,7 +146,7 @@ export default function Produccion() {
                 fabrication_num: filters.fabrication_num ? parseInt(filters.fabrication_num) : null,
                 article: filters.article || null,
                 status: filters.status !== '' ? parseInt(filters.status) : null,
-                period: filters.period ? parseInt(filters.period) : null
+                operator: filters.operator || null
             };
 
             const result = await fetchProductionOrders(apiFilters);
@@ -200,10 +208,7 @@ export default function Produccion() {
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nº Fabricación</label>
                         <input name="fabrication_num" type="number" value={filters.fabrication_num || ''} onChange={handleFilterChange} placeholder="Fabricación" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
                     </div>
-                    <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Periodo</label>
-                        <input name="period" type="number" min="1" max="12" value={filters.period || ''} onChange={handleFilterChange} placeholder="Mes (1-12)" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
-                    </div>
+
                     <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Artículo</label>
                         <input name="article" type="text" value={filters.article || ''} onChange={handleFilterChange} placeholder="Código o nomb..." className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
@@ -219,6 +224,10 @@ export default function Produccion() {
                         </select>
                     </div>
                     <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Operario</label>
+                        <input name="operator" type="text" value={filters.operator || ''} onChange={handleFilterChange} placeholder="Nombre..." className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
+                    </div>
+                    <div className="md:col-span-1">
                         <button type="submit" className="w-full bg-[#d88900] text-white px-4 py-2 rounded-lg hover:bg-[#b57300] transition font-bold text-sm h-[38px] flex items-center justify-center gap-2">
                             Filtrar
                         </button>
@@ -246,10 +255,11 @@ export default function Produccion() {
                                     <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Ejercicio</th>
                                     <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Serie</th>
                                     <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Nº Trabajo</th>
-                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Fecha Creada</th>
-                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Fecha Prev.</th>
-                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Nº Fab.</th>
-                                    <th className="px-2 py-2 text-center text-[11px] font-bold uppercase tracking-wider">Per.</th>
+                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-center">Fecha Creada</th>
+                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-center">Fecha Prev.</th>
+                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Orden Fabricación (O.F.)</th>
+                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-center">Nº Fab</th>
+
                                     <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Artículo</th>
                                     <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Descripción</th>
                                     <th className="px-3 py-2 text-right text-[11px] font-bold uppercase tracking-wider">U. a Fabricar</th>
@@ -277,14 +287,17 @@ export default function Produccion() {
                                                 <td className="px-3 py-2 whitespace-nowrap text-slate-600">{order.Ejercicio}</td>
                                                 <td className="px-3 py-2 whitespace-nowrap text-slate-600 font-mono">{order.SerieDocumento}</td>
                                                 <td className="px-3 py-2 whitespace-nowrap font-bold text-slate-900 font-mono">{order.NumeroTrabajo}</td>
-                                                <td className="px-3 py-2 whitespace-nowrap text-slate-600">
+                                                <td className="px-3 py-2 whitespace-nowrap text-slate-600 text-center">
                                                     {order.FechaCreacion ? new Date(order.FechaCreacion).toLocaleDateString() : '-'}
                                                 </td>
-                                                <td className="px-3 py-2 whitespace-nowrap text-slate-600">
+                                                <td className="px-3 py-2 whitespace-nowrap text-slate-600 text-center">
                                                     {order.FechaFinalPrevista ? new Date(order.FechaFinalPrevista).toLocaleDateString() : '-'}
                                                 </td>
-                                                <td className="px-3 py-2 whitespace-nowrap font-bold text-indigo-600 font-mono">{order.NumeroFabricacion}</td>
-                                                <td className="px-2 py-2 whitespace-nowrap text-center text-slate-500 font-mono">{order.Periodo}</td>
+                                                <td className="px-3 py-2 whitespace-nowrap font-black text-indigo-700 font-mono bg-indigo-50/20">
+                                                    {order.SerieDocumento}/{order.NumeroFabricacion}
+                                                </td>
+                                                <td className="px-3 py-2 whitespace-nowrap text-center font-bold text-slate-700">{order.NumeroFabricacion}</td>
+
                                                 <td className="px-3 py-2 whitespace-nowrap font-bold text-slate-800">{order.CodigoArticulo}</td>
                                                 <td className="px-3 py-2 text-slate-600 max-w-[250px] truncate" title={order.DescripcionArticulo}>
                                                     {order.DescripcionArticulo}
@@ -311,9 +324,14 @@ export default function Produccion() {
                                                 </td>
                                             </tr>
                                             {isExpanded && (
-                                                <tr>
-                                                    <td colSpan="14" className="p-0 border-b border-indigo-100">
-                                                        <OperationsTable exercise={order.Ejercicio} workNum={order.NumeroTrabajo} />
+                                                <tr className="bg-slate-50/50">
+                                                    <td colSpan="13" className="p-0 border-b border-indigo-100 border-x border-indigo-100 shadow-inner">
+                                                        <OperationsTable
+                                                            exercise={order.Ejercicio}
+                                                            workNum={order.NumeroTrabajo}
+                                                            fabNum={order.NumeroFabricacion}
+                                                            series={order.SerieDocumento}
+                                                        />
                                                     </td>
                                                 </tr>
                                             )}

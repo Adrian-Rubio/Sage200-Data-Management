@@ -29,19 +29,25 @@ class ProductionFilters(BaseModel):
     operator: Optional[str] = None
 
 def format_decimal_days_to_hhmmss(decimal_days):
-    if pd.isnull(decimal_days) or decimal_days == 0:
-        return "00:00:00"
+    try:
+        if pd.isnull(decimal_days) or decimal_days == 0:
+            return "00:00:00"
         
-    # Convert days to total seconds (1 day = 24 * 60 * 60 = 86400 seconds)
-    total_seconds = decimal_days * 86400
-    
-    # Calculate hours, minutes, seconds
-    hours = int(total_seconds // 3600)
-    minutes = int((total_seconds % 3600) // 60)
-    seconds = int(total_seconds % 60)
-    
-    # Format padding with 0s
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        # Ensure it's a number
+        d_days = float(decimal_days)
+        
+        # Convert days to total seconds (1 day = 24 * 60 * 60 = 86400 seconds)
+        total_seconds = d_days * 86400
+        
+        # Calculate hours, minutes, seconds
+        hours = int(total_seconds // 3600)
+        minutes = int((total_seconds % 3600) // 60)
+        seconds = int(total_seconds % 60)
+        
+        # Format padding with 0s
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    except (ValueError, TypeError):
+        return "00:00:00"
 
 @router.post("/orders")
 def get_production_orders(filters: ProductionFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
@@ -69,10 +75,15 @@ def get_production_orders(filters: ProductionFilters, db: Session = Depends(get_
                 (
                     SELECT STRING_AGG(NombreOperario, ', ')
                     FROM (
-                        SELECT DISTINCT trs.NombreOperario
+                        SELECT DISTINCT 
+                            CASE WHEN inc.Operario = 0 THEN 'GENERICO'
+                                 ELSE COALESCE(trs.NombreOperario, 'ID ' + CAST(inc.Operario AS VARCHAR))
+                            END as NombreOperario
                         FROM Incidencias inc
-                        JOIN Operarios trs ON inc.Operario = trs.Operario
-                        WHERE inc.EjercicioTrabajo = ot.EjercicioTrabajo
+                        LEFT JOIN Operarios trs ON inc.CodigoEmpresa = trs.CodigoEmpresa
+                                           AND inc.Operario = trs.Operario
+                        WHERE inc.CodigoEmpresa = 2
+                          AND inc.EjercicioTrabajo = ot.EjercicioTrabajo
                           AND inc.NumeroTrabajo = ot.NumeroTrabajo
                     ) d
                 ) AS Operarios
@@ -81,7 +92,7 @@ def get_production_orders(filters: ProductionFilters, db: Session = Depends(get_
                 ON ot.EjercicioFabricacion = ofab.EjercicioFabricacion
                 AND ot.SerieFabricacion = ofab.SerieFabricacion
                 AND ot.NumeroFabricacion = ofab.NumeroFabricacion
-            WHERE 1=1
+            WHERE ot.CodigoEmpresa = 2
         """
         params = {}
         
@@ -119,10 +130,14 @@ def get_production_orders(filters: ProductionFilters, db: Session = Depends(get_
             query += """ AND EXISTS (
                 SELECT 1 
                 FROM Incidencias i 
-                JOIN Operarios o ON i.Operario = o.Operario 
-                WHERE i.EjercicioTrabajo = ot.EjercicioTrabajo 
+                LEFT JOIN Operarios o ON i.CodigoEmpresa = o.CodigoEmpresa AND i.Operario = o.Operario 
+                WHERE i.CodigoEmpresa = ot.CodigoEmpresa
+                  AND i.EjercicioTrabajo = ot.EjercicioTrabajo 
                   AND i.NumeroTrabajo = ot.NumeroTrabajo 
-                  AND o.NombreOperario LIKE :operator
+                  AND (
+                      (o.NombreOperario LIKE :operator)
+                      OR (i.Operario = 0 AND 'GENERICO' LIKE :operator)
+                  )
             )"""
             params["operator"] = f"%{filters.operator}%"
             
@@ -134,8 +149,9 @@ def get_production_orders(filters: ProductionFilters, db: Session = Depends(get_
         if df.empty:
             return []
 
-        # Convert to records for easier python manipulation
-        orders = df.to_dict('records')
+        # Convert to records using a robust JSON method to handle NaN/Types
+        orders_json = df.to_json(orient='records', date_format='iso')
+        orders = json.loads(orders_json)
         
         # Adding calculated/translated fields mapping statuses
         for o in orders:
@@ -173,6 +189,8 @@ def get_production_orders(filters: ProductionFilters, db: Session = Depends(get_
         return orders
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"Error in production endpoint: {e}")
         return {"error": str(e)}
 
@@ -181,20 +199,28 @@ def get_production_operations(exercise: int, work_num: int, db: Session = Depend
     try:
         query = """
             SELECT 
-                op.Orden, op.CodigoArticulo, op.DescripcionOperacion, 
+                op.Orden, op.Operacion, op.CodigoArticulo, op.DescripcionOperacion, 
                 op.OperacionExterna, op.EstadoOperacion, 
                 op.TiempoUnFabricacion, op.TiempoTotal,
-                STRING_AGG(trs.NombreOperario, ', ') AS Operarios
+                op.EjercicioTrabajo, op.NumeroTrabajo, -- For debugging if needed
+                (
+                    SELECT STRING_AGG(NombreOperario, ', ')
+                    FROM (
+                        SELECT DISTINCT 
+                            CASE WHEN inc2.Operario = 0 THEN 'GENERICO'
+                                 ELSE COALESCE(trs2.NombreOperario, 'ID ' + CAST(inc2.Operario AS VARCHAR))
+                            END as NombreOperario
+                        FROM Incidencias inc2
+                        LEFT JOIN Operarios trs2 ON inc2.CodigoEmpresa = trs2.CodigoEmpresa
+                                            AND inc2.Operario = trs2.Operario
+                        WHERE inc2.CodigoEmpresa = 2
+                          AND inc2.EjercicioTrabajo = op.EjercicioTrabajo
+                          AND inc2.NumeroTrabajo = op.NumeroTrabajo
+                          AND inc2.Orden = op.Orden
+                    ) d
+                ) AS Operarios
             FROM OperacionesOT op
-            LEFT JOIN Incidencias inc ON op.EjercicioTrabajo = inc.EjercicioTrabajo
-                                      AND op.NumeroTrabajo = inc.NumeroTrabajo
-                                      AND op.Orden = inc.Orden
-            LEFT JOIN Operarios trs ON inc.Operario = trs.Operario
-            WHERE op.EjercicioTrabajo = :exercise AND op.NumeroTrabajo = :work_num
-            GROUP BY 
-                op.Orden, op.CodigoArticulo, op.DescripcionOperacion, 
-                op.OperacionExterna, op.EstadoOperacion, 
-                op.TiempoUnFabricacion, op.TiempoTotal
+            WHERE op.CodigoEmpresa = 2 AND op.EjercicioTrabajo = :exercise AND op.NumeroTrabajo = :work_num
             ORDER BY op.Orden ASC
         """
         
@@ -203,7 +229,9 @@ def get_production_operations(exercise: int, work_num: int, db: Session = Depend
         if df.empty:
             return []
             
-        ops = df.to_dict('records')
+        # Robust serialization to handle NaN, Decimals, etc.
+        ops_json = df.to_json(orient='records', date_format='iso')
+        ops = json.loads(ops_json)
         
         for op in ops:
             # Format Times (Dec. Days to HH:MM:SS)
@@ -226,5 +254,7 @@ def get_production_operations(exercise: int, work_num: int, db: Session = Depend
         return ops
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"Error in production operations endpoint: {e}")
         return {"error": str(e)}
