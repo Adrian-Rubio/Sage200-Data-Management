@@ -68,6 +68,26 @@ export const fetchPendingPurchases = async (filters = {}) => {
     }
 };
 
+export const fetchProductionOrders = async (filters = {}) => {
+    try {
+        const response = await api.post('/production/orders', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching production orders:", error);
+        throw error;
+    }
+};
+
+export const fetchProductionOperations = async (exercise, workNum) => {
+    try {
+        const response = await api.get(`/production/operations/${exercise}/${workNum}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching production operations:", error);
+        return [];
+    }
+};
+
 export const fetchUsers = async () => {
     try {
         const response = await api.get('/auth/users');

@@ -11,7 +11,7 @@ function Login() {
     // Redirect if already authenticated
     React.useEffect(() => {
         if (isAuthenticated) {
-            navigate('/ventas');
+            navigate('/');
         }
     }, [isAuthenticated, navigate]);
 
@@ -24,8 +24,8 @@ function Login() {
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
             <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-md border border-gray-200">
                 <div className="text-center mb-8">
-                    <h2 className="text-2xl font-bold text-gray-800">Sage200 Dashboard</h2>
-                    <p className="text-gray-500 mt-2">Sign in to your account</p>
+                    <h2 className="text-2xl font-bold text-gray-800">Cuadros de mando Sage200</h2>
+                    <p className="text-gray-500 mt-2">Introduce tus credenciales de Sage</p>
                 </div>
 
                 {error && (

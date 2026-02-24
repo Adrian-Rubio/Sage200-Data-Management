@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchPendingPurchases } from '../services/api';
+import { fetchPendingPurchases, fetchFilterOptions } from '../services/api';
 import { Link } from 'react-router-dom';
 import useDataStore from '../store/dataStore';
 
@@ -58,13 +58,15 @@ const LinesTable = ({ lines, isHijo = false }) => {
 
 
 export default function Purchases() {
-    const { purchasesData, setPurchasesData } = useDataStore();
+    const { purchasesData, setPurchasesData, filterOptions, setFilterOptions } = useDataStore();
     const [data, setData] = useState(purchasesData || []);
     const [loading, setLoading] = useState(!purchasesData);
     const [error, setError] = useState(null);
+    const [options, setOptions] = useState(filterOptions || { companies: [], reps: [], clients: [], series: [] });
 
     // Detailed Filters
     const [filters, setFilters] = useState({
+        company_id: '100', // CENVALSA INDUSTRIAL default
         status: '',
         exercise: null,
         series: '',
@@ -76,8 +78,23 @@ export default function Purchases() {
     });
 
     useEffect(() => {
+        loadFilters();
         loadData();
     }, []); // Initial load
+
+    const loadFilters = async () => {
+        if (filterOptions) {
+            setOptions(filterOptions);
+            return;
+        }
+        try {
+            const opts = await fetchFilterOptions();
+            setOptions(opts || { companies: [], reps: [], clients: [], series: [] });
+            setFilterOptions(opts);
+        } catch (e) {
+            console.error("Failed to load filters", e);
+        }
+    };
 
     const loadData = async (e) => {
         if (e) e.preventDefault();
@@ -85,6 +102,7 @@ export default function Purchases() {
         try {
             // Mapping UI filters to API
             const apiFilters = {
+                company_id: filters.company_id || null,
                 status: filters.status || null,
                 exercise: filters.exercise ? parseInt(filters.exercise) : null,
                 series: filters.series || null,
@@ -97,7 +115,7 @@ export default function Purchases() {
 
             const result = await fetchPendingPurchases(apiFilters);
             setData(result);
-            if (!filters.status && !filters.exercise && !filters.series && !filters.order_num && !filters.parent_order_num && !filters.provider && !filters.division && !filters.origin) {
+            if (!filters.status && !filters.exercise && !filters.series && !filters.order_num && !filters.parent_order_num && !filters.provider && !filters.division && !filters.origin && filters.company_id === '100') {
                 setPurchasesData(result);
             }
         } catch (err) {
@@ -134,7 +152,16 @@ export default function Purchases() {
 
             {/* Advanced Filters Bar - ERP Style */}
             <form onSubmit={loadData} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-9 gap-4 items-end">
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Empresa</label>
+                        <select name="company_id" value={filters.company_id || ''} onChange={handleFilterChange} className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2">
+                            <option value="">Todas</option>
+                            {options.companies?.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
                     <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ejercicio</label>
                         <input name="exercise" type="number" value={filters.exercise || ''} onChange={handleFilterChange} placeholder="2026" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />

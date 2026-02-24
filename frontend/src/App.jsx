@@ -7,6 +7,7 @@ import ComingSoon from './pages/ComingSoon';
 import Login from './pages/Login';
 import Compras from './pages/Compras';
 import Usuarios from './pages/Usuarios';
+import Produccion from './pages/Produccion';
 import PrivateRoute from './components/PrivateRoute';
 
 function App() {
@@ -23,7 +24,7 @@ function App() {
           <Route path="/pending-orders" element={<PendingOrders />} />
           <Route path="/compras" element={<Compras />} />
           <Route path="/usuarios" element={<Usuarios />} />
-          <Route path="/produccion" element={<ComingSoon title="Producción" />} />
+          <Route path="/produccion" element={<Produccion />} />
           <Route path="/finanzas" element={<ComingSoon title="Finanzas" />} />
         </Route>
 
