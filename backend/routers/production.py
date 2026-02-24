@@ -26,6 +26,7 @@ class ProductionFilters(BaseModel):
     article: Optional[str] = None
     status: Optional[int] = None # 0: Preparada, 1: Abierta, 2: Finalizada, 3: Retenida
     period: Optional[int] = None
+    operator: Optional[str] = None
 
 def format_decimal_days_to_hhmmss(decimal_days):
     if pd.isnull(decimal_days) or decimal_days == 0:
@@ -64,7 +65,17 @@ def get_production_orders(filters: ProductionFilters, db: Session = Depends(get_
                 ot.CodigoArticulo, ot.DescripcionArticulo,
                 ot.UnidadesAFabricar as UnidadesFabricar, ot.UnidadesFabricadas, ot.EstadoOT as EstadoOF,
                 ot.FechaCreacion, ot.FechaFinalPrevista,
-                ofab.Observaciones as Observaciones 
+                ofab.Observaciones as Observaciones, 
+                (
+                    SELECT STRING_AGG(NombreOperario, ', ')
+                    FROM (
+                        SELECT DISTINCT trs.NombreOperario
+                        FROM Incidencias inc
+                        JOIN Operarios trs ON inc.Operario = trs.Operario
+                        WHERE inc.EjercicioTrabajo = ot.EjercicioTrabajo
+                          AND inc.NumeroTrabajo = ot.NumeroTrabajo
+                    ) d
+                ) AS Operarios
             FROM OrdenesTrabajo ot
             LEFT JOIN OrdenesFabricacion ofab 
                 ON ot.EjercicioFabricacion = ofab.EjercicioFabricacion
@@ -103,6 +114,17 @@ def get_production_orders(filters: ProductionFilters, db: Session = Depends(get_
         if filters.period:
             query += " AND ot.PeriodoFabricacion = :period"
             params["period"] = filters.period
+            
+        if filters.operator:
+            query += """ AND EXISTS (
+                SELECT 1 
+                FROM Incidencias i 
+                JOIN Operarios o ON i.Operario = o.Operario 
+                WHERE i.EjercicioTrabajo = ot.EjercicioTrabajo 
+                  AND i.NumeroTrabajo = ot.NumeroTrabajo 
+                  AND o.NombreOperario LIKE :operator
+            )"""
+            params["operator"] = f"%{filters.operator}%"
             
         # Add a hard limit or ordering if needed
         query += " ORDER BY ot.EjercicioTrabajo DESC, ot.NumeroTrabajo DESC"
@@ -143,6 +165,9 @@ def get_production_orders(filters: ProductionFilters, db: Session = Depends(get_
             # Clean up observations if None/Nan
             if pd.isnull(o.get('Observaciones')):
                 o['Observaciones'] = ''
+                
+            if pd.isnull(o.get('Operarios')):
+                o['Operarios'] = ''
 
         production_cache[cache_key] = orders
         return orders
@@ -156,12 +181,21 @@ def get_production_operations(exercise: int, work_num: int, db: Session = Depend
     try:
         query = """
             SELECT 
-                Orden, CodigoArticulo, DescripcionOperacion, 
-                OperacionExterna, EstadoOperacion, 
-                TiempoUnFabricacion, TiempoTotal
-            FROM OperacionesOT
-            WHERE EjercicioTrabajo = :exercise AND NumeroTrabajo = :work_num
-            ORDER BY Orden ASC
+                op.Orden, op.CodigoArticulo, op.DescripcionOperacion, 
+                op.OperacionExterna, op.EstadoOperacion, 
+                op.TiempoUnFabricacion, op.TiempoTotal,
+                STRING_AGG(trs.NombreOperario, ', ') AS Operarios
+            FROM OperacionesOT op
+            LEFT JOIN Incidencias inc ON op.EjercicioTrabajo = inc.EjercicioTrabajo
+                                      AND op.NumeroTrabajo = inc.NumeroTrabajo
+                                      AND op.Orden = inc.Orden
+            LEFT JOIN Operarios trs ON inc.Operario = trs.Operario
+            WHERE op.EjercicioTrabajo = :exercise AND op.NumeroTrabajo = :work_num
+            GROUP BY 
+                op.Orden, op.CodigoArticulo, op.DescripcionOperacion, 
+                op.OperacionExterna, op.EstadoOperacion, 
+                op.TiempoUnFabricacion, op.TiempoTotal
+            ORDER BY op.Orden ASC
         """
         
         df = pd.read_sql(text(query), db.bind, params={"exercise": exercise, "work_num": work_num})

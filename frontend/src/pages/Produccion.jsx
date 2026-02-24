@@ -49,6 +49,7 @@ const OperationsTable = ({ exercise, workNum }) => {
                             <th className="px-3 py-2">Orden</th>
                             <th className="px-3 py-2">Artículo</th>
                             <th className="px-3 py-2">Descripción Tarea</th>
+                            <th className="px-3 py-2">Operario/s</th>
                             <th className="px-3 py-2 text-center">Tipo</th>
                             <th className="px-3 py-2 text-right">T. Unitario</th>
                             <th className="px-3 py-2 text-right">T. Total</th>
@@ -61,6 +62,7 @@ const OperationsTable = ({ exercise, workNum }) => {
                                 <td className="px-3 py-2 text-slate-600 font-mono font-bold">{op.Orden}</td>
                                 <td className="px-3 py-2 text-indigo-700 font-medium">{op.CodigoArticulo}</td>
                                 <td className="px-3 py-2 text-slate-700">{op.DescripcionOperacion}</td>
+                                <td className="px-3 py-2 text-slate-500 text-xs italic">{op.Operarios || '-'}</td>
                                 <td className="px-3 py-2 text-center">
                                     {op.OperacionExterna === 1
                                         ? <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">EXTERNA</span>

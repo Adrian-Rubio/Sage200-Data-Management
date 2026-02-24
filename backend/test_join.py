@@ -3,25 +3,27 @@ from sqlalchemy import text
 import pandas as pd
 
 query = """
-    SELECT TOP 5
-        ot.EjercicioTrabajo, ot.NumeroTrabajo,
-        ofab.EjercicioFabricacion, ofab.SerieFabricacion, ofab.NumeroFabricacion,
-        ot.CodigoArticulo,
-        ot.Observaciones as Obs_OT,
-        ofab.Observaciones as Obs_OFab,
-        ofab.EstadoOF, ot.EstadoOT
-    FROM OrdenesTrabajo ot
-    LEFT JOIN OrdenesFabricacion ofab 
-        ON ot.EjercicioFabricacion = ofab.EjercicioFabricacion
-        AND ot.SerieFabricacion = ofab.SerieFabricacion
-        AND ot.NumeroFabricacion = ofab.NumeroFabricacion
-    WHERE ot.EjercicioTrabajo >= 2024
+    SELECT 
+        op.Orden, op.CodigoArticulo, op.DescripcionOperacion, 
+        (
+            SELECT STRING_AGG(NombreOperario, ', ')
+            FROM (
+                SELECT DISTINCT trs.NombreOperario
+                FROM Incidencias inc
+                JOIN Operarios trs ON inc.Operario = trs.Operario
+                WHERE inc.EjercicioTrabajo = op.EjercicioTrabajo
+                  AND inc.NumeroTrabajo = op.NumeroTrabajo
+                  AND inc.Orden = op.Orden
+            ) d
+        ) AS Operarios
+    FROM OperacionesOT op
+    WHERE op.EjercicioTrabajo = 2026 AND op.NumeroTrabajo = 496
+    ORDER BY op.Orden ASC
 """
 try:
     with engine.connect() as conn:
         df = pd.read_sql(text(query), conn)
-        print("Muestra de JOIN OT - OFab:")
+        pd.set_option('display.max_rows', None)
         print(df.to_string())
 except Exception as e:
-    print("Error SQL:")
-    print(e)
+    print("Error:", e)
