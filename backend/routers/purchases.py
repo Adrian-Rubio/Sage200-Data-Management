@@ -157,9 +157,16 @@ def get_purchases(filters: PurchaseFilters, db: Session = Depends(get_db), curre
             else:
                 c['FechaTope'] = None
                 
-            if c['_AEL_OrigenPedido'] == 'HIJO':
+            orig = str(c.get('_AEL_OrigenPedido') or '').strip().upper()
+            if orig == 'HIJO':
+                c['tipo'] = 'HIJO'
                 hijos.append(c)
+            elif orig == 'PADRE':
+                c['tipo'] = 'PADRE'
+                padres[key] = c
             else:
+                # Si es 'NORMAL' o está vacío, lo tratamos como pedido normal (sin tránsito)
+                c['tipo'] = 'NORMAL'
                 padres[key] = c
 
         # Attach lines to their respective orders (both padres and hijos)
@@ -186,7 +193,9 @@ def get_purchases(filters: PurchaseFilters, db: Session = Depends(get_db), curre
             ur = float(l['UnidadesRecibidas'] or 0)
             upen = float(l['UnidadesPendientes'] or 0)
             
-            if upen <= 0 and ur > 0:
+            if l['Estado'] == 2:
+                l['status_calculado'] = 'Entregado'
+            elif upen <= 0 and ur > 0:
                 l['status_calculado'] = 'Entregado'
             elif ur > 0 and upen > 0:
                 l['status_calculado'] = 'Parcial'
@@ -237,7 +246,10 @@ def get_purchases(filters: PurchaseFilters, db: Session = Depends(get_db), curre
                  total_recibidas += sum(float(l['UnidadesRecibidas'] or 0) for l in h['lineas'])
                  total_pendientes += sum(float(l['UnidadesPendientes'] or 0) for l in h['lineas'])
 
-            if total_pendientes <= 0 and total_recibidas > 0:
+            # Primero miramos el estado de la cabecera en BD
+            if p['Estado'] == 2:
+                p['status_global'] = 'Entregado'
+            elif total_pendientes <= 0 and total_recibidas > 0:
                 p['status_global'] = 'Entregado'
             elif total_recibidas > 0 and total_pendientes > 0:
                 p['status_global'] = 'Parcial'

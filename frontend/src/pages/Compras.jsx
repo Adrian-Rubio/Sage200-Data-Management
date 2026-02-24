@@ -194,6 +194,7 @@ export default function Purchases() {
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Origen</label>
                         <select name="origin" value={filters.origin} onChange={handleFilterChange} className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2">
                             <option value="">Todos</option>
+                            <option value="NORMAL">Solo Normales</option>
                             <option value="PADRE">Solo Padres</option>
                             <option value="HIJO">Solo Hijos</option>
                         </select>
@@ -277,6 +278,7 @@ const PurchaseEnhancedRow = ({ pedido, formatCurrency, formatDate }) => {
                     )}
                     {pedido.NumeroPedido}
                     {isHijo && <span className="bg-amber-100 text-amber-700 px-1 rounded text-[10px] uppercase font-bold ml-1">Hijo</span>}
+                    {pedido.tipo === 'NORMAL' && <span className="bg-slate-100 text-slate-600 px-1 rounded text-[10px] uppercase font-bold ml-1">Normal</span>}
                 </td>
                 <td className={`px-2 py-2 whitespace-nowrap font-mono ${pedidoOrigen !== "N/A" ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}>
                     {pedidoOrigen}
