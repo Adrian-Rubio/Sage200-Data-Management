@@ -198,7 +198,7 @@ export default function Produccion() {
                     </div>
                     <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Serie</label>
-                        <input name="series" type="text" value={filters.series || ''} onChange={handleFilterChange} placeholder="PAF" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
+                        <input name="series" type="text" value={filters.series || ''} onChange={handleFilterChange} placeholder="INF, CON, SIS" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
                     </div>
                     <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nº Trabajo</label>
