@@ -96,6 +96,75 @@ const OperationsTable = ({ exercise, workNum, fabNum, series }) => {
     );
 };
 
+const TruncatedCell = ({ text, maxWidth = "200px" }) => {
+    const [isOverflowing, setIsOverflowing] = useState(false);
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const cellRef = import.meta.env.SSR ? null : (el) => {
+        if (!el) return;
+        const checkOverflow = () => {
+            setIsOverflowing(el.scrollWidth > el.clientWidth);
+        };
+        checkOverflow();
+        // Option window resize is also handled
+        window.addEventListener('resize', checkOverflow);
+        return () => window.removeEventListener('resize', checkOverflow);
+    };
+
+    // Ref for the actual div to check overflow
+    const textRef = useState(null)[0];
+
+    useEffect(() => {
+        const el = document.getElementById(`cell-${text}`); // Simplistic approach for demo
+        if (el) {
+            setIsOverflowing(el.scrollWidth > el.clientWidth);
+        }
+    }, [text]);
+
+    if (!text) return <td className="px-3 py-2 text-slate-400 italic">-</td>;
+
+    const handleMouseMove = (e) => {
+        setMousePos({ x: e.clientX, y: e.clientY });
+    };
+
+    return (
+        <td
+            className="px-3 py-2 text-slate-500 italic relative group/obs border-x border-slate-100"
+            style={{ maxWidth }}
+            onMouseMove={handleMouseMove}
+        >
+            <div
+                id={`cell-${text}`}
+                className="truncate"
+                onMouseEnter={(e) => {
+                    setIsOverflowing(e.currentTarget.scrollWidth > e.currentTarget.clientWidth);
+                }}
+            >
+                {text}
+            </div>
+            {isOverflowing && (
+                <div
+                    className="fixed invisible group-hover/obs:visible z-[9999] bg-slate-900 text-white text-[12px] p-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] w-80 whitespace-normal border border-white/20 backdrop-blur-md transition-opacity duration-200 pointer-events-none"
+                    style={{
+                        top: `${mousePos.y - 10}px`,
+                        left: `${mousePos.x + 20}px`,
+                        transform: 'translateY(-100%)'
+                    }}
+                >
+                    <div className="font-black border-b border-white/20 mb-2 pb-1 text-indigo-400 uppercase text-[10px] tracking-widest flex items-center justify-between">
+                        <span>Detalle Observaciones</span>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div className="leading-relaxed text-slate-200">
+                        {text}
+                    </div>
+                    {/* Small arrow pointing to the mouse */}
+                    <div className="absolute -bottom-1 left-0 w-3 h-3 bg-slate-900 rotate-45 border-r border-b border-white/20 hidden"></div>
+                </div>
+            )}
+        </td>
+    );
+};
+
 export default function Produccion() {
     const { productionData, productionFiltersHash, setProductionData } = useDataStore();
     const [data, setData] = useState(productionData || []);
@@ -110,7 +179,8 @@ export default function Produccion() {
         fabrication_num: '',
         article: '',
         status: '',
-        operator: ''
+        operator: '',
+        observations: ''
     });
 
     const [expandedRows, setExpandedRows] = useState({});
@@ -146,7 +216,8 @@ export default function Produccion() {
                 fabrication_num: filters.fabrication_num ? parseInt(filters.fabrication_num) : null,
                 article: filters.article || null,
                 status: filters.status !== '' ? parseInt(filters.status) : null,
-                operator: filters.operator || null
+                operator: filters.operator || null,
+                observations: filters.observations || null
             };
 
             const result = await fetchProductionOrders(apiFilters);
@@ -224,10 +295,10 @@ export default function Produccion() {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Operario</label>
-                        <input name="operator" type="text" value={filters.operator || ''} onChange={handleFilterChange} placeholder="Nombre..." className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Observaciones</label>
+                        <input name="observations" type="text" value={filters.observations || ''} onChange={handleFilterChange} placeholder="Palabra clave..." title="Busca coincidencias en las observaciones de la O.F." className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
                     </div>
-                    <div className="md:col-span-1">
+                    <div>
                         <button type="submit" className="w-full bg-[#d88900] text-white px-4 py-2 rounded-lg hover:bg-[#b57300] transition font-bold text-sm h-[38px] flex items-center justify-center gap-2">
                             Filtrar
                         </button>
@@ -258,13 +329,12 @@ export default function Produccion() {
                                     <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-center">Fecha Creada</th>
                                     <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-center">Fecha Prev.</th>
                                     <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Orden Fabricación (O.F.)</th>
-                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-center">Nº Fab</th>
-
+                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider min-w-[200px]">Observaciones</th>
                                     <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Artículo</th>
                                     <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Descripción</th>
                                     <th className="px-3 py-2 text-right text-[11px] font-bold uppercase tracking-wider">U. a Fabricar</th>
                                     <th className="px-3 py-2 text-right text-[11px] font-bold uppercase tracking-wider">U. Fabricadas</th>
-                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider min-w-[150px]">Observaciones</th>
+                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-center">Nº Fab</th>
                                     <th className="px-3 py-2 text-center text-[11px] font-bold uppercase tracking-wider">Estado</th>
                                 </tr>
                             </thead>
@@ -296,7 +366,7 @@ export default function Produccion() {
                                                 <td className="px-3 py-2 whitespace-nowrap font-black text-indigo-700 font-mono bg-indigo-50/20">
                                                     {order.SerieDocumento}/{order.NumeroFabricacion}
                                                 </td>
-                                                <td className="px-3 py-2 whitespace-nowrap text-center font-bold text-slate-700">{order.NumeroFabricacion}</td>
+                                                <TruncatedCell text={order.Observaciones} maxWidth="200px" />
 
                                                 <td className="px-3 py-2 whitespace-nowrap font-bold text-slate-800">{order.CodigoArticulo}</td>
                                                 <td className="px-3 py-2 text-slate-600 max-w-[250px] truncate" title={order.DescripcionArticulo}>
@@ -316,9 +386,7 @@ export default function Produccion() {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-3 py-2 text-slate-500 max-w-[150px] truncate italic" title={order.Observaciones}>
-                                                    {order.Observaciones || '-'}
-                                                </td>
+                                                <td className="px-3 py-2 whitespace-nowrap text-center font-bold text-slate-700 border-x border-slate-100">{order.NumeroFabricacion}</td>
                                                 <td className="px-3 py-2 whitespace-nowrap text-center">
                                                     <StatusBadge statusId={order.EstadoOF} statusDesc={order.EstadoDesc} />
                                                 </td>

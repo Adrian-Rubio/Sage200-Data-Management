@@ -10,8 +10,8 @@ from cachetools import TTLCache
 import hashlib
 import json
 
-# Cache production results for 5 minutes
-production_cache = TTLCache(maxsize=100, ttl=300)
+# Cache production results for 10 seconds (reduced for testing)
+production_cache = TTLCache(maxsize=100, ttl=10)
 
 router = APIRouter(
     prefix="/api/production",
@@ -27,6 +27,7 @@ class ProductionFilters(BaseModel):
     status: Optional[int] = None # 0: Preparada, 1: Abierta, 2: Finalizada, 3: Retenida
     period: Optional[int] = None
     operator: Optional[str] = None
+    observations: Optional[str] = None
 
 def format_decimal_days_to_hhmmss(decimal_days):
     try:
@@ -140,6 +141,11 @@ def get_production_orders(filters: ProductionFilters, db: Session = Depends(get_
                   )
             )"""
             params["operator"] = f"%{filters.operator}%"
+            
+        if filters.observations:
+            query += " AND UPPER(ISNULL(ofab.Observaciones, '')) LIKE UPPER(:observations)"
+            params["observations"] = f"%{filters.observations.strip()}%"
+            print(f"DEBUG: Filtering observations with: {params['observations']}")
             
         # Add a hard limit or ordering if needed
         query += " ORDER BY ot.EjercicioTrabajo DESC, ot.NumeroTrabajo DESC"
