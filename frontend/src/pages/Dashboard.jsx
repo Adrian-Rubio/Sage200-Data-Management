@@ -129,23 +129,23 @@ export default function Dashboard() {
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
     return (
-        <div className="w-full min-h-screen bg-[#dcfce7] p-6 text-gray-800">
-            {/* Header: Logo and Title */}
-            <div className="relative flex items-center justify-center mb-10 h-20">
-                <div className="absolute left-0 top-0 h-full flex items-center gap-4">
-                    <Link to="/" className="flex items-center justify-center bg-white/80 hover:bg-white text-gray-800 px-4 py-2 rounded-lg shadow-sm font-medium transition-all text-sm border border-gray-200">
-                        ← Menú Principal
-                    </Link>
-                    <img src="/logo_transparente.png" alt="Cenvalsa Industrial" className="h-full object-contain drop-shadow-md py-1" />
+        <div className="w-full min-h-screen bg-[#f8fafc] p-4 text-gray-800 font-sans">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-4">
+                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <span className="bg-slate-800 text-white px-3 py-1 rounded text-lg">CENVALSA</span>
+                        Módulo de Ventas
+                    </h1>
                 </div>
-                <h1 className="text-5xl font-extrabold text-green-900 tracking-tight uppercase drop-shadow-sm">
-                    VENTAS
-                </h1>
-                <div className="absolute right-0 top-0 h-full flex items-center gap-4">
-                    <span className="text-gray-600 font-medium text-sm">Hola, {user?.username} ({user?.role})</span>
-                    <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 px-4 py-2 rounded-lg shadow-sm font-medium transition-all text-sm">
+                <div className="flex gap-3">
+                    <span className="text-slate-600 font-medium text-sm flex items-center mr-2">Hola, {user?.username} ({user?.role})</span>
+                    <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 px-4 py-2 rounded shadow-sm transition font-medium text-sm h-[38px] flex items-center justify-center">
                         Cerrar Sesión
                     </button>
+                    <Link to="/" className="bg-white text-slate-600 border border-slate-300 px-4 py-2 rounded shadow-sm hover:bg-slate-50 transition font-medium text-sm h-[38px] flex items-center justify-center">
+                        Volver al Menú
+                    </Link>
                 </div>
             </div>
 
