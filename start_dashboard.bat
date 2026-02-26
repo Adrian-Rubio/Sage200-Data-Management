@@ -13,6 +13,6 @@ echo Starting Frontend (React/Vite)...
 start "Sage200 Frontend" cmd /k "cd frontend && npm run dev"
 
 echo Both services launched! 
-echo Frontend: http://localhost:5173 (or 5174 if port busy)
-echo Backend: http://localhost:8000/docs
+echo Dashboard: http://metricas.cenval.es
+echo Backend Docs: http://metricas.cenval.es:8000/docs
 pause

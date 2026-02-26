@@ -143,7 +143,7 @@ def get_production_orders(filters: ProductionFilters, db: Session = Depends(get_
             params["operator"] = f"%{filters.operator}%"
             
         if filters.observations:
-            query += " AND UPPER(ISNULL(ofab.Observaciones, '')) LIKE UPPER(:observations)"
+            query += " AND UPPER(CAST(ISNULL(ofab.Observaciones, '') AS NVARCHAR(MAX))) LIKE UPPER(:observations)"
             params["observations"] = f"%{filters.observations.strip()}%"
             print(f"DEBUG: Filtering observations with: {params['observations']}")
             

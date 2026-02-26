@@ -33,7 +33,6 @@ class DashboardFilters(BaseModel):
 def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     # Create a deterministic cache key from filters and user context
     filter_dict = filters.dict()
-    # Convert dates to strings for JSON serialization
     for k, v in filter_dict.items():
         if isinstance(v, date):
             filter_dict[k] = v.isoformat()
@@ -41,7 +40,8 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
     cache_payload = {
         "filters": filter_dict,
         "role": current_user.role,
-        "rep": current_user.sales_rep_id
+        "rep": current_user.sales_rep_id,
+        "v": 10 # Version 10: Clear stale cache after fix
     }
     cache_str = json.dumps(cache_payload, sort_keys=True)
     cache_key = hashlib.md5(cache_str.encode()).hexdigest()
@@ -50,43 +50,24 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
         return dashboard_cache[cache_key]
 
     try:
-        # Base Query
-        # Exclude old/duplicate company 100 (Cenval S.L.)
-        query = "SELECT * FROM Vis_AEL_DiarioFactxComercial WHERE CodigoEmpresa <> '100'"
-        params = {}
-
-        # --- Filters ---
-        # Specific Reps requested by user
-        
-        # Define Divisions
+        # Division Mapping
         divisions = {
-            'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE'],
+            'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
             'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
-            # Informática Industrial has the rest (Juan Carlos Valdes Anton)
             'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
         }
         
-        all_allowed_reps = [
-            'JOSE CESPEDES BLANCO',
-            'JUAN CARLOS BENITO RAMOS',
-            'JUAN CARLOS VALDES ANTON',
-            'ANTONIO MACHO MACHO',
-            'JAVIER ALLEN PERKINS',
-            'JESUS COLLADO ARAQUE'
-        ]
+        all_reps = [r for reps in divisions.values() for r in reps]
 
         # Filter reps by division if selected
-        current_allowed_reps = all_allowed_reps
+        current_allowed_reps = all_reps
         if filters.division:
             if filters.division in divisions:
-                target_reps = divisions[filters.division]
-                # Intersection of all allowed and division reps
-                current_allowed_reps = [rep for rep in all_allowed_reps if rep in target_reps]
+                current_allowed_reps = divisions[filters.division]
             else:
-                 current_allowed_reps = [] # Should not happen if frontend sends correct values
+                current_allowed_reps = []
 
-        # ROLE BASED ACCESS CONTROL
-        # Consider an admin if string role="admin" OR the user's role_obj is admin.
+        # RBAC
         has_manage_permission = (current_user.role == "admin") or (
             current_user.role_obj and current_user.role_obj.name == "admin"
         ) or (
@@ -94,187 +75,152 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
         )
         if not has_manage_permission and current_user.sales_rep_id:
             current_allowed_reps = [rep for rep in current_allowed_reps if rep == current_user.sales_rep_id.upper()]
-            # Force the filter so it overrides frontend requests
-            filters.sales_rep_id = current_user.sales_rep_id.upper()
 
+        # Shared filter strings and params
+        common_where = ""
+        common_rev_where = "" # Specially for revenue if needed
+        common_params = {}
+
+        # 2025+ is Company 2 only as per user request
+        company_filter = "CodigoEmpresa = '2'"
         
-        # We need to filter by names because IDs are not provided in the request
-        # Assuming 'Comisionista' column holds the names. Trim and upper for safety.
-        # This is a bit inefficient if we could use IDs, but safe for now.
-        
-        # Manually construct IN clause to avoid pyodbc TVP issues with tuples
         if current_allowed_reps:
             placeholders = [f":rep_{i}" for i in range(len(current_allowed_reps))]
-            query += f" AND UPPER(RTRIM(LTRIM(Comisionista))) IN ({', '.join(placeholders)})"
-            
+            common_where += f" AND UPPER(RTRIM(LTRIM(Comisionista))) IN ({', '.join(placeholders)})"
             for i, rep in enumerate(current_allowed_reps):
-                params[f'rep_{i}'] = rep
+                common_params[f'rep_{i}'] = rep
         else:
-            # If no reps match (e.g. invalid division), return no results
-            query += " AND 1=0"
+            common_where += " AND 1=0"
 
         if filters.start_date:
-            query += " AND FechaFactura >= :start_date"
-            params['start_date'] = filters.start_date
-        
+            common_where += " AND TRY_CONVERT(date, FechaFactura) >= :start_date"
+            common_params['start_date'] = filters.start_date
         if filters.end_date:
-            query += " AND FechaFactura <= :end_date"
-            params['end_date'] = filters.end_date
-            
-        if filters.company_id:
-            query += " AND CodigoEmpresa = :company_id"
-            params['company_id'] = filters.company_id
-            
+            common_where += " AND TRY_CONVERT(date, FechaFactura) <= :end_date"
+            common_params['end_date'] = filters.end_date
         if filters.sales_rep_id:
-            # If a specific rep is selected, we filter by that ONE (ID or Name)
-            # The frontend should likely send the NAME if we don't have IDs mapped yet.
-            # For now, let's assume sales_rep_id is the NAME string from the dropdown.
-            query += " AND UPPER(RTRIM(LTRIM(Comisionista))) = :sales_rep_id"
-            params['sales_rep_id'] = filters.sales_rep_id
-
+            common_where += " AND UPPER(RTRIM(LTRIM(Comisionista))) = :sales_rep_id_f"
+            common_params['sales_rep_id_f'] = filters.sales_rep_id.upper()
         if filters.client_id:
-            query += " AND CodigoCliente = :client_id"
-            params['client_id'] = filters.client_id
-            
+            common_where += " AND CodigoCliente = :client_id"
+            common_params['client_id'] = filters.client_id
 
-        # Execute Query into Pandas DataFrame
-        df = pd.read_sql(text(query), db.bind, params=params)
+        # --- QUERY 1: REVENUE (Diario) ---
+        query_rev = f"SELECT * FROM Vis_AEL_DiarioFactxComercial WHERE {company_filter} {common_where}"
+        df_rev = pd.read_sql(text(query_rev), db.bind, params=common_params)
 
-        # --- NEW: Pending Invoices Logic (Moved Up) ---
+        # --- QUERY 2: MARGIN (VIS_CEN_LinAlbFacSD) ---
+        query_marg = f"SELECT * FROM VIS_CEN_LinAlbFacSD WHERE {company_filter} {common_where}"
+        df_marg = pd.read_sql(text(query_marg), db.bind, params=common_params)
+        
+        # Ensure correct types and column names (Normalization)
+        for df_tmp in [df_rev, df_marg]:
+            if not df_tmp.empty:
+                df_tmp.columns = [c.strip() for c in df_tmp.columns]
+                if 'BaseImponible' in df_tmp.columns:
+                    df_tmp['BaseImponible'] = pd.to_numeric(df_tmp['BaseImponible'], errors='coerce').fillna(0)
+                if 'ImporteCoste' in df_tmp.columns:
+                    df_tmp['ImporteCoste'] = pd.to_numeric(df_tmp['ImporteCoste'], errors='coerce').fillna(0)
+                if 'FechaFactura' in df_tmp.columns:
+                    df_tmp['FechaFactura'] = pd.to_datetime(df_tmp['FechaFactura'], errors='coerce')
+
+        # --- PENDING INVOICES (Raw) ---
         total_pending_amount = 0.0
         pending_map = {}
-        
         try:
-            # 1. Get Comisionista ID -> Name Mapping
-            rep_map_query = "SELECT CodigoComisionista, UPPER(RTRIM(LTRIM(Comisionista))) as Comisionista FROM Comisionistas"
-            rep_map_df = pd.read_sql(text(rep_map_query), db.bind)
-            rep_map = dict(zip(rep_map_df['CodigoComisionista'].astype(str), rep_map_df['Comisionista']))
-
-            # 2. Query Pending Albaranes
-            pending_query = """
-                SELECT 
-                    k.CodigoComisionista, k.ImporteComision,
-                    k.CodigoComisionista2_, k.ImporteComision2_,
-                    k.CodigoComisionista3_, k.ImporteComision3_,
-                    k.CodigoComisionista4_, k.ImporteComision4_,
-                    c.RazonSocial,
-                    k.ImporteLiquido
-                FROM CabeceraAlbaranCliente k
-                JOIN Clientes c ON k.CodigoCliente = c.CodigoCliente AND k.CodigoEmpresa = c.CodigoEmpresa
-                WHERE k.StatusFacturado = 0
-                AND k.ImporteLiquido > 100
-                AND k.CodigoEmpresa <> '100'
-            """
-            
-            pending_params = {}
-            if filters.company_id:
-                pending_query += " AND k.CodigoEmpresa = :company_id"
-                pending_params['company_id'] = filters.company_id
+            p_params = {}
+            p_where = f"WHERE k.StatusFacturado = 0 AND {company_filter.replace('CodigoEmpresa', 'k.CodigoEmpresa')}"
+            p_query = f"SELECT k.ImporteLiquido, c.RazonSocial, com.Comisionista FROM CabeceraAlbaranCliente k JOIN Clientes c ON k.CodigoCliente = c.CodigoCliente AND k.CodigoEmpresa = c.CodigoEmpresa JOIN Comisionistas com ON k.CodigoComisionista = com.CodigoComisionista {p_where}"
+            df_pending_raw = pd.read_sql(text(p_query), db.bind, params=p_params)
+            if not df_pending_raw.empty:
+                total_pending_amount = float(df_pending_raw['ImporteLiquido'].sum())
+                df_pending_raw['Comisionista'] = df_pending_raw['Comisionista'].str.strip().str.upper()
                 
-            df_pending = pd.read_sql(text(pending_query), db.bind, params=pending_params)
-            
-            if not df_pending.empty:
-                # Calculate Total for KPI
-                total_pending_amount = float(df_pending['ImporteLiquido'].sum())
-
-                # 3. Determine correct Rep ID
-                def get_target_rep_id(row):
-                    if row['ImporteComision'] and row['ImporteComision'] != 0: return str(row['CodigoComisionista'])
-                    if row['ImporteComision2_'] and row['ImporteComision2_'] != 0: return str(row['CodigoComisionista2_'])
-                    if row['ImporteComision3_'] and row['ImporteComision3_'] != 0: return str(row['CodigoComisionista3_'])
-                    if row['ImporteComision4_'] and row['ImporteComision4_'] != 0: return str(row['CodigoComisionista4_'])
-                    return str(row['CodigoComisionista'])
-
-                df_pending['TargetRepID'] = df_pending.apply(get_target_rep_id, axis=1)
+                # Group by client first to sum multiple pending albaranes for the same client
+                df_grouped = df_pending_raw.groupby(['Comisionista', 'RazonSocial'], as_index=False)['ImporteLiquido'].sum()
                 
-                # 4. Map ID to Name
-                df_pending['Comisionista'] = df_pending['TargetRepID'].map(rep_map).fillna('UNKNOWN')
-                df_pending = df_pending[df_pending['Comisionista'] != 'UNKNOWN']
-
-                # 5. Group for Chart Tooltips
-                pending_map = df_pending.groupby('Comisionista')[['RazonSocial', 'ImporteLiquido']].apply(
-                    lambda x: x.nlargest(5, 'ImporteLiquido').to_dict('records')
+                pending_map = df_grouped.groupby('Comisionista').apply(
+                    lambda x: x.nlargest(5, 'ImporteLiquido')[['RazonSocial', 'ImporteLiquido']].to_dict('records')
                 ).to_dict()
+        except: pass
 
-        except Exception as e:
-            print(f"Error fetching pending invoices: {e}")
-            pass
+        if df_rev.empty and df_marg.empty:
+            return {"kpis": {"revenue": 0, "sales_margin": 0, "pending_invoice": total_pending_amount, "clients": 0, "invoices": 0}, "charts": {"sales_by_rep": [], "sales_by_day": [], "sales_margin_evolution": [], "top_clients": []}}
 
-        if df.empty:
-            return {
-                "kpis": {
-                    "revenue": 0,
-                    "commission": 0,
-                    "pending_invoice": total_pending_amount, # Added
-                    "clients": 0,
-                    "invoices": 0
-                },
-                "charts": {
-                    "sales_by_rep": [],
-                    "sales_by_day": [],
-                    "commission_dist": [],
-                    "top_clients": []
-                }
-            }
+        # --- CALCULATIONS REVENUE ---
+        total_revenue = float(df_rev['BaseImponible'].sum()) if not df_rev.empty else 0.0
+        unique_clients = int(df_rev['CodigoCliente'].nunique()) if not df_rev.empty else 0
+        unique_invoices = int(df_rev['NumeroFactura'].nunique()) if not df_rev.empty else 0
 
-        # --- KPIs ---
-        total_revenue = float(df['BaseImponible'].sum())
-        total_commission = float(df['ImporteComision'].sum())
-        unique_clients = int(df['CodigoCliente'].nunique())
-        unique_invoices = int(df['NumeroFactura'].nunique())
+        # Sales by Rep
+        sales_by_rep_data = []
+        if not df_rev.empty:
+            s_rep = df_rev.groupby('Comisionista')['BaseImponible'].sum().reset_index().sort_values('BaseImponible', ascending=False)
+            sales_by_rep_data = s_rep.to_dict(orient='records')
+            for item in sales_by_rep_data:
+                item['pending_invoices'] = pending_map.get(item['Comisionista'].strip().upper(), [])
 
-        # --- Charts ---
+        # Sales by Day
+        sales_by_day_data = []
+        if not df_rev.empty:
+            df_rev['FechaFactura'] = pd.to_datetime(df_rev['FechaFactura'])
+            s_day = df_rev.groupby(df_rev['FechaFactura'].dt.date)['BaseImponible'].sum()
+            start = filters.start_date or df_rev['FechaFactura'].min().date()
+            end = filters.end_date or df_rev['FechaFactura'].max().date()
+            if start and end:
+                idx = pd.date_range(start, end)
+                s_day.index = pd.DatetimeIndex(s_day.index)
+                s_day = s_day.reindex(idx, fill_value=0)
+            sales_by_day_data = [{'date': d.strftime('%Y-%m-%d'), 'amount': v} for d, v in s_day.items()]
 
-        # 1. Sales by Rep (Bar Chart)
-        sales_by_rep_df = df.groupby('Comisionista')['BaseImponible'].sum().reset_index()
-        sales_by_rep_df = sales_by_rep_df.sort_values(by='BaseImponible', ascending=False)
-        sales_by_rep_data = sales_by_rep_df.to_dict(orient='records')
-        
-        # Attach pending invoices to reps
-        for item in sales_by_rep_data:
-            rep_name = item['Comisionista'].strip().upper() if item['Comisionista'] else ""
-            if rep_name in pending_map:
-                 item['pending_invoices'] = pending_map[rep_name]
+        # Top Clients
+        top_clients_data = []
+        if not df_rev.empty:
+            c_met = df_rev.groupby(['CodigoCliente', 'RazonSocial']).agg(revenue=('BaseImponible', 'sum'), orders=('NumeroFactura', 'nunique')).reset_index()
+            c_met['ticket_avg'] = c_met['revenue'] / c_met['orders']
+            top_clients_data = c_met.sort_values('revenue', ascending=False).head(15).to_dict(orient='records')
+
+        # --- CALCULATIONS MARGIN ---
+        global_margin_pct = 0.0
+        margin_evolution_data = []
+        if not df_marg.empty:
+            m_sum = df_marg['BaseImponible'].sum()
+            m_cost = df_marg['ImporteCoste'].sum()
+            if m_sum > 0:
+                global_margin_pct = round(float((m_sum - m_cost) / m_sum * 100), 2)
+            
+            # Margin Evolution (Lines)
+            df_marg['FechaFactura'] = pd.to_datetime(df_marg['FechaFactura'])
+            df_marg['Division'] = df_marg['Comisionista'].apply(lambda x: next((k for k, v in divisions.items() if str(x).strip().upper() in (r.upper() for r in v)), 'Otros'))
+            
+            # Grouping Granularity based on date range
+            days_diff = 0
+            if filters.start_date and filters.end_date:
+                days_diff = (filters.end_date - filters.start_date).days
+            
+            # If range is less than 90 days, show daily/weekly trend to get a "line"
+            # If more, show monthly
+            if days_diff <= 90:
+                df_marg['Periodo'] = df_marg['FechaFactura'].dt.strftime('%Y-%m-%d')
             else:
-                 item['pending_invoices'] = []
-
-        # 2. Sales by Day (Line Chart) with Calendar Fill
-        # Ensure FechaFactura is datetime
-        df['FechaFactura'] = pd.to_datetime(df['FechaFactura'])
-        sales_by_day = df.groupby(df['FechaFactura'].dt.date)['BaseImponible'].sum()
-        
-        # Create full date range if we have filters, otherwise use min/max from data
-        start = filters.start_date if filters.start_date else df['FechaFactura'].min().date()
-        end = filters.end_date if filters.end_date else df['FechaFactura'].max().date()
-        
-        if start and end:
-            idx = pd.date_range(start, end)
-            sales_by_day.index = pd.DatetimeIndex(sales_by_day.index)
-            sales_by_day = sales_by_day.reindex(idx, fill_value=0)
-        
-        sales_by_day_data = [{'date': date.strftime('%Y-%m-%d'), 'amount': val} for date, val in sales_by_day.items()]
-
-        # 3. Commission Distribution (Donut Chart)
-        # Groupping by %Comision
-        comm_dist = df.groupby('%Comision')['BaseImponible'].sum().reset_index()
-        comm_dist.columns = ['percentage', 'amount']
-        comm_dist_data = comm_dist.to_dict(orient='records')
-
-        # 4. Top 15 Clients (Table)
-        # Group by Client ID and Name
-        client_metrics = df.groupby(['CodigoCliente', 'RazonSocial']).agg(
-            revenue=('BaseImponible', 'sum'),
-            orders=('NumeroFactura', 'nunique') # distinct invoices
-        ).reset_index()
-        
-        client_metrics['ticket_avg'] = client_metrics['revenue'] / client_metrics['orders']
-        client_metrics = client_metrics.sort_values(by='revenue', ascending=False).head(15)
-        top_clients_data = client_metrics.to_dict(orient='records')
+                df_marg['Periodo'] = df_marg['FechaFactura'].dt.strftime('%Y-%m')
+            
+            m_evol = df_marg.groupby(['Periodo', 'Division']).agg(
+                ventas=('BaseImponible', 'sum'),
+                costes=('ImporteCoste', 'sum')
+            ).reset_index()
+            m_evol['margin'] = ((m_evol['ventas'] - m_evol['costes']) / m_evol['ventas'] * 100).fillna(0)
+            
+            # Pivot for Recharts
+            pivot_evol = m_evol.pivot(index='Periodo', columns='Division', values='margin').fillna(0).reset_index()
+            # Ensure chronological order
+            pivot_evol = pivot_evol.sort_values('Periodo')
+            margin_evolution_data = pivot_evol.to_dict(orient='records')
 
         result = {
             "kpis": {
                 "revenue": total_revenue,
-                "commission": total_commission,
+                "sales_margin": global_margin_pct,
                 "pending_invoice": total_pending_amount,
                 "clients": unique_clients,
                 "invoices": unique_invoices
@@ -282,7 +228,7 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
             "charts": {
                 "sales_by_rep": sales_by_rep_data,
                 "sales_by_day": sales_by_day_data,
-                "commission_dist": comm_dist_data,
+                "sales_margin_evolution": margin_evolution_data,
                 "top_clients": top_clients_data
             }
         }
@@ -291,7 +237,6 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
         return result
 
     except Exception as e:
-        # print error to console for debugging
         print(f"Error in dashboard: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -308,7 +253,7 @@ def get_sales_comparison(filters: ComparisonFilters, db: Session = Depends(get_d
         
         # Define Allowed Reps Logic (Shared with Dashboard)
         divisions = {
-            'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE'],
+            'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
             'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
             'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
         }
@@ -318,7 +263,8 @@ def get_sales_comparison(filters: ComparisonFilters, db: Session = Depends(get_d
             'JUAN CARLOS VALDES ANTON',
             'ANTONIO MACHO MACHO',
             'JAVIER ALLEN PERKINS',
-            'JESUS COLLADO ARAQUE'
+            'JESUS COLLADO ARAQUE',
+            'ADRIÁN ROMERO JIMENEZ'
         ]
 
         # Determine target reps

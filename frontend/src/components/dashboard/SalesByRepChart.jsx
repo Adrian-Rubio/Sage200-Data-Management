@@ -48,9 +48,13 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-export function SalesByRepChart({ data }) {
+export function SalesByRepChart({ data, isEmbed }) {
+    const containerClass = isEmbed
+        ? "w-full h-full flex flex-col"
+        : "bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col";
+
     return (
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
+        <div className={containerClass}>
             <h3 className="text-gray-700 font-semibold mb-4 text-center">Facturación Total por Comercial</h3>
             <div style={{ width: '100%', height: '100%', minHeight: 0, flexGrow: 1 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -72,7 +76,18 @@ export function SalesByRepChart({ data }) {
                         />
                         <YAxis tickFormatter={(val) => `${(val / 1000).toFixed(0)}k€`} tick={{ fontSize: 12, fill: '#9ca3af' }} />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f3f4f6' }} />
-                        <Bar dataKey="BaseImponible" radius={[4, 4, 0, 0]} maxBarSize={80}>
+                        <Bar
+                            dataKey="BaseImponible"
+                            radius={[4, 4, 0, 0]}
+                            maxBarSize={80}
+                            label={{
+                                position: 'top',
+                                fill: '#4b5563',
+                                fontSize: 11,
+                                fontWeight: 700,
+                                formatter: (val) => `${(val / 1000).toFixed(0)}k€`
+                            }}
+                        >
                             {data.map((entry, index) => (
                                 <Cell
                                     key={`cell-${index}`}

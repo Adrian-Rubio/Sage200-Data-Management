@@ -13,7 +13,7 @@ app = FastAPI(title="Sage200 Dashboard API")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*", "http://metricas.cenval.es"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

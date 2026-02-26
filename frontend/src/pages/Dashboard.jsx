@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { KpiCard } from '../components/dashboard/KpiCard';
 import { SalesByRepChart } from '../components/dashboard/SalesByRepChart';
 import { SalesByDayChart } from '../components/dashboard/SalesByDayChart';
-import { CommissionDonutChart } from '../components/dashboard/CommissionDonutChart';
+import { SalesMarginEvolutionChart } from '../components/dashboard/SalesMarginEvolutionChart';
+import { DashboardCarousel } from '../components/dashboard/DashboardCarousel';
 import { TopClientsTable } from '../components/dashboard/TopClientsTable';
 import useAuthStore from '../store/authStore';
 import useDataStore from '../store/dataStore';
@@ -90,7 +91,7 @@ export default function Dashboard() {
             const newFilters = { ...prev, [name]: value || null };
 
             const divisions = {
-                'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE'],
+                'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
                 'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
                 'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
             };
@@ -146,6 +147,9 @@ export default function Dashboard() {
                     <Link to="/" className="bg-white text-slate-600 border border-slate-300 px-4 py-2 rounded shadow-sm hover:bg-slate-50 transition font-medium text-sm h-[38px] flex items-center justify-center">
                         Volver al Menú
                     </Link>
+                    <button onClick={() => window.location.reload(true)} className="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded shadow-sm hover:bg-blue-100 transition font-medium text-sm h-[38px] flex items-center justify-center">
+                        Refrescar App
+                    </button>
                 </div>
             </div>
 
@@ -160,15 +164,7 @@ export default function Dashboard() {
                     <input type="date" name="end_date" value={filters.end_date || ''} onChange={handleFilterChange} className="block w-40 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white" />
                 </div>
 
-                <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Empresa</label>
-                    <select name="company_id" value={filters.company_id || ''} onChange={handleFilterChange} className="block w-48 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white">
-                        <option value="">Todas</option>
-                        {options.companies.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
-                </div>
+
 
 
                 <div className="flex flex-col">
@@ -195,7 +191,7 @@ export default function Dashboard() {
                             .filter(r => {
                                 if (!filters.division) return true;
                                 const divisions = {
-                                    'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE'],
+                                    'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
                                     'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
                                     'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
                                 };
@@ -240,35 +236,36 @@ export default function Dashboard() {
                 </div>
             </div>
 
+
+
             {/* Top Row: KPIs */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                 <KpiCard title="Facturación" value={data?.kpis?.revenue || 0} subtext="Total periodo" />
-                <KpiCard title="Pendiente de Facturar" value={data?.kpis?.pending_invoice || 0} subtext="Albaranes pendientes" isWarning={true} />
-                <KpiCard title="Clientes Únicos" value={data?.kpis?.clients || 0} subtext="Activos" />
-                <KpiCard title="Número Facturas" value={data?.kpis?.invoices || 0} subtext="Emitidas" />
+                <KpiCard title="Margen" value={data?.kpis?.sales_margin || 0} subtext="Promedio comercial" isPercentage={true} />
+                <KpiCard title="Pdte. Facturar" value={data?.kpis?.pending_invoice || 0} subtext="Albaranes" isWarning={true} />
+                <KpiCard title="Clientes" value={data?.kpis?.clients || 0} subtext="Activos" />
+                <KpiCard title="Facturas" value={data?.kpis?.invoices || 0} subtext="Emitidas" />
             </div>
 
-            {/* Middle Row: Sales by Rep Details */}
-            <div className="grid grid-cols-1 gap-6 mb-6">
-                <div className="h-80">
-                    <SalesByRepChart data={data?.charts?.sales_by_rep || []} />
+            {/* Carousel Area (Zona Roja) */}
+            <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-slate-100 mb-6 relative overflow-hidden">
+                {/* Decorative background for the "Zona Roja" concept */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full -mr-16 -mt-16 pointer-events-none" />
+
+                <div className="min-h-[500px] h-[600px]">
+                    <DashboardCarousel
+                        salesByRepData={data?.charts?.sales_by_rep || []}
+                        salesByDayData={data?.charts?.sales_by_day || []}
+                        marginEvolutionData={data?.charts?.sales_margin_evolution || []}
+                    />
                 </div>
             </div>
 
-            {/* Bottom Row: Charts & Tables */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <div className="h-80">
-                    <SalesByDayChart data={data?.charts?.sales_by_day || []} />
-                </div>
-                <div className="h-80">
-                    <CommissionDonutChart data={data?.charts?.commission_dist || []} />
-                </div>
-            </div>
-
-            {/* Detailed Table */}
+            {/* Bottom Section: Table */}
             <div className="grid grid-cols-1 gap-6">
                 <TopClientsTable data={data?.charts?.top_clients || []} />
             </div>
+
         </div>
     );
 }

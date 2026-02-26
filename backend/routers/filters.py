@@ -17,7 +17,7 @@ router = APIRouter(
 @router.get("/options")
 def get_filter_options(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     # Generate a cache key based on the user's access level
-    cache_key = f"options_{current_user.role}_{current_user.sales_rep_id}"
+    cache_key = f"options_v2_{current_user.role}_{current_user.sales_rep_id}"
     if cache_key in filters_cache:
         return filters_cache[cache_key]
 
@@ -51,7 +51,8 @@ def get_filter_options(db: Session = Depends(get_db), current_user: models.User 
             'JUAN CARLOS VALDES ANTON',
             'ANTONIO MACHO MACHO',
             'JAVIER ALLEN PERKINS',
-            'JESUS COLLADO ARAQUE'
+            'JESUS COLLADO ARAQUE',
+            'ADRIÁN ROMERO JIMENEZ'
         ]
         
         has_manage_permission = (current_user.role == "admin") or (

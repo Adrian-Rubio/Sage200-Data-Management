@@ -1,20 +1,17 @@
 
-export function KpiCard({ title, value, subtext, isWarning }) {
-    // Format value (e.g. 1.2M or 150k)
-    // If it's a large monetary value, maybe compact is fine, but let's just make it look good.
-    // For pending invoice which is monetary, we usually want to see the currency symbol.
-
-    const isMonetary = (title.toLowerCase().includes('factura') || title.toLowerCase().includes('comisión') || title.toLowerCase().includes('pendiente'))
+export function KpiCard({ title, value, subtext, isWarning, isPercentage }) {
+    const isMonetary = !isPercentage && (title.toLowerCase().includes('factura') || title.toLowerCase().includes('comisión') || title.toLowerCase().includes('pendiente'))
         && !title.toLowerCase().includes('número')
+        && title.toLowerCase() !== 'facturas' // Literal "Facturas" is a count
         && !title.toLowerCase().includes('clientes');
 
-    const formattedValue = new Intl.NumberFormat('es-ES', {
-        style: isMonetary ? 'currency' : 'decimal',
-        currency: 'EUR',
-        maximumFractionDigits: 0,
-        // notation: "compact", // Compact can be confusing for exact amounts like 123.456 €
-        // compactDisplay: "short"
-    }).format(value);
+    const formattedValue = isPercentage
+        ? new Intl.NumberFormat('es-ES', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value / 100)
+        : new Intl.NumberFormat('es-ES', {
+            style: isMonetary ? 'currency' : 'decimal',
+            currency: 'EUR',
+            maximumFractionDigits: 0,
+        }).format(value);
 
     // Dynamic styles
     const titleColor = isWarning ? "text-orange-600" : "text-gray-500";
