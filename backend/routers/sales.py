@@ -107,11 +107,23 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
 
         # --- QUERY 1: REVENUE (Diario) ---
         query_rev = f"SELECT * FROM Vis_AEL_DiarioFactxComercial WHERE {company_filter} {common_where}"
+        with open("dashboard_debug.log", "a") as f:
+            f.write(f"\n--- {date.today()} ---\n")
+            f.write(f"DEBUG: Revenue Query: {query_rev}\n")
+            f.write(f"DEBUG: Params: {common_params}\n")
         df_rev = pd.read_sql(text(query_rev), db.bind, params=common_params)
+        with open("dashboard_debug.log", "a") as f:
+            f.write(f"DEBUG: df_rev size: {df_rev.shape}\n")
+            f.write(f"DEBUG: df_rev revenue sum: {df_rev['BaseImponible'].sum() if not df_rev.empty else 0}\n")
 
         # --- QUERY 2: MARGIN (VIS_CEN_LinAlbFacSD) ---
         query_marg = f"SELECT * FROM VIS_CEN_LinAlbFacSD WHERE {company_filter} {common_where}"
+        with open("dashboard_debug.log", "a") as f:
+            f.write(f"DEBUG: Margin Query: {query_marg}\n")
         df_marg = pd.read_sql(text(query_marg), db.bind, params=common_params)
+        with open("dashboard_debug.log", "a") as f:
+            f.write(f"DEBUG: df_marg size: {df_marg.shape}\n")
+            f.write(f"DEBUG: df_marg sum: {df_marg['BaseImponible'].sum() if not df_marg.empty else 0}\n")
         
         # Ensure correct types and column names (Normalization)
         for df_tmp in [df_rev, df_marg]:
@@ -142,9 +154,13 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
                 pending_map = df_grouped.groupby('Comisionista').apply(
                     lambda x: x.nlargest(5, 'ImporteLiquido')[['RazonSocial', 'ImporteLiquido']].to_dict('records')
                 ).to_dict()
-        except: pass
+        except Exception as e:
+            with open("dashboard_debug.log", "a") as f:
+                f.write(f"DEBUG: Pending query error: {e}\n")
 
         if df_rev.empty and df_marg.empty:
+            with open("dashboard_debug.log", "a") as f:
+                f.write("DEBUG: BOTH DFS EMPTY\n")
             return {"kpis": {"revenue": 0, "sales_margin": 0, "pending_invoice": total_pending_amount, "clients": 0, "invoices": 0}, "charts": {"sales_by_rep": [], "sales_by_day": [], "sales_margin_evolution": [], "top_clients": []}}
 
         # --- CALCULATIONS REVENUE ---

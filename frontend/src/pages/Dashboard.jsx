@@ -140,7 +140,7 @@ export default function Dashboard() {
                     </h1>
                 </div>
                 <div className="flex gap-3">
-                    <span className="text-slate-600 font-medium text-sm flex items-center mr-2">Hola, {user?.username} ({user?.role})</span>
+                    <span className="text-slate-600 font-medium text-sm flex items-center mr-2">{user?.sub}</span>
                     <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 px-4 py-2 rounded shadow-sm transition font-medium text-sm h-[38px] flex items-center justify-center">
                         Cerrar Sesión
                     </button>

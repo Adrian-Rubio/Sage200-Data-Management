@@ -1,0 +1,18 @@
+
+--- 2026-02-26 ---
+DEBUG: Revenue Query: SELECT * FROM Vis_AEL_DiarioFactxComercial WHERE CodigoEmpresa = '2'  AND UPPER(RTRIM(LTRIM(Comisionista))) IN (:rep_0, :rep_1, :rep_2, :rep_3, :rep_4, :rep_5, :rep_6) AND TRY_CONVERT(date, FechaFactura) >= :start_date AND TRY_CONVERT(date, FechaFactura) <= :end_date
+DEBUG: Params: {'rep_0': 'JOSE CESPEDES BLANCO', 'rep_1': 'ANTONIO MACHO MACHO', 'rep_2': 'JESUS COLLADO ARAQUE', 'rep_3': 'ADRIÁN ROMERO JIMENEZ', 'rep_4': 'JUAN CARLOS BENITO RAMOS', 'rep_5': 'JAVIER ALLEN PERKINS', 'rep_6': 'JUAN CARLOS VALDES ANTON', 'start_date': datetime.date(2026, 1, 31), 'end_date': datetime.date(2026, 2, 27)}
+
+--- 2026-02-26 ---
+DEBUG: Revenue Query: SELECT * FROM Vis_AEL_DiarioFactxComercial WHERE CodigoEmpresa = '2'  AND UPPER(RTRIM(LTRIM(Comisionista))) IN (:rep_0, :rep_1, :rep_2, :rep_3, :rep_4, :rep_5, :rep_6) AND TRY_CONVERT(date, FechaFactura) >= :start_date AND TRY_CONVERT(date, FechaFactura) <= :end_date
+DEBUG: Params: {'rep_0': 'JOSE CESPEDES BLANCO', 'rep_1': 'ANTONIO MACHO MACHO', 'rep_2': 'JESUS COLLADO ARAQUE', 'rep_3': 'ADRIÁN ROMERO JIMENEZ', 'rep_4': 'JUAN CARLOS BENITO RAMOS', 'rep_5': 'JAVIER ALLEN PERKINS', 'rep_6': 'JUAN CARLOS VALDES ANTON', 'start_date': datetime.date(2026, 1, 31), 'end_date': datetime.date(2026, 2, 27)}
+DEBUG: df_rev size: (820, 12)
+DEBUG: df_rev revenue sum: 916529.8900000001
+DEBUG: Margin Query: SELECT * FROM VIS_CEN_LinAlbFacSD WHERE CodigoEmpresa = '2'  AND UPPER(RTRIM(LTRIM(Comisionista))) IN (:rep_0, :rep_1, :rep_2, :rep_3, :rep_4, :rep_5, :rep_6) AND TRY_CONVERT(date, FechaFactura) >= :start_date AND TRY_CONVERT(date, FechaFactura) <= :end_date
+DEBUG: df_marg size: (1823, 22)
+DEBUG: df_marg sum: 890220.5700000001
+DEBUG: df_rev size: (820, 12)
+DEBUG: df_rev revenue sum: 916529.8900000001
+DEBUG: Margin Query: SELECT * FROM VIS_CEN_LinAlbFacSD WHERE CodigoEmpresa = '2'  AND UPPER(RTRIM(LTRIM(Comisionista))) IN (:rep_0, :rep_1, :rep_2, :rep_3, :rep_4, :rep_5, :rep_6) AND TRY_CONVERT(date, FechaFactura) >= :start_date AND TRY_CONVERT(date, FechaFactura) <= :end_date
+DEBUG: df_marg size: (1823, 22)
+DEBUG: df_marg sum: 890220.5700000001
