@@ -165,22 +165,31 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
 
         # --- CALCULATIONS REVENUE ---
         total_revenue = float(df_rev['BaseImponible'].sum()) if not df_rev.empty else 0.0
+        total_gross = float(df_rev[df_rev['BaseImponible'] > 0]['BaseImponible'].sum()) if not df_rev.empty else 0.0
+        total_returns = float(df_rev[df_rev['BaseImponible'] < 0]['BaseImponible'].sum()) if not df_rev.empty else 0.0
+        
         unique_clients = int(df_rev['CodigoCliente'].nunique()) if not df_rev.empty else 0
         unique_invoices = int(df_rev['NumeroFactura'].nunique()) if not df_rev.empty else 0
 
-        # Sales by Rep
+        # Sales by Rep (Using Gross for the main chart to avoid negative bars as requested)
         sales_by_rep_data = []
         if not df_rev.empty:
-            s_rep = df_rev.groupby('Comisionista')['BaseImponible'].sum().reset_index().sort_values('BaseImponible', ascending=False)
+            # We show Gross Revenue in the main bar chart to avoid the "downwards" bars
+            s_rep = df_rev.groupby('Comisionista')['BaseImponible'].apply(lambda x: x[x>0].sum()).reset_index().sort_values('Comisionista', ascending=True)
+            s_rep.columns = ['Comisionista', 'BaseImponible']
             sales_by_rep_data = s_rep.to_dict(orient='records')
             for item in sales_by_rep_data:
                 item['pending_invoices'] = pending_map.get(item['Comisionista'].strip().upper(), [])
+                # Add division information for coloring
+                rep_name = item['Comisionista'].strip().upper()
+                item['division'] = next((k for k, v in divisions.items() if rep_name in (r.upper() for r in v)), 'Otros')
 
-        # Sales by Day
+        # Sales by Day (Using Gross to avoid "downwards" bars)
         sales_by_day_data = []
         if not df_rev.empty:
             df_rev['FechaFactura'] = pd.to_datetime(df_rev['FechaFactura'])
-            s_day = df_rev.groupby(df_rev['FechaFactura'].dt.date)['BaseImponible'].sum()
+            # Sum only positive values for the main chart
+            s_day = df_rev.groupby(df_rev['FechaFactura'].dt.date)['BaseImponible'].apply(lambda x: x[x>0].sum())
             start = filters.start_date or df_rev['FechaFactura'].min().date()
             end = filters.end_date or df_rev['FechaFactura'].max().date()
             if start and end:
@@ -236,6 +245,8 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
         result = {
             "kpis": {
                 "revenue": total_revenue,
+                "revenue_gross": total_gross,
+                "returns": total_returns,
                 "sales_margin": global_margin_pct,
                 "pending_invoice": total_pending_amount,
                 "clients": unique_clients,

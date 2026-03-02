@@ -108,14 +108,14 @@ export default function Purchases() {
                 series: filters.series || null,
                 order_num: filters.order_num ? parseInt(filters.order_num) : null,
                 parent_order_num: filters.parent_order_num ? parseInt(filters.parent_order_num) : null,
-                provider_id: filters.provider || null,
+                provider: filters.provider || null,
                 division: filters.division || null,
                 origin: filters.origin || null
             };
 
             const result = await fetchPendingPurchases(apiFilters);
             setData(result);
-            if (!filters.status && !filters.exercise && !filters.series && !filters.order_num && !filters.parent_order_num && !filters.provider && !filters.division && !filters.origin && filters.company_id === '100') {
+            if (!filters.start_date && !filters.end_date && !filters.status && !filters.exercise && !filters.series && !filters.order_num && !filters.parent_order_num && !filters.provider && !filters.division && !filters.origin && filters.company_id === '100') {
                 setPurchasesData(result);
             }
         } catch (err) {
@@ -151,56 +151,67 @@ export default function Purchases() {
             </div>
 
             {/* Advanced Filters Bar - ERP Style */}
-            <form onSubmit={loadData} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-9 gap-4 items-end">
-                    <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Empresa</label>
-                        <select name="company_id" value={filters.company_id || ''} onChange={handleFilterChange} className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2">
-                            <option value="">Todas</option>
-                            {options.companies?.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
-                    </div>
+            <form onSubmit={(e) => { e.preventDefault(); loadData(); }} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4 items-end">
                     <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ejercicio</label>
                         <input name="exercise" type="number" value={filters.exercise || ''} onChange={handleFilterChange} placeholder="2026" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Serie</label>
-                        <input name="series" type="text" value={filters.series || ''} onChange={handleFilterChange} placeholder="CEE" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Empresa</label>
+                        <select
+                            name="company_id"
+                            value={filters.company_id || ''}
+                            onChange={handleFilterChange}
+                            className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2"
+                        >
+                            <option value="">Todas</option>
+                            <option value="100">Cenvalsa Industrial</option>
+                            <option value="400">Siscon</option>
+                        </select>
                     </div>
-                    <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nº Pedido</label>
-                        <input name="order_num" type="number" value={filters.order_num || ''} onChange={handleFilterChange} placeholder="Número" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nº Pedido Origen</label>
-                        <input name="parent_order_num" type="number" value={filters.parent_order_num || ''} onChange={handleFilterChange} placeholder="Origen" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Proveedor / Razón Social</label>
-                        <input name="provider" type="text" value={filters.provider || ''} onChange={handleFilterChange} placeholder="Buscar..." className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
-                    </div>
+
                     <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Estado</label>
-                        <select name="status" value={filters.status} onChange={handleFilterChange} className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2">
-                            <option value="">Activos</option>
-                            <option value="partial">Parciales</option>
-                            <option value="completed">Completos</option>
+                        <select
+                            name="status"
+                            value={filters.status}
+                            onChange={handleFilterChange}
+                            className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2"
+                        >
+                            <option value="">Todos</option>
+                            <option value="0">Pte. Recibir</option>
+                            <option value="1">Recepción Parcial</option>
                         </select>
                     </div>
+
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ejercicio</label>
+                        <input name="exercise" type="number" value={filters.exercise || ''} onChange={handleFilterChange} placeholder="2026" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nº Pedido</label>
+                        <input name="order_num" type="number" value={filters.order_num || ''} onChange={handleFilterChange} placeholder="Pedido" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Proveedor</label>
+                        <input name="provider" type="text" value={filters.provider || ''} onChange={handleFilterChange} placeholder="Nombre prov..." className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
+                    </div>
+
                     <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Origen</label>
-                        <select name="origin" value={filters.origin} onChange={handleFilterChange} className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2">
+                        <select name="origin" value={filters.origin || ''} onChange={handleFilterChange} className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2">
                             <option value="">Todos</option>
-                            <option value="NORMAL">Solo Normales</option>
-                            <option value="PADRE">Solo Padres</option>
-                            <option value="HIJO">Solo Hijos</option>
+                            <option value="OF">OF</option>
+                            <option value="STOCK">Stock</option>
+                            <option value="PEDIDO">Pedido Venta</option>
                         </select>
                     </div>
+
                     <div>
-                        <button type="submit" className="w-full bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition font-bold text-sm h-[38px] flex items-center justify-center gap-2">
+                        <button type="submit" className="w-full bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 transition font-bold text-sm h-[38px] flex items-center justify-center gap-2">
                             Filtrar
                         </button>
                     </div>

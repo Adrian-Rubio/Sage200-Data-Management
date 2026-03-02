@@ -39,6 +39,14 @@ export default function Home() {
             icon: <img src="/finanzas.png" alt="Finanzas" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform" />
         },
         {
+            name: 'Almacén',
+            path: '/almacen',
+            permission: 'almacen',
+            color: 'bg-[#f04a24]',
+            hover: 'hover:bg-[#d63d1a]',
+            icon: <img src="/pedidos.png" alt="Almacén" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform" />
+        },
+        {
             name: 'Usuarios',
             path: '/usuarios',
             permission: 'admin',

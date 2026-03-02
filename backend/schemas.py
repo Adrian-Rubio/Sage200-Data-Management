@@ -9,6 +9,7 @@ class RoleBase(BaseModel):
     can_view_compras: bool = False
     can_view_produccion: bool = False
     can_view_finanzas: bool = False
+    can_view_almacen: bool = False
     can_manage_users: bool = False
 
 class RoleCreate(RoleBase):

@@ -14,6 +14,7 @@ class Role(Base):
     can_view_compras = Column(Boolean, default=False)
     can_view_produccion = Column(Boolean, default=False)
     can_view_finanzas = Column(Boolean, default=False)
+    can_view_almacen = Column(Boolean, default=False)
     can_manage_users = Column(Boolean, default=False)
     
     users = relationship("User", back_populates="role_obj")

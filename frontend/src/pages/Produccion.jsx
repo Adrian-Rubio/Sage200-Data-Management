@@ -171,6 +171,11 @@ export default function Produccion() {
     const [loading, setLoading] = useState(!productionData);
     const [error, setError] = useState(null);
 
+    // Initial dates (current month)
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const today = now.toISOString().split('T')[0];
+
     // Detailed Filters
     const [filters, setFilters] = useState({
         exercise: new Date().getFullYear(),

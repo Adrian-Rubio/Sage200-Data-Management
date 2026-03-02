@@ -26,8 +26,8 @@ def get_pending_orders(filters: PendingOrdersFilters, db: Session = Depends(get_
         # Define Division Mapping (consistent with sales.py)
         # Note: 'Mecánica' in screenshot matches 'Sismecánica' reps
         divisions = {
-            'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE'],
-            'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'], # Maps to 'Mecánica' in UI
+            'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
+            'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
             'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
         }
         
@@ -101,7 +101,7 @@ def get_pending_orders(filters: PendingOrdersFilters, db: Session = Depends(get_
         if current_user.role == "comercial" and current_user.sales_rep_id:
              df = df[df['Comisionista'] == current_user.sales_rep_id.upper()]
         elif filters.sales_rep_id:
-             df = df[df['CodigoComisionista'] == filters.sales_rep_id]
+             df = df[df['Comisionista'] == filters.sales_rep_id.strip().upper()]
 
         if df.empty:
              return {"kpis": {"total_orders": 0, "total_amount": 0}, "by_division": []}
@@ -127,7 +127,11 @@ def get_pending_orders(filters: PendingOrdersFilters, db: Session = Depends(get_
         # KPIs for the top cards
         total_orders = int(df['NumeroPedido'].nunique())
         total_amount = float(df['BaseImponiblePendiente'].sum())
+        total_cost = float(df['CosteTotal'].sum())
+        total_units = float(df['UnidadesPendientes'].sum())
         
+        global_margin_pct = (total_amount - total_cost) / total_amount if total_amount > 0 else 0
+
         # Format for Frontend (sorting by Amount desc)
         division_group = division_group.sort_values('PendingAmount', ascending=False)
         by_division_data = division_group.to_dict(orient='records')
@@ -135,7 +139,9 @@ def get_pending_orders(filters: PendingOrdersFilters, db: Session = Depends(get_
         return {
             "kpis": {
                 "total_orders": total_orders,
-                "total_amount": total_amount
+                "total_amount": total_amount,
+                "total_units": total_units,
+                "global_margin_pct": global_margin_pct * 100
             },
             "by_division": by_division_data
         }

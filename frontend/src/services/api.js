@@ -16,6 +16,20 @@ api.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            // Token expired or unauthorized
+            if (window.location.pathname !== '/login') {
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default api;
 
 export const fetchFilterOptions = async () => {
@@ -163,6 +177,26 @@ export const deleteRole = async (roleId) => {
         return response.data;
     } catch (error) {
         console.error("Error deleting role:", error);
+        throw error;
+    }
+};
+
+export const fetchAlmacenStats = async (filters) => {
+    try {
+        const response = await api.post('/almacen/stats', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching almacen stats:", error);
+        throw error;
+    }
+};
+
+export const fetchOperators = async () => {
+    try {
+        const response = await api.get('/almacen/operators');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching operators:", error);
         throw error;
     }
 };

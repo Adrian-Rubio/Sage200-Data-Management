@@ -1,0 +1,184 @@
+Traceback (most recent call last):
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+pyodbc.DataError: ('22007', '[22007] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]La conversión del tipo de datos nvarchar en datetime produjo un valor fuera de intervalo. (242) (SQLExecDirectW)')
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\pandas\io\sql.py", line 1679, in execute
+    return execute_function(sql, *args)
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.DataError: (pyodbc.DataError) ('22007', '[22007] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]La conversión del tipo de datos nvarchar en datetime produjo un valor fuera de intervalo. (242) (SQLExecDirectW)')
+[SQL: 
+        WITH LineasAgg AS (
+            SELECT 
+                CodigoEmpresa, 
+                EjercicioAlbaran, 
+                NumeroAlbaran, 
+                SUM(Unidades) as UnidadesTotales
+            FROM LineasAlbaranCliente
+            GROUP BY CodigoEmpresa, EjercicioAlbaran, NumeroAlbaran
+        ),
+        OpsClean AS (
+            SELECT DISTINCT
+                CodigoEmpresa,
+                Operario,
+                RTRIM(LTRIM(REPLACE(REPLACE(NombreOperario, CHAR(13), ''), CHAR(10), ''))) as NombreOperario
+            FROM CE_OperariosAlmacen
+        )
+        SELECT 
+            cab.EjercicioAlbaran,
+            MONTH(cab.CE_FechaFinPrep) as Mes,
+            DAY(cab.CE_FechaFinPrep) as Dia,
+            CONVERT(VARCHAR(10), cab.CE_FechaFinPrep, 120) as Fecha,
+            ISNULL(op.NombreOperario, 'Sin Asignar') as NombreOperario,
+            cab.NumeroLineas,
+            ISNULL(lin.UnidadesTotales, 0) as Unidades
+        FROM CabeceraAlbaranCliente cab
+        LEFT JOIN OpsClean op ON cab.CE_OperarioPreparacion = op.Operario AND cab.CodigoEmpresa = op.CodigoEmpresa
+        LEFT JOIN LineasAgg lin ON cab.CodigoEmpresa = lin.CodigoEmpresa 
+                             AND cab.EjercicioAlbaran = lin.EjercicioAlbaran 
+                             AND cab.NumeroAlbaran = lin.NumeroAlbaran
+        WHERE cab.CE_FechaFinPrep IS NOT NULL AND cab.CE_FechaFinPrep >= ? AND cab.CE_FechaFinPrep <= ?
+        ]
+[parameters: ('2026-02-01', '2026-02-28')]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\routers\almacen.py", line 79, in get_almacen_stats
+    df = pd.read_sql(text(query), conn, params=params)
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\pandas\io\sql.py", line 730, in read_sql
+    return pandas_sql.read_query(
+           ~~~~~~~~~~~~~~~~~~~~~^
+        sql,
+        ^^^^
+    ...<6 lines>...
+        dtype=dtype,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\pandas\io\sql.py", line 1856, in read_query
+    result = self.execute(sql, params)
+  File "C:\Users\adrian.rubio\OneDrive - CENVAL S.L\Escritorio\repositorios\Data_Management\backend\venv\Lib\site-packages\pandas\io\sql.py", line 1681, in execute
+    raise DatabaseError(f"Execution failed on sql '{sql}': {exc}") from exc
+pandas.errors.DatabaseError: Execution failed on sql '
+        WITH LineasAgg AS (
+            SELECT 
+                CodigoEmpresa, 
+                EjercicioAlbaran, 
+                NumeroAlbaran, 
+                SUM(Unidades) as UnidadesTotales
+            FROM LineasAlbaranCliente
+            GROUP BY CodigoEmpresa, EjercicioAlbaran, NumeroAlbaran
+        ),
+        OpsClean AS (
+            SELECT DISTINCT
+                CodigoEmpresa,
+                Operario,
+                RTRIM(LTRIM(REPLACE(REPLACE(NombreOperario, CHAR(13), ''), CHAR(10), ''))) as NombreOperario
+            FROM CE_OperariosAlmacen
+        )
+        SELECT 
+            cab.EjercicioAlbaran,
+            MONTH(cab.CE_FechaFinPrep) as Mes,
+            DAY(cab.CE_FechaFinPrep) as Dia,
+            CONVERT(VARCHAR(10), cab.CE_FechaFinPrep, 120) as Fecha,
+            ISNULL(op.NombreOperario, 'Sin Asignar') as NombreOperario,
+            cab.NumeroLineas,
+            ISNULL(lin.UnidadesTotales, 0) as Unidades
+        FROM CabeceraAlbaranCliente cab
+        LEFT JOIN OpsClean op ON cab.CE_OperarioPreparacion = op.Operario AND cab.CodigoEmpresa = op.CodigoEmpresa
+        LEFT JOIN LineasAgg lin ON cab.CodigoEmpresa = lin.CodigoEmpresa 
+                             AND cab.EjercicioAlbaran = lin.EjercicioAlbaran 
+                             AND cab.NumeroAlbaran = lin.NumeroAlbaran
+        WHERE cab.CE_FechaFinPrep IS NOT NULL AND cab.CE_FechaFinPrep >= :start_date AND cab.CE_FechaFinPrep <= :end_date
+        ': (pyodbc.DataError) ('22007', '[22007] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]La conversión del tipo de datos nvarchar en datetime produjo un valor fuera de intervalo. (242) (SQLExecDirectW)')
+[SQL: 
+        WITH LineasAgg AS (
+            SELECT 
+                CodigoEmpresa, 
+                EjercicioAlbaran, 
+                NumeroAlbaran, 
+                SUM(Unidades) as UnidadesTotales
+            FROM LineasAlbaranCliente
+            GROUP BY CodigoEmpresa, EjercicioAlbaran, NumeroAlbaran
+        ),
+        OpsClean AS (
+            SELECT DISTINCT
+                CodigoEmpresa,
+                Operario,
+                RTRIM(LTRIM(REPLACE(REPLACE(NombreOperario, CHAR(13), ''), CHAR(10), ''))) as NombreOperario
+            FROM CE_OperariosAlmacen
+        )
+        SELECT 
+            cab.EjercicioAlbaran,
+            MONTH(cab.CE_FechaFinPrep) as Mes,
+            DAY(cab.CE_FechaFinPrep) as Dia,
+            CONVERT(VARCHAR(10), cab.CE_FechaFinPrep, 120) as Fecha,
+            ISNULL(op.NombreOperario, 'Sin Asignar') as NombreOperario,
+            cab.NumeroLineas,
+            ISNULL(lin.UnidadesTotales, 0) as Unidades
+        FROM CabeceraAlbaranCliente cab
+        LEFT JOIN OpsClean op ON cab.CE_OperarioPreparacion = op.Operario AND cab.CodigoEmpresa = op.CodigoEmpresa
+        LEFT JOIN LineasAgg lin ON cab.CodigoEmpresa = lin.CodigoEmpresa 
+                             AND cab.EjercicioAlbaran = lin.EjercicioAlbaran 
+                             AND cab.NumeroAlbaran = lin.NumeroAlbaran
+        WHERE cab.CE_FechaFinPrep IS NOT NULL AND cab.CE_FechaFinPrep >= ? AND cab.CE_FechaFinPrep <= ?
+        ]
+[parameters: ('2026-02-01', '2026-02-28')]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)

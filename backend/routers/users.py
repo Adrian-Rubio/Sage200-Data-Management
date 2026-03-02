@@ -24,12 +24,13 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 
     # Compute permissions for the token
     perms = {
-        "ventas": True, "compras": True, "produccion": True, "finanzas": True, "admin": True
+        "ventas": True, "compras": True, "produccion": True, "finanzas": True, "almacen": True, "admin": True
     } if user.role == "admin" or (user.role_obj and user.role_obj.name == "admin") else {
         "ventas": user.role_obj.can_view_ventas if user.role_obj else True,
         "compras": user.role_obj.can_view_compras if user.role_obj else True,
         "produccion": user.role_obj.can_view_produccion if user.role_obj else False,
         "finanzas": user.role_obj.can_view_finanzas if user.role_obj else False,
+        "almacen": user.role_obj.can_view_almacen if user.role_obj else False,
         "admin": user.role_obj.can_manage_users if user.role_obj else False
     }
 

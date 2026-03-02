@@ -34,6 +34,7 @@ export default function Usuarios() {
         can_view_compras: false,
         can_view_produccion: false,
         can_view_finanzas: false,
+        can_view_almacen: false,
         can_manage_users: false
     });
 
@@ -118,6 +119,7 @@ export default function Usuarios() {
             can_view_compras: role.can_view_compras,
             can_view_produccion: role.can_view_produccion,
             can_view_finanzas: role.can_view_finanzas,
+            can_view_almacen: role.can_view_almacen,
             can_manage_users: role.can_manage_users
         });
         setIsRoleModalOpen(true);
@@ -198,7 +200,7 @@ export default function Usuarios() {
         setIsEditMode(false);
         setEditingId(null);
         setUserFormData({ username: '', email: '', password: '', role: 'comercial', role_id: '', sales_rep_id: '', is_active: true });
-        setRoleFormData({ name: '', description: '', can_view_ventas: false, can_view_compras: false, can_view_produccion: false, can_view_finanzas: false, can_manage_users: false });
+        setRoleFormData({ name: '', description: '', can_view_ventas: false, can_view_compras: false, can_view_produccion: false, can_view_finanzas: false, can_view_almacen: false, can_manage_users: false });
     };
 
     const formatDate = (dateStr) => {
@@ -334,6 +336,7 @@ export default function Usuarios() {
                                 <PermissionCheck label="Módulo Compras" name="can_view_compras" checked={roleFormData.can_view_compras} onChange={handleRoleInputChange} />
                                 <PermissionCheck label="Gestión Producción" name="can_view_produccion" checked={roleFormData.can_view_produccion} onChange={handleRoleInputChange} />
                                 <PermissionCheck label="Datos Finanzas" name="can_view_finanzas" checked={roleFormData.can_view_finanzas} onChange={handleRoleInputChange} />
+                                <PermissionCheck label="Módulo Almacén" name="can_view_almacen" checked={roleFormData.can_view_almacen} onChange={handleRoleInputChange} />
                                 <PermissionCheck label="Admin Usuarios" name="can_manage_users" checked={roleFormData.can_manage_users} onChange={handleRoleInputChange} />
                             </div>
                         </div>
@@ -414,6 +417,7 @@ function RolesTable({ roles, onEdit, onDelete }) {
                         <StaticPermission label="Compras" active={role.can_view_compras} />
                         <StaticPermission label="Producción" active={role.can_view_produccion} />
                         <StaticPermission label="Finanzas" active={role.can_view_finanzas} />
+                        <StaticPermission label="Almacén" active={role.can_view_almacen} />
                         <StaticPermission label="Gestión USR" active={role.can_manage_users} />
                     </div>
                 </div>

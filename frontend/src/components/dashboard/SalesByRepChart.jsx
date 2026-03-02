@@ -53,9 +53,34 @@ export function SalesByRepChart({ data, isEmbed }) {
         ? "w-full h-full flex flex-col"
         : "bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col";
 
+    const getDivisionColor = (division) => {
+        switch (division) {
+            case 'Conectrónica': return { fill: '#10b981', stroke: '#047857' }; // Emerald
+            case 'Sismecánica': return { fill: '#3b82f6', stroke: '#1d4ed8' }; // Blue
+            case 'Informática Industrial': return { fill: '#8b5cf6', stroke: '#6d28d9' }; // Purple
+            default: return { fill: '#94a3b8', stroke: '#475569' }; // Gray/Slate
+        }
+    };
+
     return (
         <div className={containerClass}>
-            <h3 className="text-gray-700 font-semibold mb-4 text-center">Facturación Total por Comercial</h3>
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-gray-700 font-semibold">Facturación por Comercial</h3>
+                <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-sm bg-[#10b981]"></div>
+                        <span className="text-slate-500">Conectrónica</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-sm bg-[#3b82f6]"></div>
+                        <span className="text-slate-500">Sismecánica</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-sm bg-[#8b5cf6]"></div>
+                        <span className="text-slate-500">Informática Industrial</span>
+                    </div>
+                </div>
+            </div>
             <div style={{ width: '100%', height: '100%', minHeight: 0, flexGrow: 1 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
@@ -74,7 +99,7 @@ export function SalesByRepChart({ data, isEmbed }) {
                                 return value;
                             }}
                         />
-                        <YAxis tickFormatter={(val) => `${(val / 1000).toFixed(0)}k€`} tick={{ fontSize: 12, fill: '#9ca3af' }} />
+                        <YAxis tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(0)}k€` : `${val}€`} tick={{ fontSize: 12, fill: '#9ca3af' }} />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f3f4f6' }} />
                         <Bar
                             dataKey="BaseImponible"
@@ -85,17 +110,20 @@ export function SalesByRepChart({ data, isEmbed }) {
                                 fill: '#4b5563',
                                 fontSize: 11,
                                 fontWeight: 700,
-                                formatter: (val) => `${(val / 1000).toFixed(0)}k€`
+                                formatter: (val) => val >= 1000 ? `${(val / 1000).toFixed(1)}k€` : `${val.toFixed(0)}€`
                             }}
                         >
-                            {data.map((entry, index) => (
-                                <Cell
-                                    key={`cell-${index}`}
-                                    fill={index % 2 === 0 ? '#10b981' : '#3b82f6'}
-                                    stroke={index % 2 === 0 ? '#047857' : '#1d4ed8'}
-                                    strokeWidth={2}
-                                />
-                            ))}
+                            {data.map((entry, index) => {
+                                const colors = getDivisionColor(entry.division);
+                                return (
+                                    <Cell
+                                        key={`cell-${index}`}
+                                        fill={colors.fill}
+                                        stroke={colors.stroke}
+                                        strokeWidth={2}
+                                    />
+                                );
+                            })}
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>

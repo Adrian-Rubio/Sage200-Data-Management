@@ -225,11 +225,9 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex gap-2 ml-auto">
-                    {/* Botón de pedidos pendientes temporalmente oculto a petición del usuario
-                    <Link to="/pending-orders" className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition font-medium h-10 flex items-center justify-center shadow-sm">
-                        Pedidos Pendientes →
+                    <Link to="/pedidos-pendientes-pbix" className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 transition font-medium h-10 flex items-center justify-center shadow-sm">
+                        Pedidos pendientes →
                     </Link>
-                    */}
                     <Link to="/comparison" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium h-10 flex items-center justify-center shadow-sm">
                         Comparativa Anual →
                     </Link>
@@ -240,7 +238,19 @@ export default function Dashboard() {
 
             {/* Top Row: KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-                <KpiCard title="Facturación" value={data?.kpis?.revenue || 0} subtext="Total periodo" />
+                <KpiCard
+                    title="Facturación"
+                    value={data?.kpis?.revenue_gross || 0}
+                    subtext={
+                        <div className="flex flex-col items-center gap-1">
+                            <span>Ventas Brutas</span>
+                            <div className="flex gap-2 text-[10px] font-bold">
+                                <span className="text-red-500">Abonos: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.returns || 0)}</span>
+                                <span className="text-slate-500">Neto: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.revenue || 0)}</span>
+                            </div>
+                        </div>
+                    }
+                />
                 <KpiCard title="Margen" value={data?.kpis?.sales_margin || 0} subtext="Promedio comercial" isPercentage={true} />
                 <KpiCard title="Pdte. Facturar" value={data?.kpis?.pending_invoice || 0} subtext="Albaranes" isWarning={true} />
                 <KpiCard title="Clientes" value={data?.kpis?.clients || 0} subtext="Activos" />

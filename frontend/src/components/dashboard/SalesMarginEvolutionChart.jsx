@@ -1,10 +1,10 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const COLORS = {
-    'Conectrónica': '#e11d48', // Pinkish/Red
-    'Sismecánica': '#2563eb', // Blue
-    'Informática Industrial': '#059669', // Green
-    'Otros': '#94a3b8' // Gray
+    'Conectrónica': '#10b981', // Emerald
+    'Sismecánica': '#3b82f6', // Blue
+    'Informática Industrial': '#8b5cf6', // Purple
+    'Otros': '#94a3b8' // Slate
 };
 
 export function SalesMarginEvolutionChart({ data, isEmbed }) {
