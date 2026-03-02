@@ -1,35 +1,60 @@
-# Sage200 Dashboard Web App
+# Sage200 Dashboard & Data Management
 
-## Prerequisites
-- Python 3.9+
-- Node.js & npm
-- ODBC Driver 17 for SQL Server
+Sistema integral de gestión de datos y visualización de KPIs para Sage 200, que combina un backend en FastAPI, un frontend en React y reportes de PowerBI distribuidos.
 
-## Setup
+## 📂 Estructura del Proyecto
 
-### Backend (FastAPI)
-1.  Navigate to `backend/`.
-2.  Create a virtual environment: `python -m venv venv`.
-3.  Activate it: `venv\Scripts\activate` (Windows).
-4.  Install dependencies: `pip install -r requirements.txt`.
-5.  Copy `.env.example` to `.env` and fill in your Sage 200 SQL credentials.
-6.  Run the server: `uvicorn main:app --reload`.
+-   **`backend/`**: Servidor API desarrollado con **FastAPI** (Python). Se conecta a SQL Server para extraer datos de ventas, compras, producción y almacén.
+-   **`frontend/`**: Aplicación web desarrollada con **React (Vite)**. Proporciona una interfaz moderna con dashboards interactivos, filtros avanzados y gráficos de evolución.
+-   **`pbix_almacen_extracted/`**: Versión extraída del reporte de PowerBI para facilitar el seguimiento de cambios.
+-   **`*.pbix`**: Archivos de PowerBI (Dashboard de Almacén y Pedidos Pendientes) gestionados mediante **Git LFS**.
 
-### Frontend (React + Vite)
-1.  Navigate to `frontend/`.
-2.  Install dependencies: `npm install`.
-3.  Run the dev server: `npm run dev`.
+## ⚙️ Requisitos Previos
 
-## Architecture
-- **Backend**: FastAPI (Python) for data extraction from SQL Server.
-- **Frontend**: React (Vite) for dashboard visualization.
+-   **Python 3.9+**
+-   **Node.js & npm**
+-   **ODBC Driver 17 for SQL Server** (para la conexión del backend)
+-   **Git LFS** (instalado y activo para descargar archivos grandes)
 
-## Key Features
-- **KPIs**: Revenue, Commission, Unique Clients, Invoice count.
-- **Charts**: Sales by Representative, Sales Trend by Day, Commission Distribution.
-- **Filtering**:
-  - Filter by Date Range (Start/End).
-  - Filter by Company.
-  - Filter by Sales Representative (Restricted list).
-  - Filter by Segmentation/Division (using Invoice Series).
-  - Filter by Client.
+## 🚀 Instalación y Puesta en Marcha
+
+### Inicio Rápido (Windows)
+Puedes arrancar ambos servicios simultáneamente usando el archivo por lotes:
+```bash
+./start_dashboard.bat
+```
+
+### Configuración Manual
+
+#### 1. Backend (FastAPI)
+1.  Entra en `backend/`.
+2.  Crea un entorno virtual: `python -m venv venv`.
+3.  Activa el entorno: `venv\Scripts\activate`.
+4.  Instala dependencias: `pip install -r requirements.txt`.
+5.  Configura el archivo `.env` con las credenciales de SQL Server (usa `.env.example` como base).
+6.  Inicia el servidor: `uvicorn main:app --reload`.
+
+#### 2. Frontend (React + Vite)
+1.  Entra en `frontend/`.
+2.  Instala las dependencias: `npm install`.
+3.  Inicia el servidor de desarrollo: `npm run dev`.
+
+## 📦 Manejo de Archivos Grandes (Git LFS)
+
+Este repositorio utiliza **Git Large File Storage (LFS)** para los archivos `.pbix` y modelos de datos pesados que superan los 100MB.
+
+-   **Si acabas de clonar el repo**, asegúrate de descargar los archivos reales con:
+    ```bash
+    git lfs install
+    git lfs pull
+    ```
+-   **Para añadir nuevos reportes grandes**: Los archivos `.pbix` se rastrearán automáticamente. No olvides hacer commit del archivo `.gitattributes` si realizas cambios de configuración.
+
+## ✨ Características Principales
+
+-   **Dashboards de Ventas**: Margen comercial, KPIs de facturación, ventas por representante y evolución diaria.
+-   **Módulo de Producción**: Seguimiento de operarios, incidencias y estados de órdenes.
+-   **Módulo de Almacén**: Gestión de pedidos de almacén y estados de stock.
+-   **Filtros Globales**: Filtrado por fecha, empresa, vendedor, división y cliente.
+-   **Acceso Centralizado**: El dashboard principal se sirve habitualmente en `http://metricas.cenval.es`.
+
