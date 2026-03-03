@@ -140,7 +140,7 @@ export default function PendingOrders() {
             </div>
 
             {/* Bottom Row Charts */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 {/* 2. Margen % */}
                 <div className="bg-white p-6 rounded-lg shadow h-[400px]">
                     <h3 className="text-lg font-bold text-gray-700 text-center mb-6">Margen sobre venta total pedidos</h3>
@@ -171,6 +171,62 @@ export default function PendingOrders() {
                             </Bar>
                         </BarChart>
                     </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Detailed Orders Table */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-12">
+                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <h3 className="font-bold text-gray-700">Listado Detallado de Pedidos</h3>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold uppercase tracking-wider">
+                        {data?.detailed_orders?.length || 0} Pedidos
+                    </span>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-gray-50 text-gray-500 font-bold uppercase text-[11px] tracking-wider">
+                            <tr>
+                                <th className="px-6 py-3 border-b">Nº Pedido</th>
+                                <th className="px-6 py-3 border-b">Cliente</th>
+                                <th className="px-6 py-3 border-b">Comercial</th>
+                                <th className="px-6 py-3 border-b">División</th>
+                                <th className="px-6 py-3 border-b text-right">Importe</th>
+                                <th className="px-6 py-3 border-b text-center">Unidades</th>
+                                <th className="px-6 py-3 border-b text-right">Margen (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {data?.detailed_orders?.map((order, i) => (
+                                <tr key={i} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 font-bold text-gray-900">{order.NumeroPedido}</td>
+                                    <td className="px-6 py-4 text-gray-700">{order.Cliente}</td>
+                                    <td className="px-6 py-4 text-gray-600">{order.Comisionista}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${order.Division === 'Conectrónica' ? 'bg-blue-100 text-blue-700' :
+                                                order.Division === 'Mecánica' ? 'bg-orange-100 text-orange-700' :
+                                                    'bg-purple-100 text-purple-700'
+                                            }`}>
+                                            {order.Division}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right font-bold text-gray-900">{formatCurrency(order.Importe)}</td>
+                                    <td className="px-6 py-4 text-center text-gray-600">{order.Unidades.toLocaleString('es-ES')}</td>
+                                    <td className="px-6 py-4 text-right">
+                                        <span className={`font-bold ${order.MarginPct > 20 ? 'text-green-600' : order.MarginPct > 10 ? 'text-amber-600' : 'text-red-600'}`}>
+                                            {order.MarginPct.toFixed(2)}%
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                            {(!data?.detailed_orders || data.detailed_orders.length === 0) && (
+                                <tr>
+                                    <td colSpan="7" className="px-6 py-10 text-center text-gray-400 font-medium">
+                                        No hay pedidos que coincidan con los filtros seleccionados
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

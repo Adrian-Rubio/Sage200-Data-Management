@@ -46,9 +46,11 @@ def get_pending_orders(filters: PendingOrdersFilters, db: Session = Depends(get_
                 p.UnidadesPendientes, 
                 p.PrecioCoste,
                 p.NumeroPedido,
-                p.CodigoComisionista
+                p.CodigoComisionista,
+                cl.RazonSocial as Cliente
             FROM CEN_PowerBi_LineasPedVen_Vendedor p
             LEFT JOIN Comisionistas c ON p.CodigoComisionista = c.CodigoComisionista AND p.CodigoEmpresa = c.CodigoEmpresa
+            LEFT JOIN Clientes cl ON p.CodigoCliente = cl.CodigoCliente AND p.CodigoEmpresa = cl.CodigoEmpresa
             WHERE p.UnidadesPendientes > 0
             AND p.CodigoEmpresa <> '100'
         """
@@ -72,10 +74,11 @@ def get_pending_orders(filters: PendingOrdersFilters, db: Session = Depends(get_
         df = pd.read_sql(text(basic_query), db.bind, params=params)
         
         if df.empty:
-             return {"kpis": {"total_orders": 0, "total_amount": 0}, "by_division": []}
+             return {"kpis": {"total_orders": 0, "total_amount": 0}, "by_division": [], "detailed_orders": []}
 
-        # Clean Comisionista names
+        # Clean strings
         df['Comisionista'] = df['Comisionista'].str.strip().str.upper()
+        df['Cliente'] = df['Cliente'].str.strip()
 
         # Map to Division
         def get_division(rep_name):
@@ -104,25 +107,36 @@ def get_pending_orders(filters: PendingOrdersFilters, db: Session = Depends(get_
              df = df[df['Comisionista'] == filters.sales_rep_id.strip().upper()]
 
         if df.empty:
-             return {"kpis": {"total_orders": 0, "total_amount": 0}, "by_division": []}
+             return {"kpis": {"total_orders": 0, "total_amount": 0}, "by_division": [], "detailed_orders": []}
 
         # Calculate Metrics
-        # Coste Linea = UnidadesPendientes * PrecioCoste
         df['CosteTotal'] = df['UnidadesPendientes'] * df['PrecioCoste']
         
-        # Group by Division for the charts
+        # --- Group by Division for the charts ---
         division_group = df.groupby('Division').agg(
             PendingAmount=('BaseImponiblePendiente', 'sum'),
             PendingCost=('CosteTotal', 'sum'),
             OrderCount=('NumeroPedido', 'nunique')
         ).reset_index()
         
-        # Calculate Margin %: (Amount - Cost) / Amount
         division_group['MarginPct'] = (division_group['PendingAmount'] - division_group['PendingCost']) / division_group['PendingAmount']
-        division_group['MarginPct'] = division_group['MarginPct'].fillna(0) # Handle division by zero
-        
-        # Rename Sismecánica to Mecánica for UI text (optional)
+        division_group['MarginPct'] = division_group['MarginPct'].fillna(0)
         division_group['Division'] = division_group['Division'].replace('Sismecánica', 'Mecánica')
+
+        # --- Detailed Orders List ---
+        # Group by Order Number to aggregate multiple lines per order
+        orders_detailed = df.groupby(['NumeroPedido', 'Cliente', 'Comisionista', 'Division']).agg(
+            Importe=('BaseImponiblePendiente', 'sum'),
+            Coste=('CosteTotal', 'sum'),
+            Unidades=('UnidadesPendientes', 'sum')
+        ).reset_index()
+        
+        orders_detailed['MarginPct'] = (orders_detailed['Importe'] - orders_detailed['Coste']) / orders_detailed['Importe']
+        orders_detailed['MarginPct'] = orders_detailed['MarginPct'].fillna(0) * 100
+        orders_detailed['Division'] = orders_detailed['Division'].replace('Sismecánica', 'Mecánica')
+        
+        # Sort by Amount Desc
+        detailed_orders_list = orders_detailed.sort_values('Importe', ascending=False).to_dict(orient='records')
 
         # KPIs for the top cards
         total_orders = int(df['NumeroPedido'].nunique())
@@ -143,7 +157,8 @@ def get_pending_orders(filters: PendingOrdersFilters, db: Session = Depends(get_
                 "total_units": total_units,
                 "global_margin_pct": global_margin_pct * 100
             },
-            "by_division": by_division_data
+            "by_division": by_division_data,
+            "detailed_orders": detailed_orders_list
         }
 
     except Exception as e:
