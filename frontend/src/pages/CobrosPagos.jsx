@@ -12,9 +12,9 @@ export default function CobrosPagos() {
 
     // Filters
     const [filters, setFilters] = useState({
-        start_date: '',
+        start_date: null,
         end_date: new Date().toISOString().split('T')[0],
-        company_id: ''
+        company_id: null
     });
 
     const companies = [
@@ -33,6 +33,11 @@ export default function CobrosPagos() {
         try {
             const result = await fetchFinancePayments(filters);
             setData(result);
+
+            // Auto-set the start date to the oldest pending item if not already set
+            if (!filters.start_date && result?.kpis?.oldest_date) {
+                setFilters(prev => ({ ...prev, start_date: result.kpis.oldest_date }));
+            }
         } catch (err) {
             setError("Error cargando datos de tesorería.");
         } finally {

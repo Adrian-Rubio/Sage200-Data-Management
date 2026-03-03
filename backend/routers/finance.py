@@ -72,6 +72,9 @@ def get_payments_summary(filters: FinanceFilters, db: Session = Depends(get_db),
         total_cobros = float(df['Cobro'].sum())
         total_pagos = float(df['Pago'].sum())
         
+        # Get min date from the resulting dataframe
+        oldest_date = df['FechaVencimiento'].min().strftime('%Y-%m-%d') if not df.empty else None
+
         # Format dates for JSON
         df['FechaVencimiento'] = df['FechaVencimiento'].dt.strftime('%Y-%m-%d')
         df = df.fillna('')
@@ -82,7 +85,8 @@ def get_payments_summary(filters: FinanceFilters, db: Session = Depends(get_db),
             "kpis": {
                 "total_cobros": total_cobros,
                 "total_pagos": total_pagos,
-                "net_balance": total_cobros - total_pagos
+                "net_balance": total_cobros - total_pagos,
+                "oldest_date": oldest_date
             },
             "items": items
         }
