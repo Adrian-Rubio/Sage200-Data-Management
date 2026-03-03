@@ -10,6 +10,9 @@ import Compras from './pages/Compras';
 import Usuarios from './pages/Usuarios';
 import Produccion from './pages/Produccion';
 import Almacen from './pages/Almacen';
+import CobrosPagos from './pages/CobrosPagos';
+import CuentaExplotacion from './pages/CuentaExplotacion';
+import Contabilidad from './pages/Contabilidad';
 import PrivateRoute from './components/PrivateRoute';
 
 function App() {
@@ -29,7 +32,9 @@ function App() {
           <Route path="/usuarios" element={<Usuarios />} />
           <Route path="/produccion" element={<Produccion />} />
           <Route path="/almacen" element={<Almacen />} />
-          <Route path="/finanzas" element={<ComingSoon title="Finanzas" />} />
+          <Route path="/contabilidad" element={<Contabilidad />} />
+          <Route path="/finanzas/tesoreria" element={<CobrosPagos />} />
+          <Route path="/finanzas/explotacion" element={<CuentaExplotacion />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

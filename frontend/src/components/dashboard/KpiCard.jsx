@@ -1,6 +1,17 @@
 
 export function KpiCard({ title, value, subtext, isWarning, isPercentage }) {
-    const isMonetary = !isPercentage && (title.toLowerCase().includes('factura') || title.toLowerCase().includes('comisión') || title.toLowerCase().includes('pendiente'))
+    const isMonetary = !isPercentage && (
+        title.toLowerCase().includes('factura') ||
+        title.toLowerCase().includes('comisión') ||
+        title.toLowerCase().includes('pendiente') ||
+        title.toLowerCase().includes('cobro') ||
+        title.toLowerCase().includes('pago') ||
+        title.toLowerCase().includes('saldo') ||
+        title.toLowerCase().includes('importe') ||
+        title.toLowerCase().includes('beneficio') ||
+        title.toLowerCase().includes('margen') ||
+        title.toLowerCase().includes('total')
+    )
         && !title.toLowerCase().includes('número')
         && title.toLowerCase() !== 'facturas' // Literal "Facturas" is a count
         && !title.toLowerCase().includes('clientes');

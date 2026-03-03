@@ -200,3 +200,33 @@ export const fetchOperators = async () => {
         throw error;
     }
 };
+
+export const fetchFinancePayments = async (filters) => {
+    try {
+        const response = await api.post('/finance/payments', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching finance payments:", error);
+        throw error;
+    }
+};
+
+export const fetchFinancePnL = async (filters) => {
+    try {
+        const response = await api.post('/finance/pnl', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching finance PnL:", error);
+        throw error;
+    }
+};
+
+export const fetchFinancePnLEvolution = async (filters) => {
+    try {
+        const response = await api.post('/finance/pnl-evolution', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching finance PnL evolution:", error);
+        throw error;
+    }
+};

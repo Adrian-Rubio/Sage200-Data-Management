@@ -31,12 +31,12 @@ export default function Home() {
             icon: <img src="/produccion.png" alt="Producción" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform" />
         },
         {
-            name: 'Finanzas',
-            path: '/finanzas',
+            name: 'Contabilidad',
+            path: '/contabilidad',
             permission: 'finanzas',
             color: 'bg-[#9814ff]',
             hover: 'hover:bg-[#7b0fd6]',
-            icon: <img src="/finanzas.png" alt="Finanzas" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform" />
+            icon: <img src="/finanzas.png" alt="Contabilidad" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform" />
         },
         {
             name: 'Almacén',
