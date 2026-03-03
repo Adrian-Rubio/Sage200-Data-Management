@@ -300,6 +300,62 @@ export default function PedidosPendientesPBIX() {
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 </button>
             </div>
+
+            {/* Row 3: Detailed Orders Table */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-12">
+                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-slate-50/50">
+                    <h3 className="font-bold text-slate-700">Listado Detallado de Pedidos</h3>
+                    <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded font-bold uppercase tracking-wider">
+                        {data?.detailed_orders?.length || 0} Pedidos
+                    </span>
+                </div>
+                <div className="overflow-x-auto overflow-y-auto max-h-[600px] custom-scrollbar">
+                    <table className="w-full text-left text-xs">
+                        <thead className="bg-[#fcfdff] text-gray-500 font-bold uppercase text-[9px] tracking-wider sticky top-0 z-10">
+                            <tr>
+                                <th className="px-4 py-3 border-b">Nº Pedido</th>
+                                <th className="px-4 py-3 border-b">Cliente</th>
+                                <th className="px-4 py-3 border-b">Comercial</th>
+                                <th className="px-4 py-3 border-b">División</th>
+                                <th className="px-4 py-3 border-b text-right">Importe</th>
+                                <th className="px-4 py-3 border-b text-center">Unidades</th>
+                                <th className="px-4 py-3 border-b text-right">Margen (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {data?.detailed_orders?.map((order, i) => (
+                                <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                    <td className="px-4 py-4 font-bold text-slate-800">{order.NumeroPedido}</td>
+                                    <td className="px-4 py-4 text-slate-600 max-w-[250px] truncate" title={order.Cliente}>{order.Cliente}</td>
+                                    <td className="px-4 py-4 text-slate-500">{order.Comisionista}</td>
+                                    <td className="px-4 py-4">
+                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${order.Division === 'Conectrónica' ? 'bg-emerald-100 text-emerald-700' :
+                                                order.Division === 'Mecánica' ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-purple-100 text-purple-700'
+                                            }`}>
+                                            {order.Division}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-4 text-right font-bold text-slate-800">{formatCurrency(order.Importe)}</td>
+                                    <td className="px-4 py-4 text-center text-slate-500">{order.Unidades.toLocaleString('es-ES')}</td>
+                                    <td className="px-4 py-4 text-right">
+                                        <span className={`font-bold ${order.MarginPct > 20 ? 'text-emerald-600' : order.MarginPct > 10 ? 'text-amber-600' : 'text-red-500'}`}>
+                                            {order.MarginPct.toFixed(2)}%
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                            {(!data?.detailed_orders || data.detailed_orders.length === 0) && (
+                                <tr>
+                                    <td colSpan="7" className="px-6 py-10 text-center text-gray-400">
+                                        No hay pedidos para el periodo o filtros seleccionados
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 }
