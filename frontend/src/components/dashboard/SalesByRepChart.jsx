@@ -99,7 +99,7 @@ export function SalesByRepChart({ data, isEmbed }) {
                                 return value;
                             }}
                         />
-                        <YAxis tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(0)}k€` : `${val}€`} tick={{ fontSize: 12, fill: '#9ca3af' }} />
+                        <YAxis tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M€` : val >= 1000 ? `${(val / 1000).toFixed(0)}k€` : `${val}€`} tick={{ fontSize: 12, fill: '#9ca3af' }} />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f3f4f6' }} />
                         <Bar
                             dataKey="BaseImponible"
@@ -110,7 +110,7 @@ export function SalesByRepChart({ data, isEmbed }) {
                                 fill: '#4b5563',
                                 fontSize: 11,
                                 fontWeight: 700,
-                                formatter: (val) => val >= 1000 ? `${(val / 1000).toFixed(1)}k€` : `${val.toFixed(0)}€`
+                                formatter: (val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M€` : val >= 1000 ? `${(val / 1000).toFixed(1)}k€` : `${val.toFixed(0)}€`
                             }}
                         >
                             {data.map((entry, index) => {

@@ -49,7 +49,7 @@ def get_pending_orders(filters: PendingOrdersFilters, db: Session = Depends(get_
                 p.CodigoComisionista,
                 p.RazonSocial as Cliente
             FROM CEN_PowerBi_LineasPedVen_Vendedor p
-            LEFT JOIN Comisionistas c ON p.CodigoComisionista = c.CodigoComisionista AND p.CodigoEmpresa = c.CodigoEmpresa
+            LEFT JOIN Comisionistas c ON p.CodigoComisionistaLinea = c.CodigoComisionista AND p.CodigoEmpresa = c.CodigoEmpresa
             WHERE p.UnidadesPendientes > 0
             AND p.CodigoEmpresa = '2'
         """

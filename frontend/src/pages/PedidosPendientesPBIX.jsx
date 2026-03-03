@@ -231,7 +231,7 @@ export default function PedidosPendientesPBIX() {
                                         <LabelList
                                             dataKey="Importe pendiente"
                                             position="top"
-                                            formatter={(val) => `${(val / 1000).toFixed(0)}k€`}
+                                            formatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M€` : `${(val / 1000).toFixed(0)}k€`}
                                             style={{ fontSize: '14px', fontWeight: '800', fill: '#1e40af' }}
                                         />
                                     </Bar>
@@ -330,8 +330,8 @@ export default function PedidosPendientesPBIX() {
                                     <td className="px-4 py-4 text-slate-500">{order.Comisionista}</td>
                                     <td className="px-4 py-4">
                                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${order.Division === 'Conectrónica' ? 'bg-emerald-100 text-emerald-700' :
-                                                order.Division === 'Mecánica' ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-purple-100 text-purple-700'
+                                            order.Division === 'Mecánica' ? 'bg-blue-100 text-blue-700' :
+                                                'bg-purple-100 text-purple-700'
                                             }`}>
                                             {order.Division}
                                         </span>

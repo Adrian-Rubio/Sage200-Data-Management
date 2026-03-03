@@ -229,7 +229,7 @@ export default function Comparison() {
                                 dataKey="month"
                                 tickFormatter={(val) => monthNames[val - 1]}
                             />
-                            <YAxis tickFormatter={(val) => `${(val / 1000).toFixed(0)}k€`} />
+                            <YAxis tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M€` : `${(val / 1000).toFixed(0)}k€`} />
                             <Tooltip
                                 formatter={(val) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(val)}
                                 labelFormatter={(val) => monthNames[val - 1]}
@@ -271,7 +271,7 @@ export default function Comparison() {
                                 height={60}
                                 tickFormatter={formatName}
                             />
-                            <YAxis tickFormatter={(val) => `${(val / 1000).toFixed(0)}k€`} />
+                            <YAxis tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M€` : `${(val / 1000).toFixed(0)}k€`} />
                             <Tooltip formatter={(val) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(val)} />
                             <Legend wrapperStyle={{ paddingTop: '20px' }} />
 

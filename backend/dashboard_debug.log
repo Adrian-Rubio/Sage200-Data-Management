@@ -403,3 +403,21 @@ DEBUG: df_rev revenue sum: -1405.41
 DEBUG: Margin Query: SELECT * FROM VIS_CEN_LinAlbFacSD WHERE CodigoEmpresa = '2'  AND UPPER(RTRIM(LTRIM(Comisionista))) IN (:rep_0, :rep_1, :rep_2, :rep_3, :rep_4, :rep_5, :rep_6) AND TRY_CONVERT(date, FechaFactura) >= :start_date AND TRY_CONVERT(date, FechaFactura) <= :end_date
 DEBUG: df_marg size: (9, 22)
 DEBUG: df_marg sum: -1405.4099999999999
+
+--- 2026-03-03 ---
+DEBUG: Revenue Query: SELECT * FROM Vis_AEL_DiarioFactxComercial WHERE CodigoEmpresa = '2'  AND UPPER(RTRIM(LTRIM(Comisionista))) IN (:rep_0, :rep_1, :rep_2, :rep_3, :rep_4, :rep_5, :rep_6) AND TRY_CONVERT(date, FechaFactura) >= :start_date AND TRY_CONVERT(date, FechaFactura) <= :end_date
+DEBUG: Params: {'rep_0': 'JOSE CESPEDES BLANCO', 'rep_1': 'ANTONIO MACHO MACHO', 'rep_2': 'JESUS COLLADO ARAQUE', 'rep_3': 'ADRIÁN ROMERO JIMENEZ', 'rep_4': 'JUAN CARLOS BENITO RAMOS', 'rep_5': 'JAVIER ALLEN PERKINS', 'rep_6': 'JUAN CARLOS VALDES ANTON', 'start_date': datetime.date(2026, 2, 28), 'end_date': datetime.date(2026, 3, 30)}
+
+--- 2026-03-03 ---
+DEBUG: Revenue Query: SELECT * FROM Vis_AEL_DiarioFactxComercial WHERE CodigoEmpresa = '2'  AND UPPER(RTRIM(LTRIM(Comisionista))) IN (:rep_0, :rep_1, :rep_2, :rep_3, :rep_4, :rep_5, :rep_6) AND TRY_CONVERT(date, FechaFactura) >= :start_date AND TRY_CONVERT(date, FechaFactura) <= :end_date
+DEBUG: Params: {'rep_0': 'JOSE CESPEDES BLANCO', 'rep_1': 'ANTONIO MACHO MACHO', 'rep_2': 'JESUS COLLADO ARAQUE', 'rep_3': 'ADRIÁN ROMERO JIMENEZ', 'rep_4': 'JUAN CARLOS BENITO RAMOS', 'rep_5': 'JAVIER ALLEN PERKINS', 'rep_6': 'JUAN CARLOS VALDES ANTON', 'start_date': datetime.date(2026, 2, 28), 'end_date': datetime.date(2026, 3, 30)}
+DEBUG: df_rev size: (8, 12)
+DEBUG: df_rev revenue sum: -1743.8100000000004
+DEBUG: Margin Query: SELECT * FROM VIS_CEN_LinAlbFacSD WHERE CodigoEmpresa = '2'  AND UPPER(RTRIM(LTRIM(Comisionista))) IN (:rep_0, :rep_1, :rep_2, :rep_3, :rep_4, :rep_5, :rep_6) AND TRY_CONVERT(date, FechaFactura) >= :start_date AND TRY_CONVERT(date, FechaFactura) <= :end_date
+DEBUG: df_marg size: (12, 22)
+DEBUG: df_marg sum: -1743.81
+DEBUG: df_rev size: (8, 12)
+DEBUG: df_rev revenue sum: -1743.8100000000004
+DEBUG: Margin Query: SELECT * FROM VIS_CEN_LinAlbFacSD WHERE CodigoEmpresa = '2'  AND UPPER(RTRIM(LTRIM(Comisionista))) IN (:rep_0, :rep_1, :rep_2, :rep_3, :rep_4, :rep_5, :rep_6) AND TRY_CONVERT(date, FechaFactura) >= :start_date AND TRY_CONVERT(date, FechaFactura) <= :end_date
+DEBUG: df_marg size: (12, 22)
+DEBUG: df_marg sum: -1743.81
