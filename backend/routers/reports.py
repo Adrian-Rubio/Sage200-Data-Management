@@ -23,13 +23,17 @@ def map_division(fam):
 
 @router.post("/monthly-close")
 def get_monthly_close(filters: MonthlyCloseFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
-    # RBAC: only admin or direccion
-    # Assuming direccion is a role name or a permission
-    is_admin = current_user.role == "admin" or (current_user.role_obj and current_user.role_obj.name == "admin")
-    is_direccion = current_user.role == "direccion" or (current_user.role_obj and current_user.role_obj.name == "direccion")
-    
-    if not (is_admin or is_direccion):
+    def check_is_authorized(u):
+        r_name = str(u.role).lower()
+        ro_name = str(u.role_obj.name).lower() if u.role_obj else ""
+        
+        is_adm = "admin" in r_name or "admin" in ro_name
+        is_dir = "direcci" in r_name or "direcci" in ro_name or "direccion" in r_name or "direccion" in ro_name
+        return is_adm or is_dir
+
+    if not check_is_authorized(current_user):
         raise HTTPException(status_code=403, detail="Not authorized for this report")
+
 
     try:
         company_id = 2 # Fixed for Company 2

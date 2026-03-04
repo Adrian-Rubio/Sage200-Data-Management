@@ -40,11 +40,13 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
             "sub": user.username, 
             "role": user.role, 
             "role_id": user.role_id,
+            "role_name": user.role_obj.name if user.role_obj else user.role,
             "permissions": perms,
             "sales_rep_id": user.sales_rep_id
         }, 
         expires_delta=access_token_expires
     )
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 def check_admin_role(current_user: models.User = Depends(auth.get_current_active_user)):
