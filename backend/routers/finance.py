@@ -17,6 +17,10 @@ class FinanceFilters(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     company_id: Optional[str] = None
+    status: Optional[int] = None
+    invoice_start_date: Optional[date] = None
+    invoice_end_date: Optional[date] = None
+    client_search: Optional[str] = None
 
 class PnLFilters(BaseModel):
     year: int
@@ -26,23 +30,27 @@ class PnLFilters(BaseModel):
 @router.post("/payments")
 def get_payments_summary(filters: FinanceFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
-        # User defined companies: 100, 2, 4, 6
-        # Join with PlanCuentasPGC to get account concept (Cuenta column)
+        # We query CarteraEfectos directly to get StatusContabilizado and FechaFactura which are not in the view
         query = """
             SELECT 
                 p.CodigoEmpresa,
-                p.Prevision,
+                CASE p.Prevision WHEN 'C' THEN 'Cobros' ELSE 'Pagos' END AS Prevision,
                 p.FechaVencimiento,
-                p.ImporteC as Cobro,
-                p.ImporteB as Pago,
-                p.RazonSocial,
-                p.NombreProveedor,
+                p.FechaFactura,
+                CASE p.Prevision WHEN 'C' THEN p.ImporteEfecto ELSE 0 END AS Cobro,
+                CASE p.Prevision WHEN 'C' THEN 0 ELSE p.ImporteEfecto END AS Pago,
+                cl.RazonSocial,
+                pr.RazonSocial AS NombreProveedor,
                 p.DocumentoConta,
                 p.Comentario,
-                p.Expr1 as CuentaID,
-                c.Cuenta as ConceptoCuenta
-            FROM PowerBi_CarteraCoPa p
-            LEFT JOIN PlanCuentasPGC c ON p.CodigoEmpresa = c.CodigoEmpresa AND p.Expr1 = c.CodigoCuenta
+                p.CodigoClienteProveedor,
+                p.CodigoCuenta as CuentaID,
+                c.Cuenta as ConceptoCuenta,
+                p.StatusBorrado as Status
+            FROM CarteraEfectos p WITH (NOLOCK)
+            LEFT JOIN Clientes cl WITH (NOLOCK) ON p.CodigoEmpresa = cl.CodigoEmpresa AND p.CodigoClienteProveedor = cl.CodigoCliente AND p.Prevision = 'C'
+            LEFT JOIN Proveedores pr WITH (NOLOCK) ON p.CodigoEmpresa = pr.CodigoEmpresa AND p.CodigoClienteProveedor = pr.CodigoProveedor AND p.Prevision = 'P'
+            LEFT JOIN PlanCuentasPGC c ON p.CodigoEmpresa = c.CodigoEmpresa AND p.CodigoCuenta = c.CodigoCuenta
             WHERE 1=1
         """
         params = {}
@@ -53,6 +61,7 @@ def get_payments_summary(filters: FinanceFilters, db: Session = Depends(get_db),
         else:
             query += " AND p.CodigoEmpresa IN (100, 2, 4, 6)"
 
+        # Date Filters
         if filters.start_date:
             query += " AND p.FechaVencimiento >= :start_date"
             params['start_date'] = filters.start_date
@@ -60,6 +69,23 @@ def get_payments_summary(filters: FinanceFilters, db: Session = Depends(get_db),
         if filters.end_date:
             query += " AND p.FechaVencimiento <= :end_date"
             params['end_date'] = filters.end_date
+
+        if filters.invoice_start_date:
+            query += " AND p.FechaFactura >= :inv_start"
+            params['inv_start'] = filters.invoice_start_date
+        
+        if filters.invoice_end_date:
+            query += " AND p.FechaFactura <= :inv_end"
+            params['inv_end'] = filters.invoice_end_date
+
+        # Status Filter (Realizado -1 / Pendiente 0) based on StatusBorrado
+        if filters.status is not None:
+            query += " AND p.StatusBorrado = :status"
+            params['status'] = filters.status
+
+        if filters.client_search:
+            query += " AND (CAST(p.CodigoClienteProveedor AS VARCHAR) LIKE :client_search OR ISNULL(cl.RazonSocial, pr.RazonSocial) LIKE :client_search)"
+            params['client_search'] = f"%{filters.client_search}%"
 
         df = pd.read_sql(text(query), db.bind, params=params)
         
@@ -77,12 +103,15 @@ def get_payments_summary(filters: FinanceFilters, db: Session = Depends(get_db),
 
         # Format dates for JSON
         df['FechaVencimiento'] = df['FechaVencimiento'].dt.strftime('%Y-%m-%d')
+        if 'FechaFactura' in df.columns:
+            df['FechaFactura'] = pd.to_datetime(df['FechaFactura']).dt.strftime('%Y-%m-%d')
         df = df.fillna('')
         
-        items = df.sort_values('FechaVencimiento', ascending=True).to_dict(orient='records')
+        items = df.sort_values('FechaVencimiento', ascending=True).head(500).to_dict(orient='records')
         
         return {
             "kpis": {
+                "total_count": len(df),
                 "total_cobros": total_cobros,
                 "total_pagos": total_pagos,
                 "net_balance": total_cobros - total_pagos,
