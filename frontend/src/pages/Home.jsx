@@ -44,7 +44,7 @@ export default function Home() {
             permission: 'almacen',
             color: 'bg-[#10b981]',
             hover: 'hover:bg-[#0da271]',
-            icon: <img src="/pedidos.png" alt="Inventario" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform opacity-90" />
+            icon: <img src="/cajas.png" alt="Inventario" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform opacity-90" />
         },
         {
             name: 'Almacén',
