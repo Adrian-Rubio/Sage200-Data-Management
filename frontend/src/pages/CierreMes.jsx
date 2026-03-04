@@ -136,14 +136,16 @@ export default function CierreMes() {
 
 
     return (
-        <div className="p-4 max-w-[1600px] mx-auto min-h-screen bg-[#f8fafc] text-gray-800 font-sans">
+        <div className="p-6 max-w-[1720px] mx-auto min-h-screen bg-[#f8fafc] text-gray-800 font-sans">
+
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <span className="bg-emerald-600 text-white px-3 py-1 rounded text-lg">REPORTE</span>
+                    <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+                        <span className="bg-emerald-600 text-white px-4 py-1.5 rounded text-xl">REPORTE</span>
                         Cierre de Mes
                     </h1>
+
                 </div>
                 <div className="flex gap-3">
                     <span className="text-slate-600 font-medium text-sm flex items-center mr-2">{user?.username}</span>
@@ -164,7 +166,8 @@ export default function CierreMes() {
             </div>
 
             {/* Filters */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-6 items-end mb-8 animate-fadeIn">
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-8 items-end mb-10 animate-fadeIn">
+
                 <div className="flex flex-col">
                     <label className="text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Ejercicio</label>
                     <select
@@ -189,13 +192,14 @@ export default function CierreMes() {
                 </div>
                 <div className="flex-grow flex justify-end gap-10">
                     <div className="text-right">
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catuluña Mensual</div>
-                        <div className="text-sm font-black text-slate-800">{formatCurrency(data?.ventas?.catalunya)}</div>
+                        <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Catuluña Mensual</div>
+                        <div className="text-lg font-black text-slate-800">{formatCurrency(data?.ventas?.catalunya)}</div>
                     </div>
                     <div className="text-right">
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ventas CYME</div>
-                        <div className="text-sm font-black text-slate-800">{formatCurrency(data?.ventas?.cyme)}</div>
+                        <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Ventas CYME</div>
+                        <div className="text-lg font-black text-slate-800">{formatCurrency(data?.ventas?.cyme)}</div>
                     </div>
+
                 </div>
             </div>
 
@@ -207,29 +211,32 @@ export default function CierreMes() {
             ) : (
                 <div className="animate-fadeIn space-y-6">
                     {/* Main KPIs Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <KPIBlock title="Facturación" value={formatCurrency(data?.facturación?.total)} icon="💰" color="emerald" />
                         <KPIBlock title="Ventas (Pedidos)" value={formatCurrency(data?.ventas?.total)} icon="📈" color="blue" />
                         <KPIBlock title="Compras" value={formatCurrency(data?.compras)} icon="🛒" color="amber" />
                         <KPIBlock title="Stock" value={formatCurrency(data?.inventario?.total)} icon="📦" color="slate" />
                     </div>
 
+
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                         {/* Inventario Breakdown */}
-                        <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between">
+                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                                    <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
                                     Inventario
                                 </div>
                             </h3>
+
                             <div className="space-y-4">
                                 {invData.sort((a, b) => b.value - a.value).map((item, i) => (
-                                    <div key={item.name} className="flex flex-col gap-1.5">
-                                        <div className="flex justify-between text-[11px] font-bold text-slate-600">
+                                    <div key={item.name} className="flex flex-col gap-2">
+                                        <div className="flex justify-between text-[13px] font-bold text-slate-600">
                                             <span className="truncate pr-2">{item.name}</span>
                                             <span className="text-slate-900">{formatCurrency(item.value)}</span>
                                         </div>
+
                                         <div className="w-full bg-slate-50 h-2 rounded-full overflow-hidden border border-slate-100/50">
                                             <div
                                                 className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-full rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(0,0,0,0.1)]"
@@ -242,20 +249,22 @@ export default function CierreMes() {
                         </div>
 
                         {/* Facturación Breakdown */}
-                        <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between">
+                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"></span>
+                                    <span className="w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"></span>
                                     Facturado (Div)
                                 </div>
                             </h3>
+
                             <div className="space-y-4">
                                 {factDivData.sort((a, b) => b.value - a.value).map((item, i) => (
-                                    <div key={item.name} className="flex flex-col gap-1.5">
-                                        <div className="flex justify-between text-[11px] font-bold text-slate-600">
+                                    <div key={item.name} className="flex flex-col gap-2">
+                                        <div className="flex justify-between text-[13px] font-bold text-slate-600">
                                             <span className="truncate pr-2">{item.name}</span>
                                             <span className="text-slate-900">{formatCurrency(item.value)}</span>
                                         </div>
+
                                         <div className="w-full bg-slate-50 h-2 rounded-full overflow-hidden border border-slate-100/50">
                                             <div
                                                 className="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(0,0,0,0.1)]"
@@ -268,20 +277,22 @@ export default function CierreMes() {
                         </div>
 
                         {/* Cartera Breakdown */}
-                        <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between">
+                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span>
+                                    <span className="w-2.5 h-2.5 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span>
                                     Cartera Pendiente
                                 </div>
                             </h3>
+
                             <div className="space-y-4">
                                 {Object.entries(data?.cartera?.por_division || {}).sort((a, b) => b[1] - a[1]).map(([name, value], i) => (
-                                    <div key={name} className="flex flex-col gap-1.5">
-                                        <div className="flex justify-between text-[11px] font-bold text-slate-600">
+                                    <div key={name} className="flex flex-col gap-2">
+                                        <div className="flex justify-between text-[13px] font-bold text-slate-600">
                                             <span className="truncate pr-2">{name}</span>
                                             <span className="text-slate-900">{formatCurrency(value)}</span>
                                         </div>
+
                                         <div className="w-full bg-slate-50 h-2 rounded-full overflow-hidden border border-slate-100/50">
                                             <div
                                                 className="bg-gradient-to-r from-amber-400 to-amber-600 h-full rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(0,0,0,0.1)]"
@@ -294,30 +305,33 @@ export default function CierreMes() {
                         </div>
 
                         {/* Ranking Facturación */}
-                        <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between">
+                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-violet-500 rounded-full shadow-[0_0_8px_rgba(139,92,246,0.5)]"></span>
+                                    <span className="w-2.5 h-2.5 bg-violet-500 rounded-full shadow-[0_0_8px_rgba(139,92,246,0.5)]"></span>
                                     Ranking Facturado
                                 </div>
                             </h3>
-                            <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                <table className="w-full text-[11px]">
+
+                            <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                <table className="w-full text-xs">
                                     <thead className="sticky top-0 bg-white z-10">
                                         <tr className="text-slate-400">
-                                            <th className="text-left py-2 font-black uppercase tracking-tighter w-6">Pos</th>
-                                            <th className="text-left py-2 font-black uppercase tracking-tighter">Nombre</th>
-                                            <th className="text-right py-2 font-black uppercase tracking-tighter">Neto</th>
+                                            <th className="text-left py-3 font-black uppercase tracking-tighter w-8">Pos</th>
+                                            <th className="text-left py-3 font-black uppercase tracking-tighter">Nombre</th>
+                                            <th className="text-right py-3 font-black uppercase tracking-tighter">Neto</th>
                                         </tr>
                                     </thead>
+
                                     <tbody className="divide-y divide-slate-50">
                                         {factRepData.map((rep, idx) => (
                                             <tr key={rep.name} className="hover:bg-slate-50/80 transition-colors group">
-                                                <td className="py-2.5 font-bold text-slate-300 group-hover:text-violet-400 transition-colors">{idx + 1}</td>
-                                                <td className="py-2.5 font-bold text-slate-700 truncate max-w-[100px]">{rep.name}</td>
-                                                <td className="py-2.5 text-right font-black text-slate-900">{formatCurrency(rep.value)}</td>
+                                                <td className="py-3 font-bold text-slate-300 group-hover:text-violet-400 transition-colors">{idx + 1}</td>
+                                                <td className="py-3 font-bold text-slate-700 truncate max-w-[120px]">{rep.name}</td>
+                                                <td className="py-3 text-right font-black text-slate-900">{formatCurrency(rep.value)}</td>
                                             </tr>
                                         ))}
+
                                     </tbody>
                                 </table>
                             </div>
@@ -338,14 +352,15 @@ function KPIBlock({ title, value, icon, color }) {
     };
 
     return (
-        <div className={`p-6 rounded-3xl border shadow-sm ${colorClasses[color]} hover:shadow-md transition-all duration-300 group`}>
-            <div className="flex justify-between items-start mb-4">
-                <span className="text-2xl group-hover:scale-125 transition-transform duration-500">{icon}</span>
-                <span className="text-[10px] font-black uppercase tracking-widest opacity-60">{title}</span>
+        <div className={`p-8 rounded-3xl border shadow-sm ${colorClasses[color]} hover:shadow-md transition-all duration-300 group`}>
+            <div className="flex justify-between items-start mb-6">
+                <span className="text-3xl group-hover:scale-125 transition-transform duration-500">{icon}</span>
+                <span className="text-xs font-black uppercase tracking-widest opacity-60">{title}</span>
             </div>
-            <div className="text-2xl font-black text-slate-800 tracking-tight">{value}</div>
+            <div className="text-3xl font-black text-slate-800 tracking-tight">{value}</div>
         </div>
     );
+
 }
 
 function ChartCard({ title, children }) {
