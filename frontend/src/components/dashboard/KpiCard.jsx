@@ -16,13 +16,15 @@ export function KpiCard({ title, value, subtext, isWarning, isPercentage }) {
         && title.toLowerCase() !== 'facturas' // Literal "Facturas" is a count
         && !title.toLowerCase().includes('clientes');
 
-    const formattedValue = isPercentage
-        ? new Intl.NumberFormat('es-ES', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value / 100)
-        : new Intl.NumberFormat('es-ES', {
-            style: isMonetary ? 'currency' : 'decimal',
-            currency: 'EUR',
-            maximumFractionDigits: 0,
-        }).format(value);
+    const formattedValue = typeof value !== 'number'
+        ? value
+        : isPercentage
+            ? new Intl.NumberFormat('es-ES', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value / 100)
+            : new Intl.NumberFormat('es-ES', {
+                style: isMonetary ? 'currency' : 'decimal',
+                currency: 'EUR',
+                maximumFractionDigits: 0,
+            }).format(value);
 
     // Dynamic styles
     const titleColor = isWarning ? "text-orange-600" : "text-gray-500";

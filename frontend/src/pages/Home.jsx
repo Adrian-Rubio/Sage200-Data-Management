@@ -39,6 +39,14 @@ export default function Home() {
             icon: <img src="/finanzas.png" alt="Contabilidad" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform" />
         },
         {
+            name: 'Inventario',
+            path: '/inventario',
+            permission: 'almacen',
+            color: 'bg-[#10b981]',
+            hover: 'hover:bg-[#0da271]',
+            icon: <img src="/pedidos.png" alt="Inventario" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform opacity-90" />
+        },
+        {
             name: 'Almacén',
             path: '/almacen',
             permission: 'almacen',
@@ -80,6 +88,14 @@ export default function Home() {
         >
             {/* Header con logout */}
             <div className="absolute top-6 right-6 flex items-center gap-4 bg-[#2a2e35]/90 p-3 rounded-xl shadow-lg border border-white/10 backdrop-blur-sm z-50">
+                {(user?.role === 'admin' || user?.role === 'direccion') && (
+                    <Link
+                        to="/cierre-mes"
+                        className="text-gray-400 hover:text-emerald-400 transition-colors text-[11px] font-bold uppercase tracking-wider border-r border-white/10 pr-4"
+                    >
+                        Cierre de mes
+                    </Link>
+                )}
                 <span className="text-gray-300 font-medium text-sm px-2">
                     Hola, <span className="text-white font-bold">{user?.username}</span> ({user?.role_obj?.name || user?.role})
                 </span>

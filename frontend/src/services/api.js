@@ -82,6 +82,16 @@ export const fetchPendingPurchases = async (filters = {}) => {
     }
 };
 
+export const fetchPurchasesDashboard = async (filters = {}) => {
+    try {
+        const response = await api.post('/purchases/dashboard', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching purchases dashboard:", error);
+        throw error;
+    }
+};
+
 export const fetchProductionOrders = async (filters = {}) => {
     try {
         const response = await api.post('/production/orders', filters);
@@ -227,6 +237,26 @@ export const fetchFinancePnLEvolution = async (filters) => {
         return response.data;
     } catch (error) {
         console.error("Error fetching finance PnL evolution:", error);
+        throw error;
+    }
+};
+
+export const fetchInventoryDashboard = async (filters = {}) => {
+    try {
+        const response = await api.post('/inventory/dashboard', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching inventory dashboard:", error);
+        throw error;
+    }
+};
+
+export const fetchMonthlyClose = async (filters) => {
+    try {
+        const response = await api.post('/reports/monthly-close', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching monthly close report:", error);
         throw error;
     }
 };

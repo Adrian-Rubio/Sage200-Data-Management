@@ -1,0 +1,23 @@
+CREATE VIEW dbo.PowerBi_ComprasDetalle
+AS
+SELECT        dbo.CabeceraAlbaranProveedor.CodigoEmpresa, dbo.CabeceraAlbaranProveedor.EjercicioAlbaran AS Ejercicio, dbo.CabeceraAlbaranProveedor.FechaAlbaran AS Fecha, dbo.CabeceraAlbaranProveedor.CodigoProveedor, 
+                         dbo.CabeceraAlbaranProveedor.RazonSocial, dbo.CabeceraAlbaranProveedor.Nacion, dbo.CabeceraAlbaranProveedor.CodigoCanal, dbo.CanalesEmpresa.Canal, dbo.LineasAlbaranProveedor.CodigoArticulo, 
+                         dbo.LineasAlbaranProveedor.DescripcionArticulo, dbo.LineasAlbaranProveedor.CodigoAlmacen, dbo.Almacenes.Almacen, dbo.LineasAlbaranProveedor.CodigoFamilia, Familias_2.Descripcion AS DescripcionFamilia, 
+                         dbo.LineasAlbaranProveedor.CodigoSubfamilia, Familias_1.Descripcion, dbo.LineasAlbaranProveedor.CodigoProyecto, dbo.Proyectos.Proyecto, dbo.LineasAlbaranProveedor.Unidades2_ AS Unidades, 
+                         dbo.LineasAlbaranProveedor.ImporteNeto, dbo.LineasAlbaranProveedor.BaseImponible, dbo.LineasAlbaranProveedor.ImporteLiquido, DATEDIFF(Day,
+                             (SELECT        TOP (1) FechaPedido
+                               FROM            dbo.LineasPedidoProveedor
+                               WHERE        (LineasPosicion = dbo.LineasAlbaranProveedor.LineaPedido)), dbo.LineasAlbaranProveedor.FechaAlbaran) AS DiasEnServir, 1 AS Contador, dbo.CabeceraAlbaranProveedor.StatusFacturado
+FROM            dbo.CabeceraAlbaranProveedor WITH (NOLOCK) INNER JOIN
+                         dbo.LineasAlbaranProveedor WITH (NOLOCK) ON dbo.CabeceraAlbaranProveedor.CodigoEmpresa = dbo.LineasAlbaranProveedor.CodigoEmpresa AND 
+                         dbo.CabeceraAlbaranProveedor.EjercicioAlbaran = dbo.LineasAlbaranProveedor.EjercicioAlbaran AND dbo.CabeceraAlbaranProveedor.SerieAlbaran = dbo.LineasAlbaranProveedor.SerieAlbaran AND 
+                         dbo.CabeceraAlbaranProveedor.NumeroAlbaran = dbo.LineasAlbaranProveedor.NumeroAlbaran LEFT OUTER JOIN
+                         dbo.Familias AS Familias_1 WITH (NOLOCK) ON dbo.LineasAlbaranProveedor.CodigoSubfamilia = Familias_1.CodigoSubfamilia AND dbo.LineasAlbaranProveedor.CodigoFamilia = Familias_1.CodigoFamilia AND 
+                         dbo.LineasAlbaranProveedor.CodigoEmpresa = Familias_1.CodigoEmpresa LEFT OUTER JOIN
+                         dbo.Familias AS Familias_2 WITH (NOLOCK) ON dbo.LineasAlbaranProveedor.CodigoEmpresa = Familias_2.CodigoEmpresa AND dbo.LineasAlbaranProveedor.CodigoFamilia = Familias_2.CodigoFamilia AND 
+                         Familias_2.CodigoSubfamilia = '**********' LEFT OUTER JOIN
+                         dbo.CanalesEmpresa WITH (NOLOCK) ON dbo.CabeceraAlbaranProveedor.CodigoCanal = dbo.CanalesEmpresa.CodigoCanal AND 
+                         dbo.CabeceraAlbaranProveedor.CodigoEmpresa = dbo.CanalesEmpresa.CodigoEmpresa LEFT OUTER JOIN
+                         dbo.Proyectos WITH (NOLOCK) ON dbo.CabeceraAlbaranProveedor.CodigoEmpresa = dbo.Proyectos.CodigoEmpresa AND dbo.LineasAlbaranProveedor.CodigoEmpresa = dbo.Proyectos.CodigoEmpresa AND 
+                         dbo.LineasAlbaranProveedor.CodigoProyecto = dbo.Proyectos.CodigoProyecto LEFT OUTER JOIN
+                         dbo.Almacenes WITH (NOLOCK) ON dbo.LineasAlbaranProveedor.CodigoEmpresa = dbo.Almacenes.CodigoEmpresa AND dbo.LineasAlbaranProveedor.CodigoAlmacen = dbo.Almacenes.CodigoAlmacen

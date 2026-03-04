@@ -1,125 +1,57 @@
 import { useState, useEffect } from 'react';
-import { fetchPendingPurchases, fetchFilterOptions } from '../services/api';
+import { fetchPurchasesDashboard, fetchFilterOptions } from '../services/api';
 import { Link } from 'react-router-dom';
-import useDataStore from '../store/dataStore';
+import { KpiCard } from '../components/dashboard/KpiCard';
+import { PurchasesCarousel } from '../components/dashboard/PurchasesCarousel';
+import { DivisionPurchasesTable } from '../components/dashboard/DivisionPurchasesTable';
+import useAuthStore from '../store/authStore';
 
-// Helper for status badges
-const StatusBadge = ({ status }) => {
-    switch (status) {
-        case 'Entregado':
-            return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">● Entregado</span>;
-        case 'Parcial':
-            return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">● Parcial</span>;
-        case 'Pendiente':
-            return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">● Pendiente</span>;
-        default:
-            return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">● {status || 'Desconocido'}</span>;
-    }
-};
-
-// Component for rendering order lines
-const LinesTable = ({ lines, isHijo = false }) => {
-    if (!lines || lines.length === 0) return <div className="p-4 text-sm text-gray-500 italic">No hay líneas detalladas.</div>;
-
-    return (
-        <div className={`p-4 ${isHijo ? 'bg-indigo-50/50' : 'bg-gray-50'}`}>
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead>
-                    <tr className="text-left text-gray-500">
-                        <th className="pb-2 font-medium">Línea</th>
-                        <th className="pb-2 font-medium">Artículo</th>
-                        <th className="pb-2 font-medium">Descripción</th>
-                        <th className="pb-2 font-medium text-right">Pedidas</th>
-                        <th className="pb-2 font-medium text-right">Recibidas</th>
-                        <th className="pb-2 font-medium text-right">Pendientes</th>
-                        <th className="pb-2 font-medium text-right">Estado</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                    {lines.map((l, idx) => (
-                        <tr key={idx} className="hover:bg-white transition-colors">
-                            <td className="py-2 text-gray-600 font-mono text-xs">{l.LineaOrden}</td>
-                            <td className="py-2 text-gray-900 font-medium">{l.CodigoArticulo}</td>
-                            <td className="py-2 text-gray-500 truncate max-w-xs" title={l.DescripcionArticulo}>{l.DescripcionArticulo}</td>
-                            <td className="py-2 text-right text-gray-600">{l.UnidadesPedidas}</td>
-                            <td className="py-2 text-right text-green-600 font-medium">{l.UnidadesRecibidas}</td>
-                            <td className="py-2 text-right text-red-600">{l.UnidadesPendientes}</td>
-                            <td className="py-2 text-right"><StatusBadge status={l.status_calculado} /></td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
-};
-
-// Component for a nested Row (Padre -> Hijos -> Lineas)
-// Replaced by PurchaseEnhancedRow inside Purchases component
-
-
-export default function Purchases() {
-    const { purchasesData, setPurchasesData, filterOptions, setFilterOptions } = useDataStore();
-    const [data, setData] = useState(purchasesData || []);
-    const [loading, setLoading] = useState(!purchasesData);
+export default function ComprasDashboard() {
+    const { user, logoutUser } = useAuthStore();
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [options, setOptions] = useState(filterOptions || { companies: [], reps: [], clients: [], series: [] });
+    const [options, setOptions] = useState({ companies: [] });
 
-    // Detailed Filters
-    const [filters, setFilters] = useState({
-        company_id: '100', // CENVALSA INDUSTRIAL default
-        status: '',
-        exercise: null,
-        series: '',
-        order_num: '',
-        parent_order_num: '',
-        provider: '',
-        division: '',
-        origin: ''
+    const currentYear = new Date().getFullYear();
+    const [filters, setFilters] = useState(() => {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        return {
+            exercise: currentYear,
+            company_id: '',
+            provider_id: '',
+            start_date: firstDay.toISOString().split('T')[0],
+            end_date: lastDay.toISOString().split('T')[0]
+        };
     });
 
     useEffect(() => {
         loadFilters();
-        loadData();
-    }, []); // Initial load
+    }, []);
+
+    useEffect(() => {
+        loadDashboard();
+    }, [filters]);
 
     const loadFilters = async () => {
-        if (filterOptions) {
-            setOptions(filterOptions);
-            return;
-        }
         try {
             const opts = await fetchFilterOptions();
-            setOptions(opts || { companies: [], reps: [], clients: [], series: [] });
-            setFilterOptions(opts);
+            setOptions(opts || { companies: [] });
         } catch (e) {
             console.error("Failed to load filters", e);
         }
     };
 
-    const loadData = async (e) => {
-        if (e) e.preventDefault();
+    const loadDashboard = async () => {
         setLoading(true);
         try {
-            // Mapping UI filters to API
-            const apiFilters = {
-                company_id: filters.company_id || null,
-                status: filters.status || null,
-                exercise: filters.exercise ? parseInt(filters.exercise) : null,
-                series: filters.series || null,
-                order_num: filters.order_num ? parseInt(filters.order_num) : null,
-                parent_order_num: filters.parent_order_num ? parseInt(filters.parent_order_num) : null,
-                provider: filters.provider || null,
-                division: filters.division || null,
-                origin: filters.origin || null
-            };
-
-            const result = await fetchPendingPurchases(apiFilters);
+            const result = await fetchPurchasesDashboard(filters);
             setData(result);
-            if (!filters.start_date && !filters.end_date && !filters.status && !filters.exercise && !filters.series && !filters.order_num && !filters.parent_order_num && !filters.provider && !filters.division && !filters.origin && filters.company_id === '100') {
-                setPurchasesData(result);
-            }
         } catch (err) {
-            setError("Error cargando pedidos de compra. Verifica el backend.");
+            setError("Error cargando el dashboard de compras.");
         } finally {
             setLoading(false);
         }
@@ -127,224 +59,145 @@ export default function Purchases() {
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
-        setFilters(prev => ({ ...prev, [name]: value }));
+        setFilters(prev => ({ ...prev, [name]: value || '' }));
     };
 
-    const formatCurrency = (val) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(val || 0);
-    const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString('es-ES') : '-';
-
     return (
-        <div className="w-full min-h-screen bg-[#f8fafc] p-4 text-gray-800 font-sans">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
+        <div className="w-full min-h-screen bg-[#f8fafc] p-6 text-gray-800 font-sans flex flex-col">
+            {/* Header - Balanced */}
+            <div className="flex justify-between items-center mb-5">
                 <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <span className="bg-slate-800 text-white px-3 py-1 rounded text-lg">CENVALSA</span>
-                        Módulo de Compras
+                    <h1 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                        <span className="bg-indigo-600 text-white px-3 py-1 rounded-lg text-lg shadow-sm">PURCHASES</span>
+                        Dashboard de Compras
                     </h1>
                 </div>
                 <div className="flex gap-3">
-                    <Link to="/" className="bg-white text-slate-600 border border-slate-300 px-4 py-2 rounded shadow-sm hover:bg-slate-50 transition font-medium text-sm">
+                    <Link to="/" className="bg-white text-slate-600 border border-slate-200 px-5 py-2 rounded-lg shadow-sm hover:bg-slate-50 transition font-bold text-sm h-[40px] flex items-center justify-center">
                         Volver al Menú
                     </Link>
                 </div>
             </div>
 
-            {/* Advanced Filters Bar - ERP Style */}
-            <form onSubmit={(e) => { e.preventDefault(); loadData(); }} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4 items-end">
-                    <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ejercicio</label>
-                        <input name="exercise" type="number" value={filters.exercise || ''} onChange={handleFilterChange} placeholder="2026" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Empresa</label>
-                        <select
-                            name="company_id"
-                            value={filters.company_id || ''}
-                            onChange={handleFilterChange}
-                            className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2"
-                        >
-                            <option value="">Todas</option>
-                            <option value="100">Cenvalsa Industrial</option>
-                            <option value="400">Siscon</option>
-                        </select>
-                    </div>
+            {/* Filters Bar - Balanced */}
+            <div className="bg-white px-6 py-4 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-wrap gap-6 items-end">
+                <div className="flex flex-col">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Ejercicio</label>
+                    <select name="exercise" value={filters.exercise} onChange={handleFilterChange} className="block w-28 rounded-xl border-gray-200 bg-gray-50/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700">
+                        {[currentYear, currentYear - 1, currentYear - 2].map(y => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="flex flex-col">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Empresa</label>
+                    <select name="company_id" value={filters.company_id} onChange={handleFilterChange} className="block w-40 rounded-xl border-gray-200 bg-gray-50/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700">
+                        <option value="">Todas</option>
+                        {options.companies?.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="flex flex-col">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Proveedor</label>
+                    <input
+                        type="text"
+                        name="provider_id"
+                        placeholder="Nombre o ID..."
+                        value={filters.provider_id}
+                        onChange={handleFilterChange}
+                        className="block w-48 rounded-xl border-gray-200 bg-gray-50/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700"
+                    />
+                </div>
+                <div className="flex flex-col">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Desde</label>
+                    <input
+                        type="date"
+                        name="start_date"
+                        value={filters.start_date}
+                        onChange={handleFilterChange}
+                        className="block w-36 rounded-xl border-gray-200 bg-gray-50/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700"
+                    />
+                </div>
+                <div className="flex flex-col">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Hasta</label>
+                    <input
+                        type="date"
+                        name="end_date"
+                        value={filters.end_date}
+                        onChange={handleFilterChange}
+                        className="block w-36 rounded-xl border-gray-200 bg-gray-50/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700"
+                    />
+                </div>
+                <div className="ml-auto flex items-center gap-2 mb-2">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Online</span>
+                </div>
+            </div>
 
-                    <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Estado</label>
-                        <select
-                            name="status"
-                            value={filters.status}
-                            onChange={handleFilterChange}
-                            className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2"
-                        >
-                            <option value="">Todos</option>
-                            <option value="0">Pte. Recibir</option>
-                            <option value="1">Recepción Parcial</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ejercicio</label>
-                        <input name="exercise" type="number" value={filters.exercise || ''} onChange={handleFilterChange} placeholder="2026" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
-                    </div>
-
-                    <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nº Pedido</label>
-                        <input name="order_num" type="number" value={filters.order_num || ''} onChange={handleFilterChange} placeholder="Pedido" className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
-                    </div>
-
-                    <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Proveedor</label>
-                        <input name="provider" type="text" value={filters.provider || ''} onChange={handleFilterChange} placeholder="Nombre prov..." className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2" />
-                    </div>
-
-                    <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Origen</label>
-                        <select name="origin" value={filters.origin || ''} onChange={handleFilterChange} className="w-full rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2">
-                            <option value="">Todos</option>
-                            <option value="OF">OF</option>
-                            <option value="STOCK">Stock</option>
-                            <option value="PEDIDO">Pedido Venta</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <button type="submit" className="w-full bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 transition font-bold text-sm h-[38px] flex items-center justify-center gap-2">
-                            Filtrar
-                        </button>
+            {loading ? (
+                <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
+                    <div className="relative">
+                        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-2 h-2 bg-indigo-600 rounded-full animate-ping"></div>
+                        </div>
                     </div>
                 </div>
-            </form>
+            ) : error ? (
+                <div className="bg-red-50 text-red-600 p-8 rounded-2xl border border-red-100 text-center font-bold shadow-sm">
+                    {error}
+                </div>
+            ) : (
+                <div className="flex flex-col">
+                    {/* KPI Cards - Prominent but efficient */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center items-center text-center hover:shadow-md transition-shadow">
+                            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-center w-full">Total Compras</h3>
+                            <p className="text-3xl font-black text-slate-800">
+                                {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(data?.kpis?.total_purchases || 0)}
+                            </p>
+                        </div>
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center items-center text-center hover:shadow-md transition-shadow">
+                            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-center w-full">Proveedor Principal</h3>
+                            <p className="text-xl font-black text-slate-800 truncate w-full px-4" title={data?.kpis?.top_provider}>
+                                {data?.kpis?.top_provider || 'N/A'}
+                            </p>
+                        </div>
+                        <div className="bg-indigo-600 rounded-2xl px-6 py-5 shadow-lg flex justify-between items-center text-white relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" /></svg>
+                            </div>
+                            <div className="z-10">
+                                <h3 className="text-indigo-100 text-[10px] font-black uppercase tracking-widest leading-none mb-2">Control Activo</h3>
+                                <p className="text-lg font-black tracking-tight">Pedidos Pendientes</p>
+                            </div>
+                            <Link to="/compras/pedidos-pendientes" className="z-10 bg-white text-indigo-600 hover:bg-indigo-50 transition-colors py-2 px-6 rounded-xl text-xs font-bold shadow-sm">
+                                Gestionar →
+                            </Link>
+                        </div>
+                    </div>
 
-            {/* Density Data Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                {loading ? (
-                    <div className="p-20 text-center">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-indigo-600 mb-4"></div>
-                        <div className="text-slate-500 font-medium">Recuperando información...</div>
+                    {/* Main Visualization Area - Balanced height */}
+                    <div className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden mb-6">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 pointer-events-none" />
+
+                        <div className="h-[480px]">
+                            <PurchasesCarousel
+                                evolutionData={data?.evolution || []}
+                                providersData={data?.top_providers || []}
+                                articlesData={data?.top_articles || []}
+                                subfamiliesData={data?.top_subfamilies || []}
+                                divisionsData={data?.top_divisions || []}
+                                repsData={data?.top_reps || []}
+                            />
+                        </div>
                     </div>
-                ) : error ? (
-                    <div className="p-20 text-center text-red-500 font-medium">{error}</div>
-                ) : data.length === 0 ? (
-                    <div className="p-20 text-center text-slate-400 font-medium">No hay registros para estos filtros.</div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-200">
-                            <thead className="bg-[#444b41] text-white">
-                                <tr className="divide-x divide-slate-600">
-                                    <th className="px-2 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Ejercicio</th>
-                                    <th className="px-2 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Serie</th>
-                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Nº Pedido</th>
-                                    <th className="px-2 py-2 text-left text-[11px] font-bold uppercase tracking-wider">P. Origen</th>
-                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Fecha Pedido</th>
-                                    <th className="px-2 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Prov.</th>
-                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Razón Social</th>
-                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Fecha Neces.</th>
-                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Fecha Tope</th>
-                                    <th className="px-2 py-2 text-center text-[11px] font-bold uppercase tracking-wider">Líns.</th>
-                                    <th className="px-3 py-2 text-right text-[11px] font-bold uppercase tracking-wider">Importe Líq.</th>
-                                    <th className="px-3 py-2 text-center text-[11px] font-bold uppercase tracking-wider">Estado</th>
-                                    <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider">Observaciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-slate-100">
-                                {data.map((pedido, idx) => (
-                                    <PurchaseEnhancedRow key={idx} pedido={pedido} formatCurrency={formatCurrency} formatDate={formatDate} />
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-            <div className="mt-4 text-[11px] text-slate-400 flex justify-between px-2">
-                <span>Total registros cargados: {data.length}</span>
-                <span>Base de Datos Sage200 (Solo lectura)</span>
-            </div>
+
+                    {/* Tabla de desglose por división */}
+                    <DivisionPurchasesTable data={data?.division_table || []} />
+                </div>
+            )}
         </div>
     );
 }
-
-// Nueva fila mejorada para mayor densidad de información
-const PurchaseEnhancedRow = ({ pedido, formatCurrency, formatDate }) => {
-    const [expanded, setExpanded] = useState(false);
-    const hasChildren = pedido.pedidos_hijos && pedido.pedidos_hijos.length > 0;
-    const isHijo = pedido._AEL_OrigenPedido === 'HIJO';
-
-    // Format Pedido Origen
-    const rawOrigen = pedido._AEL_NumeroPedOrigen;
-    const pedidoOrigen = (rawOrigen && parseInt(rawOrigen) > 0) ? parseInt(rawOrigen) : "N/A";
-
-    return (
-        <>
-            <tr className={`divide-x divide-slate-100 hover:bg-slate-50 transition-colors text-[12px] ${isHijo ? 'bg-amber-50/30' : ''}`}>
-                <td className="px-2 py-2 whitespace-nowrap text-slate-600">{pedido.EjercicioPedido}</td>
-                <td className="px-2 py-2 whitespace-nowrap text-slate-600 font-mono">{pedido.SeriePedido}</td>
-                <td className="px-3 py-2 whitespace-nowrap font-bold text-slate-900 flex items-center gap-1">
-                    {(hasChildren || (pedido.lineas && pedido.lineas.length > 0)) && (
-                        <button onClick={() => setExpanded(!expanded)} className="hover:text-indigo-600 p-0.5">
-                            <span className="text-[10px]">{expanded ? '▼' : '▶'}</span>
-                        </button>
-                    )}
-                    {pedido.NumeroPedido}
-                    {isHijo && <span className="bg-amber-100 text-amber-700 px-1 rounded text-[10px] uppercase font-bold ml-1">Hijo</span>}
-                    {pedido.tipo === 'NORMAL' && <span className="bg-slate-100 text-slate-600 px-1 rounded text-[10px] uppercase font-bold ml-1">Normal</span>}
-                </td>
-                <td className={`px-2 py-2 whitespace-nowrap font-mono ${pedidoOrigen !== "N/A" ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}>
-                    {pedidoOrigen}
-                </td>
-                <td className="px-3 py-2 whitespace-nowrap text-slate-600">{formatDate(pedido.FechaPedido)}</td>
-                <td className="px-2 py-2 whitespace-nowrap text-slate-600 font-mono">{pedido.CodigoProveedor}</td>
-                <td className="px-3 py-2 whitespace-nowrap font-medium text-slate-800 max-w-[150px] truncate" title={pedido.RazonSocial}>{pedido.RazonSocial}</td>
-                <td className="px-3 py-2 whitespace-nowrap text-slate-600">{formatDate(pedido.FechaNecesaria)}</td>
-                <td className="px-3 py-2 whitespace-nowrap text-slate-600">{formatDate(pedido.FechaTope)}</td>
-                <td className="px-2 py-2 whitespace-nowrap text-center text-slate-500">{pedido.NumeroLineas || pedido.lineas?.length || 0}</td>
-                <td className="px-3 py-2 whitespace-nowrap text-right font-semibold text-slate-900">{formatCurrency(pedido.ImporteLiquido)}</td>
-                <td className="px-3 py-2 whitespace-nowrap text-center">
-                    <StatusBadge status={pedido.status_global} />
-                </td>
-                <td className="px-3 py-2 whitespace-nowrap text-slate-500 max-w-[200px] truncate italic" title={pedido.ObservacionesPedido}>
-                    {pedido.ObservacionesPedido || '-'}
-                </td>
-            </tr>
-
-            {expanded && (
-                <tr className="bg-slate-100/50">
-                    <td colSpan="13" className="p-4 border-l-4 border-indigo-500 shadow-inner">
-                        {/* Lines of this specific order */}
-                        {pedido.lineas && pedido.lineas.length > 0 && (
-                            <div className="mb-4">
-                                <h4 className="text-[11px] font-bold text-slate-500 uppercase mb-2">Detalle de Líneas</h4>
-                                <LinesTable lines={pedido.lineas} />
-                            </div>
-                        )}
-
-                        {/* If it's a parent, show children links or summary */}
-                        {!isHijo && hasChildren && (
-                            <div>
-                                <h4 className="text-[11px] font-bold text-indigo-600 uppercase mb-2">Entregas Derivadas (Pedidos Hijo)</h4>
-                                <div className="space-y-2">
-                                    {pedido.pedidos_hijos.map((hijo, hidx) => (
-                                        <div key={hidx} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-slate-700 text-xs">Pedido {hijo.SeriePedido}-{hijo.NumeroPedido}</span>
-                                                    {hijo._AEL_NumeroPedOrigen && (
-                                                        <span className="text-[10px] bg-slate-100 px-1 rounded text-slate-500 font-mono">Origen: {hijo._AEL_NumeroPedOrigen}</span>
-                                                    )}
-                                                </div>
-                                                <span className="text-slate-500 text-[11px]">Fecha: {formatDate(hijo.FechaPedido)}</span>
-                                            </div>
-                                            <LinesTable lines={hijo.lineas} isHijo={true} />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </td>
-                </tr>
-            )}
-        </>
-    );
-};

@@ -30,6 +30,13 @@ class PurchaseFilters(BaseModel):
     division: Optional[str] = None
     origin: Optional[str] = None # 'PADRE', 'HIJO'
 
+class DashboardFilters(BaseModel):
+    exercise: Optional[int] = None
+    company_id: Optional[str] = None
+    provider_id: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+
 @router.post("/pending")
 def get_purchases(filters: PurchaseFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     # Generate Cache Key
@@ -284,4 +291,170 @@ def get_purchases(filters: PurchaseFilters, db: Session = Depends(get_db), curre
 
     except Exception as e:
         print(f"Error in purchases endpoint: {e}")
+        return {"error": str(e)}
+
+@router.post("/dashboard")
+def get_purchases_dashboard(filters: DashboardFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        query = """
+            SELECT 
+                Ejercicio,
+                MONTH(Fecha) as Mes,
+                RazonSocial as Proveedor,
+                DescripcionArticulo as Articulo,
+                Descripcion as Subfamilia,
+                CodigoFamilia,
+                BaseImponible as Importe,
+                Unidades,
+                CodigoEmpresa
+            FROM PowerBi_ComprasDetalle WITH (NOLOCK)
+            WHERE 1=1
+        """
+        params = {}
+        if filters.start_date and filters.end_date:
+            query += " AND CAST(Fecha AS DATE) >= :start_date AND CAST(Fecha AS DATE) <= :end_date"
+            params["start_date"] = filters.start_date
+            params["end_date"] = filters.end_date
+        elif filters.exercise:
+            query += " AND Ejercicio = :exercise"
+            params["exercise"] = filters.exercise
+
+        if filters.company_id:
+            query += " AND CAST(CodigoEmpresa AS VARCHAR) = :company_id"
+            params["company_id"] = str(filters.company_id).strip()
+        else:
+            query += " AND CodigoEmpresa IN (100, 2, 4, 6)"
+            
+        if filters.provider_id:
+            query += " AND (CAST(CodigoProveedor AS VARCHAR) LIKE :prov OR RazonSocial LIKE :prov)"
+            params["prov"] = f"%{filters.provider_id}%"
+
+        df = pd.read_sql(text(query), db.bind, params=params)
+        
+        if df.empty:
+            return {
+                "kpis": {
+                    "total_purchases": 0,
+                    "top_provider": "N/A"
+                },
+                "evolution": [],
+                "top_providers": [],
+                "top_articles": [],
+                "top_subfamilies": [],
+                "top_divisions": [],
+                "top_reps": [],
+                "division_table": []
+            }
+
+        # Handle NaNs in names
+        df['Proveedor'] = df['Proveedor'].fillna('Prov. Desconocido')
+        df['Articulo'] = df['Articulo'].fillna('Art. Desconocido')
+        df['Subfamilia'] = df['Subfamilia'].fillna('Sin Subfamilia')
+        df['Importe'] = df['Importe'].fillna(0)
+
+        # KPIs
+        total_purchases = float(df['Importe'].sum())
+
+        # Evolution (by Month)
+        evolution = df.groupby('Mes')['Importe'].sum().reset_index()
+        evolution['MesNombre'] = evolution['Mes'].apply(lambda x: [
+            'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 
+            'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+        ][int(x)-1])
+        evolution_data = evolution[['MesNombre', 'Importe']].rename(columns={'MesNombre': 'name', 'Importe': 'value'}).to_dict('records')
+
+        # Top 5 Providers
+        top_providers = df.groupby('Proveedor')['Importe'].sum().sort_values(ascending=False).head(5).reset_index()
+        top_providers_data = top_providers.rename(columns={'Proveedor': 'name', 'Importe': 'value'}).to_dict('records')
+
+        # Top 5 Articles
+        top_articles = df.groupby('Articulo')['Importe'].sum().sort_values(ascending=False).head(5).reset_index()
+        top_articles_data = top_articles.rename(columns={'Articulo': 'name', 'Importe': 'value'}).to_dict('records')
+
+        # Top 5 Subfamilies
+        top_subfamilies = df.groupby('Subfamilia')['Importe'].sum().sort_values(ascending=False).head(5).reset_index()
+        top_subfamilies_data = top_subfamilies.rename(columns={'Subfamilia': 'name', 'Importe': 'value'}).to_dict('records')
+
+        # Divisiones
+        def map_division(fam):
+            fam = str(fam).strip().upper()
+            if fam == 'M': return 'Mecánica'
+            elif fam == 'C': return 'Conectrónica'
+            elif fam == 'I': return 'Informática Industrial'
+            elif fam in ['CONTA', 'CONS']: return 'Estructura/Otros'
+            else: return 'Otros'
+            
+        df['Division'] = df['CodigoFamilia'].apply(map_division)
+        top_divisions = df.groupby('Division')['Importe'].sum().sort_values(ascending=False).reset_index()
+        top_divisions_data = top_divisions.rename(columns={'Division': 'name', 'Importe': 'value'}).to_dict('records')
+
+        # Tabla de Detalles por División
+        # Group by Division, but allow frontend to show more if needed. For now, group by Division and Proveedor
+        div_table = df.groupby(['Division', 'Proveedor', 'Articulo']).agg(
+            Importe=('Importe', 'sum'),
+            Unidades=('Unidades', 'sum')
+        ).reset_index()
+        # Sort by Importe descending to show the most relevant first
+        div_table = div_table.sort_values(by=['Division', 'Importe'], ascending=[True, False])
+        # Solo enviar los primeros N registros por división para no saturar si hay miles
+        top_per_div = div_table.groupby('Division').head(100).to_dict('records')
+
+        # Compras por Comercial (Pedidos de Compra vinculados a Pedidos de Venta)
+        reps_query = """
+            SELECT c.Comisionista as name, SUM(p.ImporteLiquido) as value
+            FROM CabeceraPedidoProveedor p WITH (NOLOCK)
+            LEFT JOIN CabeceraPedidoCliente v WITH (NOLOCK)
+              ON p._AEL_NumeroPedOrigen = v.NumeroPedido 
+              AND p._AEL_SeriePedOrigen = v.SeriePedido 
+              AND p._AEL_EjercicioPedOrigen = v.EjercicioPedido
+              AND p.CodigoEmpresa = v.CodigoEmpresa
+            LEFT JOIN Comisionistas c WITH (NOLOCK)
+              ON v.CodigoComisionista = c.CodigoComisionista AND v.CodigoEmpresa = c.CodigoEmpresa
+            WHERE p._AEL_OrigenPedido = 'HIJO' AND c.Comisionista IS NOT NULL
+        """
+        reps_params = {}
+        if filters.start_date and filters.end_date:
+            reps_query += " AND CAST(p.FechaPedido AS DATE) >= :start_date AND CAST(p.FechaPedido AS DATE) <= :end_date"
+            reps_params["start_date"] = filters.start_date
+            reps_params["end_date"] = filters.end_date
+        elif filters.exercise:
+            reps_query += " AND p.EjercicioPedido = :exercise"
+            reps_params["exercise"] = filters.exercise
+            
+        if filters.company_id:
+            reps_query += " AND CAST(p.CodigoEmpresa AS VARCHAR) = :company_id"
+            reps_params["company_id"] = str(filters.company_id).strip()
+        else:
+            reps_query += " AND p.CodigoEmpresa IN (100, 2, 4, 6)"
+            
+        if filters.provider_id:
+            reps_query += " AND (CAST(p.CodigoProveedor AS VARCHAR) LIKE :prov OR p.RazonSocial LIKE :prov)"
+            reps_params["prov"] = f"%{filters.provider_id}%"
+
+        reps_query += " GROUP BY c.Comisionista ORDER BY value DESC"
+        
+        try:
+            df_reps = pd.read_sql(text(reps_query), db.bind, params=reps_params)
+            df_reps['name'] = df_reps['name'].str.strip()
+            top_reps_data = df_reps.head(5).to_dict('records')
+        except Exception as e:
+            print(f"Error getting reps purchases: {e}")
+            top_reps_data = []
+
+        return {
+            "kpis": {
+                "total_purchases": total_purchases,
+                "top_provider": top_providers_data[0]['name'] if top_providers_data else "N/A"
+            },
+            "evolution": evolution_data,
+            "top_providers": top_providers_data,
+            "top_articles": top_articles_data,
+            "top_subfamilies": top_subfamilies_data,
+            "top_divisions": top_divisions_data,
+            "top_reps": top_reps_data,
+            "division_table": top_per_div
+        }
+
+    except Exception as e:
+        print(f"Error in purchases dashboard: {e}")
         return {"error": str(e)}

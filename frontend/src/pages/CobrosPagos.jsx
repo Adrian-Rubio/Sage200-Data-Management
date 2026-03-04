@@ -22,10 +22,10 @@ export default function CobrosPagos() {
     });
 
     const companies = [
-        { id: '100', name: 'Cenval (100)' },
-        { id: '2', name: 'Cenvalsa Industrial (2)' },
-        { id: '4', name: 'Dubes (4)' },
-        { id: '6', name: 'Saratur (6)' }
+        { id: '100', name: 'Cenval' },
+        { id: '2', name: 'Cenvalsa Industrial' },
+        { id: '4', name: 'Dubes' },
+        { id: '6', name: 'Saratur' }
     ];
 
     useEffect(() => {
@@ -97,7 +97,7 @@ export default function CobrosPagos() {
                     <div className="flex flex-col">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Empresa</label>
                         <select name="company_id" value={filters.company_id || ''} onChange={handleFilterChange} className="block w-48 rounded-lg border-gray-200 bg-gray-50/50 shadow-sm focus:border-blue-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700">
-                            <option value="">Todas (100, 2, 4, 6)</option>
+                            <option value="">Todo</option>
                             {companies.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
@@ -188,62 +188,63 @@ export default function CobrosPagos() {
                     </span>
                 </div>
                 <div className="overflow-x-auto overflow-y-auto max-h-[600px] custom-scrollbar">
-                    <table className="w-full text-left text-xs">
-                        <thead className="bg-[#fcfdff] text-gray-500 font-bold uppercase text-[9px] tracking-wider sticky top-0 z-10">
+                    <table className="w-full text-left text-xs border-collapse">
+                        <thead className="text-gray-600 font-bold uppercase text-[9px] tracking-wider sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th className="px-4 py-3 border-b">Empresa</th>
-                                <th className="px-4 py-3 border-b">Estado</th>
-                                <th className="px-4 py-3 border-b">Tipo</th>
-                                <th className="px-4 py-3 border-b">F. Factura</th>
-                                <th className="px-4 py-3 border-b">F. Vencim.</th>
-                                <th className="px-4 py-3 border-b">Entidad (Cliente/Prov)</th>
-                                <th className="px-4 py-3 border-b text-right">Importe</th>
-                                <th className="px-4 py-3 border-b">Concepto (Cuenta)</th>
-                                <th className="px-4 py-3 border-b">Documento</th>
+                                <th className="px-3 py-3 border border-gray-300 bg-gray-100">Empresa</th>
+                                <th className="px-3 py-3 border border-gray-300 bg-gray-100">Concepto (Cuenta)</th>
+                                <th className="px-3 py-3 border border-gray-300 bg-gray-100">F. Factura</th>
+                                <th className="px-3 py-3 border border-gray-300 bg-gray-100">F. Vencim.</th>
+                                <th className="px-3 py-3 border border-gray-300 bg-gray-100">Entidad (Cliente/Prov)</th>
+                                <th className="px-3 py-3 border border-gray-300 bg-gray-100 text-right">Importe</th>
+                                <th className="px-3 py-3 border border-gray-300 bg-gray-100">Documento</th>
+                                <th className="px-3 py-3 border border-gray-300 bg-gray-100">Comentario</th>
+                                <th className="px-3 py-3 border border-gray-300 bg-gray-100 text-center">Tipo</th>
+                                <th className="px-3 py-3 border border-gray-300 bg-gray-100 text-center">Estado</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-gray-200">
                             {loading ? (
-                                <tr><td colSpan="9" className="px-6 py-10 text-center text-gray-400">Cargando...</td></tr>
+                                <tr><td colSpan="10" className="px-6 py-10 text-center text-gray-400">Cargando...</td></tr>
                             ) : data?.items?.map((item, i) => (
-                                <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                    <td className="px-4 py-4 font-bold text-slate-400">{item.CodigoEmpresa}</td>
-                                    <td className="px-4 py-4">
-                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${item.Status === -1 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                                            {item.Status === -1 ? 'Realizado' : 'Pendiente'}
-                                        </span>
+                                <tr key={i} className="hover:bg-blue-50/50 even:bg-slate-50 transition-colors">
+                                    <td className="px-3 py-2.5 border border-gray-200 font-bold text-slate-500 text-center">{item.CodigoEmpresa}</td>
+                                    <td className="px-3 py-2.5 border border-gray-200 text-slate-600 text-[10px] leading-tight max-w-[200px] truncate" title={item.ConceptoCuenta}>
+                                        <span className="font-semibold">{item.CuentaID}</span> - {item.ConceptoCuenta}
                                     </td>
-                                    <td className="px-4 py-4">
-                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${item.Prevision === 'Cobros' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                    <td className="px-3 py-2.5 border border-gray-200 text-slate-500 font-medium">{item.FechaFactura ? new Date(item.FechaFactura).toLocaleDateString('es-ES') : '-'}</td>
+                                    <td className="px-3 py-2.5 border border-gray-200 text-slate-700 font-bold">{new Date(item.FechaVencimiento).toLocaleDateString('es-ES')}</td>
+                                    <td className="px-3 py-2.5 border border-gray-200 text-slate-800 font-medium">
+                                        <span className="text-gray-400 text-[10px] mr-1.5 font-normal">[{item.CodigoClienteProveedor}]</span>
+                                        {item.Prevision === 'Cobros' ? item.RazonSocial : item.NombreProveedor}
+                                    </td>
+                                    <td className={`px-3 py-2.5 border border-gray-200 text-right font-bold whitespace-nowrap ${item.Prevision === 'Cobros' ? 'text-emerald-700' : 'text-red-700'}`}>
+                                        {formatCurrency(item.Prevision === 'Cobros' ? item.Cobro : item.Pago)}
+                                    </td>
+                                    <td className="px-3 py-2.5 border border-gray-200 text-slate-600 text-[10px]">{item.DocumentoConta}</td>
+                                    <td className="px-3 py-2.5 border border-gray-200 text-slate-500 text-[10px] max-w-[200px] truncate" title={item.Comentario}>{item.Comentario}</td>
+                                    <td className="px-3 py-2.5 border border-gray-200 text-center">
+                                        <span className={`px-2 py-0.5 rounded-sm text-[9px] font-bold border ${item.Prevision === 'Cobros' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
                                             {item.Prevision}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-4 text-slate-400 font-medium">{item.FechaFactura ? new Date(item.FechaFactura).toLocaleDateString('es-ES') : '-'}</td>
-                                    <td className="px-4 py-4 text-slate-600 font-bold">{new Date(item.FechaVencimiento).toLocaleDateString('es-ES')}</td>
-                                    <td className="px-4 py-4 text-slate-800 font-medium">
-                                        <span className="text-gray-400 text-[10px] mr-1">{item.CodigoClienteProveedor}</span>
-                                        {item.Prevision === 'Cobros' ? item.RazonSocial : item.NombreProveedor}
+                                    <td className="px-3 py-2.5 border border-gray-200 text-center">
+                                        <span className={`px-2 py-0.5 rounded-sm text-[9px] font-black uppercase tracking-wide border ${item.Status === -1 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                                            {item.Status === -1 ? 'Realizado' : 'Pendiente'}
+                                        </span>
                                     </td>
-                                    <td className={`px-4 py-4 text-right font-bold ${item.Prevision === 'Cobros' ? 'text-emerald-700' : 'text-red-700'}`}>
-                                        {formatCurrency(item.Prevision === 'Cobros' ? item.Cobro : item.Pago)}
-                                    </td>
-                                    <td className="px-4 py-4 text-slate-500 text-[10px] italic">
-                                        {item.ConceptoCuenta} <span className="text-slate-300 font-normal">({item.CuentaID})</span>
-                                    </td>
-                                    <td className="px-4 py-4 text-slate-500">{item.DocumentoConta}</td>
-                                    <td className="px-4 py-4 text-slate-400 max-w-[200px] truncate" title={item.Comentario}>{item.Comentario}</td>
                                 </tr>
                             ))}
                             {!loading && (!data?.items || data.items.length === 0) && (
                                 <tr>
-                                    <td colSpan="9" className="px-6 py-10 text-center text-gray-400">
+                                    <td colSpan="10" className="px-6 py-10 text-center text-gray-500 font-medium">
                                         No hay efectos que coincidan con los filtros seleccionados
                                     </td>
                                 </tr>
                             )}
                             {!loading && data?.items?.length > 0 && data?.kpis?.total_count > data?.items?.length && (
                                 <tr>
-                                    <td colSpan="9" className="px-6 py-4 text-center text-[10px] font-bold text-amber-600 bg-amber-50">
+                                    <td colSpan="10" className="px-6 py-4 text-center text-xs font-bold text-amber-700 bg-amber-50 border-t border-amber-200">
                                         Mostrando los primeros {data.items.length} registros más antiguos. Se están ocultando otros {data.kpis.total_count - data.items.length} efectos. (Usa los filtros para reducir el tamaño de búsqueda).
                                     </td>
                                 </tr>
