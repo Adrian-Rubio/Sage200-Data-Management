@@ -260,3 +260,12 @@ export const fetchMonthlyClose = async (filters) => {
         throw error;
     }
 };
+export const fetchFinancePnLDetailed = async (filters) => {
+    try {
+        const response = await api.post('/finance/pnl-detailed', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching detailed PnL:", error);
+        throw error;
+    }
+};

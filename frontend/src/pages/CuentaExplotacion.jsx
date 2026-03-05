@@ -1,28 +1,28 @@
-import { useState, useEffect } from 'react';
-import { fetchFinancePnL, fetchFinancePnLEvolution } from '../services/api';
+import React, { useState, useEffect, Fragment } from 'react';
+import { fetchFinancePnLDetailed } from '../services/api';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Wallet, BarChart3, ChevronRight, LogOut, Home } from 'lucide-react';
+import { BarChart3, ChevronRight, ChevronDown, Home, Download, AlertCircle } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 
 export default function CuentaExplotacion() {
     const { logoutUser } = useAuthStore();
-    const [data, setData] = useState({ details: [], summary: {} });
-    const [evolution, setEvolution] = useState([]);
+    const [treeData, setTreeData] = useState([]);
+    const [summary, setSummary] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [expandedNodes, setExpandedNodes] = useState(new Set(['A', 'B']));
 
-    // Filters
     const [filters, setFilters] = useState({
-        year: new Date().getFullYear(),
+        year: 2026,
+        month_from: 1, // Start month
         month_up_to: new Date().getMonth() + 1,
         company_id: '100' // Default to Cenval
     });
 
     const companies = [
-        { id: '100', name: 'Cenval (100)' },
+        { id: '100', name: 'Grupo Cenval (100)' },
         { id: '2', name: 'Cenvalsa Industrial (2)' },
-        { id: '4', name: 'Dubes (4)' },
+        { id: '4', name: 'D&M (4)' },
         { id: '6', name: 'Saratur (6)' }
     ];
 
@@ -39,15 +39,13 @@ export default function CuentaExplotacion() {
 
     const loadData = async () => {
         setLoading(true);
+        setError(null);
         try {
-            const [pnlRes, evolutionRes] = await Promise.all([
-                fetchFinancePnL(filters),
-                fetchFinancePnLEvolution({ ...filters })
-            ]);
-            setData(pnlRes);
-            setEvolution(evolutionRes);
+            const res = await fetchFinancePnLDetailed(filters);
+            setTreeData(res.tree);
+            setSummary(res.summary);
         } catch (err) {
-            setError("Error cargando la cuenta de explotación.");
+            setError("Error cargando la cuenta de explotación detallada.");
             console.error(err);
         } finally {
             setLoading(false);
@@ -59,178 +57,253 @@ export default function CuentaExplotacion() {
         setFilters(prev => ({ ...prev, [name]: value }));
     };
 
-    const formatCurrency = (val) => new Intl.NumberFormat('es-ES', {
-        style: 'currency', currency: 'EUR', maximumFractionDigits: 0
-    }).format(val || 0);
-
-    const formatK = (val) => {
-        if (Math.abs(val) >= 1000000) return `${(val / 1000).toFixed(0)}k€`; // Sage usually works in thousands in reports
-        if (Math.abs(val) >= 1000) return `${(val / 1000).toFixed(0)}k€`;
-        return `${val}€`;
+    const toggleNode = (id) => {
+        const newSet = new Set(expandedNodes);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setExpandedNodes(newSet);
     };
 
-    const details = data.details || [];
-    const summary = data.summary || {};
+    const formatCurrency = (val) => {
+        if (val === undefined || val === null) return '-';
+        return new Intl.NumberFormat('es-ES', {
+            style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2
+        }).format(val);
+    };
 
-    // Grouping for the professional table
-    const expl_details = details.filter(d => d.Grupo === 'EXPLOTACION').sort((a, b) => a.Apartado_PyG.localeCompare(b.Apartado_PyG, undefined, { numeric: true }));
-    const fin_details = details.filter(d => d.Grupo === 'FINANCIERO').sort((a, b) => a.Apartado_PyG.localeCompare(b.Apartado_PyG, undefined, { numeric: true }));
-    const tax_details = details.filter(d => d.Grupo === 'IMPUESTOS').sort((a, b) => a.Apartado_PyG.localeCompare(b.Apartado_PyG, undefined, { numeric: true }));
+    const formatPercent = (val) => {
+        if (!val || isNaN(val) || !isFinite(val)) return '0,00';
+        return new Intl.NumberFormat('es-ES', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2
+        }).format(val * 100);
+    };
 
-    // Chart Data
-    const summaryData = [
-        { name: 'Explotación', value: summary.resultado_explotacion },
-        { name: 'Financiero', value: summary.resultado_financiero },
-        { name: 'Resultado', value: summary.resultado_ejercicio }
-    ];
+    const getDiffColor = (real, presu, isIncome = true) => {
+        const diff = real - presu;
+        if (Math.abs(diff) < 0.01) return 'text-slate-400';
+        if (isIncome) {
+            return diff >= 0 ? 'text-emerald-600' : 'text-red-600';
+        } else {
+            // For expenses, if real > presu it's bad
+            return diff <= 0 ? 'text-emerald-600' : 'text-red-600';
+        }
+    };
+
+    const renderRows = (nodes, depth = 0) => {
+        return nodes.map(node => {
+            const isExpanded = expandedNodes.has(node.id);
+            const hasChildren = (node.children && node.children.length > 0) || (node.accounts && node.accounts.length > 0);
+
+            // Calculate differences and percentages
+            const diff_p = node.real_p - node.presu_p;
+            const desv_p = node.presu_p !== 0 ? (diff_p / Math.abs(node.presu_p)) : (node.real_p !== 0 ? 1 : 0);
+            const diff_a = node.real_a - node.presu_a;
+            const desv_a = node.presu_a !== 0 ? (diff_a / Math.abs(node.presu_a)) : (node.real_a !== 0 ? 1 : 0);
+
+            const isIncome = !node.name.toLowerCase().includes('gastos') && !node.name.toLowerCase().includes('aprovisionamientos');
+
+            return (
+                <Fragment key={node.id}>
+                    <tr className={`hover:bg-slate-50 transition-colors border-b border-slate-100 ${depth === 0 ? 'bg-slate-50/50 font-bold' : ''}`}>
+                        <td className="px-4 py-2 border-r border-slate-100 sticky left-0 bg-inherit z-10" style={{ paddingLeft: `${depth * 20 + 16}px` }}>
+                            <div className="flex items-center gap-2">
+                                {hasChildren ? (
+                                    <button onClick={() => toggleNode(node.id)} className="p-0.5 hover:bg-slate-200 rounded transition">
+                                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                    </button>
+                                ) : <div className="w-[18px]" />}
+                                <span className={`${depth === 0 ? 'text-slate-800' : depth === 1 ? 'text-slate-700' : 'text-slate-600'} truncate max-w-[300px]`} title={node.name}>
+                                    {node.name}
+                                </span>
+                            </div>
+                        </td>
+
+                        {/* Period Data */}
+                        <td className="px-4 py-2 text-right border-r border-slate-100 text-slate-400">{formatCurrency(node.presu_p)}</td>
+                        <td className="px-4 py-2 text-right border-r border-slate-100 font-semibold">{formatCurrency(node.real_p)}</td>
+                        <td className={`px-4 py-2 text-right border-r border-slate-100 font-medium ${getDiffColor(node.real_p, node.presu_p, isIncome)}`}>
+                            {formatCurrency(diff_p)}
+                        </td>
+                        <td className={`px-4 py-2 text-right border-r border-slate-100 text-[10px] font-bold ${getDiffColor(node.real_p, node.presu_p, isIncome)}`}>
+                            {formatPercent(desv_p)}%
+                        </td>
+
+                        {/* Accumulated Data */}
+                        <td className="px-4 py-2 text-right border-r border-slate-100 text-slate-400 bg-slate-50/30">{formatCurrency(node.presu_a)}</td>
+                        <td className="px-4 py-2 text-right border-r border-slate-100 font-bold bg-slate-50/30">{formatCurrency(node.real_a)}</td>
+                        <td className={`px-4 py-2 text-right border-r border-slate-100 font-black bg-slate-50/30 ${getDiffColor(node.real_a, node.presu_a, isIncome)}`}>
+                            {formatCurrency(diff_a)}
+                        </td>
+                        <td className={`px-4 py-2 text-right text-[10px] font-black bg-slate-50/30 ${getDiffColor(node.real_a, node.presu_a, isIncome)}`}>
+                            {formatPercent(desv_a)}%
+                        </td>
+                    </tr>
+                    {isExpanded && node.children && renderRows(node.children, depth + 1)}
+                    {isExpanded && node.accounts && node.accounts.map(acc => {
+                        const d_p = acc.real_p - acc.presu_p;
+                        const ds_p = acc.presu_p !== 0 ? (d_p / Math.abs(acc.presu_p)) : (acc.real_p !== 0 ? 1 : 0);
+                        const d_a = acc.real_a - acc.presu_a;
+                        const ds_a = acc.presu_a !== 0 ? (d_a / Math.abs(acc.presu_a)) : (acc.real_a !== 0 ? 1 : 0);
+                        const isAccIncome = acc.code.startsWith('7');
+
+                        return (
+                            <tr key={acc.code} className="hover:bg-slate-50/80 transition-colors border-b border-slate-50 text-[11px] text-slate-500 italic">
+                                <td className="px-4 py-1.5 border-r border-slate-100 sticky left-0 bg-white z-10" style={{ paddingLeft: `${(depth + 1) * 20 + 24}px` }}>
+                                    <span className="opacity-60 mr-2">{acc.code}</span>
+                                    {acc.name}
+                                </td>
+                                <td className="px-4 py-1.5 text-right border-r border-slate-100 opacity-60">{formatCurrency(acc.presu_p)}</td>
+                                <td className="px-4 py-1.5 text-right border-r border-slate-100 font-medium text-slate-600">{formatCurrency(acc.real_p)}</td>
+                                <td className={`px-4 py-1.5 text-right border-r border-slate-100 ${getDiffColor(acc.real_p, acc.presu_p, isAccIncome)}`}>{formatCurrency(d_p)}</td>
+                                <td className={`px-4 py-1.5 text-right border-r border-slate-100 text-[9px] ${getDiffColor(acc.real_p, acc.presu_p, isAccIncome)}`}>{formatPercent(ds_p)}%</td>
+
+                                <td className="px-4 py-1.5 text-right border-r border-slate-100 opacity-60 bg-slate-50/20">{formatCurrency(acc.presu_a)}</td>
+                                <td className="px-4 py-1.5 text-right border-r border-slate-100 font-bold text-slate-700 bg-slate-50/20">{formatCurrency(acc.real_a)}</td>
+                                <td className={`px-4 py-1.5 text-right border-r border-slate-100 bg-slate-50/20 ${getDiffColor(acc.real_a, acc.presu_a, isAccIncome)}`}>{formatCurrency(d_a)}</td>
+                                <td className={`px-4 py-1.5 text-right text-[9px] bg-slate-50/20 ${getDiffColor(acc.real_a, acc.presu_a, isAccIncome)}`}>{formatPercent(ds_a)}%</td>
+                            </tr>
+                        );
+                    })}
+                </Fragment>
+            );
+        });
+    };
 
     return (
-        <div className="w-full min-h-screen bg-[#f1f5f9] p-4 md:p-8 text-slate-900 font-sans">
-            {/* Header / Nav */}
-            <div className="max-w-7xl mx-auto flex justify-between items-center mb-6">
-                <div className="flex items-center gap-4">
-                    <div className="bg-slate-900 text-white p-2.5 rounded-xl shadow-lg">
-                        <BarChart3 className="w-6 h-6" />
+        <div className="w-full min-h-screen bg-[#f8fafc] p-6 lg:p-8 font-sans text-slate-900">
+            {/* Header */}
+            <div className="max-w-[1800px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                <div className="flex items-center gap-5">
+                    <div className="bg-emerald-600 text-white p-3.5 rounded-2xl shadow-xl shadow-emerald-200">
+                        <BarChart3 className="w-7 h-7" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Cuenta de Explotación</h1>
-                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Análisis P&G (PGC)</p>
+                        <h1 className="text-3xl font-black text-slate-800 tracking-tight leading-none mb-2">Cuenta de Explotación Detallada</h1>
+                        <div className="flex items-center gap-3">
+                            <span className="bg-slate-200 text-slate-600 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest">Comparativa Presupuesto</span>
+                            <span className="text-slate-400 text-xs font-medium italic">Empresa: {companies.find(c => c.id === filters.company_id)?.name}</span>
+                        </div>
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <Link to="/contabilidad" className="bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 transition shadow-sm font-bold text-xs uppercase tracking-wider">
+
+                <div className="flex items-center gap-3">
+                    <button className="flex items-center gap-2 bg-white text-slate-600 border border-slate-200 px-5 py-2.5 rounded-xl hover:bg-slate-50 transition shadow-sm font-bold text-xs uppercase tracking-wider group">
+                        <Download className="w-4 h-4 group-hover:scale-110 transition" />
+                        Exportar Excel
+                    </button>
+                    <Link to="/contabilidad" className="bg-white text-slate-600 border border-slate-200 px-5 py-2.5 rounded-xl hover:bg-slate-50 transition shadow-sm font-bold text-xs uppercase tracking-wider">
                         Volver
                     </Link>
-                    <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-100 px-4 py-2 rounded-xl hover:bg-red-100 transition font-bold text-xs uppercase tracking-wider">
-                        Salir
+                    <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-100 px-5 py-2.5 rounded-xl hover:bg-red-100 transition font-bold text-xs uppercase tracking-wider">
+                        Cerrar Sesión
                     </button>
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="max-w-7xl mx-auto bg-white p-3 px-6 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-wrap items-center gap-8">
-                <div className="flex items-center gap-4">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Empresa</label>
-                    <select name="company_id" value={filters.company_id} onChange={handleFilterChange} className="bg-slate-50 border-none rounded-lg font-bold text-slate-700 text-xs py-1.5 focus:ring-0">
+            {/* Filters Bar */}
+            <div className="max-w-[1800px] mx-auto bg-white p-5 px-8 rounded-[2rem] shadow-sm border border-slate-100 mb-8 flex flex-wrap items-center gap-10">
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Entidad Consolidada</label>
+                    <select name="company_id" value={filters.company_id} onChange={handleFilterChange} className="bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 text-sm py-2 px-4 focus:ring-emerald-500 focus:border-emerald-500 min-w-[240px]">
                         {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 </div>
-                <div className="flex items-center gap-4">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Ejercicio</label>
-                    <select name="year" value={filters.year} onChange={handleFilterChange} className="bg-slate-50 border-none rounded-lg font-bold text-slate-700 text-xs py-1.5 focus:ring-0">
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ejercicio Fiscal</label>
+                    <select name="year" value={filters.year} onChange={handleFilterChange} className="bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 text-sm py-2 px-4 focus:ring-emerald-500 focus:border-emerald-500">
                         {[2026, 2025, 2024].map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                 </div>
-                <div className="flex items-center gap-4">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Hasta</label>
-                    <select name="month_up_to" value={filters.month_up_to} onChange={handleFilterChange} className="bg-slate-50 border-none rounded-lg font-bold text-slate-700 text-xs py-1.5 focus:ring-0">
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Desde Mes</label>
+                    <select name="month_from" value={filters.month_from} onChange={handleFilterChange} className="bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 text-sm py-2 px-4 focus:ring-emerald-500 focus:border-emerald-500 min-w-[140px]">
                         {months.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </select>
                 </div>
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Hasta Mes</label>
+                    <select name="month_up_to" value={filters.month_up_to} onChange={handleFilterChange} className="bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 text-sm py-2 px-4 focus:ring-emerald-500 focus:border-emerald-500 min-w-[140px]">
+                        {months.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </select>
+                </div>
+
+                {filters.company_id === '2' && (
+                    <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl border border-blue-100 italic">
+                        <AlertCircle size={16} />
+                        <span className="text-[10px] font-bold uppercase tracking-tight">Presupuesto Cenvalsa (2) cargando...</span>
+                    </div>
+                )}
             </div>
 
-            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-8">
-                {/* Legal Table */}
-                <div className="lg:col-span-3 bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-                    <div className="bg-slate-800 p-6 flex justify-between items-center text-white">
-                        <h3 className="font-bold text-lg">Estado de Resultados</h3>
-                        <div className="text-[10px] font-black bg-white/10 px-3 py-1 rounded-full uppercase tracking-tighter">
-                            Formato Legal PGC
-                        </div>
-                    </div>
+            {/* Main Content Area */}
+            <div className="max-w-[1800px] mx-auto bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse min-w-[1200px]">
+                        <thead>
+                            <tr className="bg-slate-800 text-white/70 font-black text-[9px] uppercase tracking-widest">
+                                <th rowSpan="2" className="px-6 py-4 border-r border-white/10 sticky left-0 bg-slate-800 z-20 min-w-[350px]">Descripción Estructural</th>
+                                <th colSpan="4" className="px-6 py-4 border-r border-white/10 text-center bg-slate-700/50">
+                                    Datos del Periodo (P)
+                                    <span className="block text-[8px] opacity-60">[{months.find(m => m.id === parseInt(filters.month_from))?.name} - {months.find(m => m.id === parseInt(filters.month_up_to))?.name}]</span>
+                                </th>
+                                <th colSpan="4" className="px-6 py-4 text-center bg-slate-900/50">
+                                    Datos Acumulados (A)
+                                    <span className="block text-[8px] opacity-60">[Enero - {months.find(m => m.id === parseInt(filters.month_up_to))?.name}]</span>
+                                </th>
+                            </tr>
+                            <tr className="bg-slate-900 text-white/50 font-black text-[9px] uppercase tracking-widest">
+                                <th className="px-4 py-3 text-right border-r border-white/10">Presu (P)</th>
+                                <th className="px-4 py-3 text-right border-r border-white/10 text-emerald-400">Real (P)</th>
+                                <th className="px-4 py-3 text-right border-r border-white/10">Difer (P)</th>
+                                <th className="px-4 py-3 text-right border-r border-white/10">% Desv (P)</th>
 
-                    <div className="p-0 overflow-x-auto">
-                        <table className="w-full text-left text-xs border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50 text-slate-400 font-black text-[9px] uppercase tracking-[0.2em]">
-                                    <th className="px-6 py-2.5 border-b">Estructura de Cuentas</th>
-                                    <th className="px-6 py-2.5 border-b text-right">Saldo</th>
+                                <th className="px-4 py-3 text-right border-r border-white/10 bg-black/20">Presu (A)</th>
+                                <th className="px-4 py-3 text-right border-r border-white/10 text-emerald-400 bg-black/20">Real (A)</th>
+                                <th className="px-4 py-3 text-right border-r border-white/10 bg-black/20">Difer (A)</th>
+                                <th className="px-4 py-3 text-right bg-black/20">% Desv (A)</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="9" className="px-8 py-32 text-center">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                                            <p className="text-slate-400 font-black uppercase text-[10px] tracking-widest animate-pulse">Analizando Acumulados y Presupuestos...</p>
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50 italic">
-                                {loading ? (
-                                    <tr><td colSpan="2" className="px-8 py-20 text-center text-slate-300">Generando reporte legal...</td></tr>
-                                ) : (
-                                    <>
-                                        {/* EXPLOTACION */}
-                                        {expl_details.map((item, i) => (
-                                            <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="px-6 py-2 text-slate-600 font-medium pl-8">{item.Apartado_PyG}</td>
-                                                <td className={`px-6 py-2 text-right font-bold ${item.Total >= 0 ? 'text-slate-700' : 'text-slate-400'}`}>{formatCurrency(item.Total)}</td>
-                                            </tr>
-                                        ))}
-                                        <tr className="bg-slate-100/50 border-y border-slate-200">
-                                            <td className="px-6 py-2.5 text-slate-800 font-black uppercase text-[10px]">A) RESULTADO DE EXPLOTACIÓN</td>
-                                            <td className={`px-6 py-2.5 text-right font-black text-xs ${summary.resultado_explotacion >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatCurrency(summary.resultado_explotacion)}</td>
-                                        </tr>
+                            ) : error ? (
+                                <tr>
+                                    <td colSpan="9" className="px-8 py-20 text-center text-red-500 font-bold">{error}</td>
+                                </tr>
+                            ) : (
+                                <>
+                                    {renderRows(treeData)}
 
-                                        {/* FINANCIERO */}
-                                        {fin_details.map((item, i) => (
-                                            <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="px-6 py-2 text-slate-500 font-medium pl-8">{item.Apartado_PyG}</td>
-                                                <td className={`px-6 py-2 text-right font-bold ${item.Total >= 0 ? 'text-slate-700' : 'text-slate-400'}`}>{formatCurrency(item.Total)}</td>
-                                            </tr>
-                                        ))}
-                                        <tr className="bg-slate-100/50 border-y border-slate-200">
-                                            <td className="px-6 py-2.5 text-slate-800 font-black uppercase text-[10px]">B) RESULTADO FINANCIERO</td>
-                                            <td className={`px-6 py-2.5 text-right font-black text-xs ${summary.resultado_financiero >= 0 ? 'text-blue-700' : 'text-red-700'}`}>{formatCurrency(summary.resultado_financiero)}</td>
-                                        </tr>
+                                    {/* Final Result Summary (Mocking the A+B sum for total Result) */}
+                                    <tr className="bg-slate-900 text-white font-black text-sm">
+                                        <td className="px-6 py-4 border-r border-white/10 sticky left-0 bg-slate-900 z-20">RESULTADO DEL EJERCICIO</td>
+                                        <td className="px-4 py-4 text-right border-r border-white/10 opacity-60 font-medium text-xs">{formatCurrency(summary.presu_p)}</td>
+                                        <td className="px-4 py-4 text-right border-r border-white/10 text-emerald-400">{formatCurrency(summary.real_p)}</td>
+                                        <td className="px-4 py-4 text-right border-r border-white/10 font-black">{formatCurrency(summary.real_p - summary.presu_p)}</td>
+                                        <td className="px-4 py-4 text-right border-r border-white/10 text-xs">{formatPercent(summary.presu_p !== 0 ? (summary.real_p - summary.presu_p) / Math.abs(summary.presu_p) : 0)}%</td>
 
-                                        <tr className="bg-slate-900 text-white">
-                                            <td className="px-6 py-3 font-black uppercase text-[10px] tracking-widest pl-6">C) RESULTADO ANTES DE IMPUESTOS</td>
-                                            <td className="px-6 py-3 text-right font-black text-sm">{formatCurrency(summary.resultado_antes_impuestos)}</td>
-                                        </tr>
-
-                                        {/* TAXES */}
-                                        {tax_details.map((item, i) => (
-                                            <tr key={i} className="bg-slate-50/30">
-                                                <td className="px-6 py-1.5 text-slate-400 font-medium pl-8">{item.Apartado_PyG}</td>
-                                                <td className="px-6 py-1.5 text-right text-slate-400 font-bold">{formatCurrency(item.Total)}</td>
-                                            </tr>
-                                        ))}
-                                        <tr className="bg-blue-600 text-white">
-                                            <td className="px-6 py-5 font-black uppercase text-xs tracking-tighter pl-6">RESULTADO DEL EJERCICIO</td>
-                                            <td className="px-6 py-5 text-right font-black text-xl">{formatCurrency(summary.resultado_ejercicio)}</td>
-                                        </tr>
-                                    </>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* Evolution & Charts */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Monthly Bar Chart */}
-                    <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 h-[380px]">
-                        <h3 className="font-bold text-slate-700 mb-6 flex items-center justify-between">
-                            Evolución {filters.year}
-                            <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Millones €</span>
-                        </h3>
-                        <div className="w-full h-full pb-8">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={evolution.map(m => ({ ...m, Resultado: m.Ingresos - m.Gastos }))}>
-                                    <CartesianGrid strokeDasharray="1 4" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis
-                                        dataKey="Month"
-                                        axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b' }}
-                                        tickFormatter={m => months.find(mo => mo.id === m)?.name.substring(0, 3)}
-                                    />
-                                    <YAxis hide />
-                                    <Tooltip
-                                        cursor={{ fill: '#f1f5f9' }}
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                                        formatter={val => formatCurrency(val)}
-                                    />
-                                    <Bar dataKey="Ingresos" fill="#10b981" radius={[4, 4, 0, 0]} barSize={12} />
-                                    <Bar dataKey="Gastos" fill="#cbd5e1" radius={[4, 4, 0, 0]} barSize={12} />
-                                    <Bar dataKey="Resultado" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
+                                        <td className="px-4 py-4 text-right border-r border-white/10 opacity-60 font-medium text-xs bg-black/20">{formatCurrency(summary.presu_a)}</td>
+                                        <td className="px-4 py-4 text-right border-r border-white/10 text-emerald-400 bg-black/20">{formatCurrency(summary.real_a)}</td>
+                                        <td className="px-4 py-4 text-right border-r border-white/10 font-black bg-black/20">{formatCurrency(summary.real_a - summary.presu_a)}</td>
+                                        <td className="px-4 py-4 text-right text-xs bg-black/20 font-black">{formatPercent(summary.presu_a !== 0 ? (summary.real_a - summary.presu_a) / Math.abs(summary.presu_a) : 0)}%</td>
+                                    </tr>
+                                </>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
+            <p className="max-w-[1800px] mx-auto mt-6 text-[10px] text-slate-400 font-medium uppercase tracking-[0.2em] text-center">
+                * Las diferencias positivas en ingresos se consideran favorables (verde), mientras que en gastos se consideran desfavorables (rojo).
+            </p>
         </div>
     );
 }

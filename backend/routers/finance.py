@@ -7,6 +7,8 @@ import pandas as pd
 from datetime import date
 from typing import Optional
 from pydantic import BaseModel
+import pgc_mapping
+import budget_parser
 
 router = APIRouter(
     prefix="/api/finance",
@@ -26,6 +28,7 @@ class PnLFilters(BaseModel):
     year: int
     company_id: str
     month_up_to: Optional[int] = 12
+    month_from: Optional[int] = 1
 
 @router.post("/payments")
 def get_payments_summary(filters: FinanceFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
@@ -273,3 +276,170 @@ def get_pnl_evolution(filters: PnLFilters, db: Session = Depends(get_db), curren
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/pnl-detailed")
+def get_pnl_detailed(filters: PnLFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        # month_from defaults to 1 if not provided
+        m_from = filters.month_from or 1
+        m_to = filters.month_up_to or 12
+        
+        # 1. Fetch real cumulative balances for [month_to] and [month_from - 1]
+        # prev_month is the month just BEFORE the start of our range
+        prev_month = m_from - 1
+        
+        query = """
+        SELECT 
+            CodigoCuenta,
+            NumeroPeriodo,
+            DebeAcum,
+            HaberAcum
+        FROM AcumuladosConta
+        WHERE CodigoEmpresa = :company_id
+          AND Ejercicio = :year
+          AND NumeroPeriodo IN (:month, :prev_month)
+          AND (CodigoCuenta LIKE '6%' OR CodigoCuenta LIKE '7%')
+        """
+        params = {
+            "company_id": filters.company_id,
+            "year": filters.year,
+            "month": m_to,
+            "prev_month": prev_month
+        }
+        df_real = pd.read_sql(text(query), db.bind, params=params)
+        
+        # 2. Fetch account names
+        query_names = """
+        SELECT CodigoCuenta, Cuenta as Nombre
+        FROM PlanCuentasPGC
+        WHERE CodigoEmpresa = :company_id
+          AND (CodigoCuenta LIKE '6%' OR CodigoCuenta LIKE '7%')
+        """
+        df_names = pd.read_sql(text(query_names), db.bind, params={"company_id": filters.company_id})
+        names_map = dict(zip(df_names['CodigoCuenta'], df_names['Nombre']))
+        
+        # 3. Get Budget Data for specific company (Read ONCE)
+        budget_data = budget_parser.get_budget_data(company_id=filters.company_id)
+        
+        # 4. Process all accounts (Union of Real and Budget)
+        # Ensure codes are clean strings for both
+        db_accounts_raw = df_real['CodigoCuenta'].unique()
+        db_accounts = [str(c).strip() for c in db_accounts_raw]
+        excel_accounts = [str(c).strip() for c in budget_data.keys()]
+        all_accounts = set(db_accounts) | set(excel_accounts)
+        
+        processed_accounts = []
+        
+        for acc in all_accounts:
+            # Real Data
+            row_current = df_real[(df_real['CodigoCuenta'].astype(str).str.strip() == acc) & (df_real['NumeroPeriodo'] == m_to)]
+            row_prev = df_real[(df_real['CodigoCuenta'].astype(str).str.strip() == acc) & (df_real['NumeroPeriodo'] == prev_month)]
+            
+            # Cumulative
+            haber_acum = row_current['HaberAcum'].sum() if not row_current.empty else 0.0
+            debe_acum = row_current['DebeAcum'].sum() if not row_current.empty else 0.0
+            real_acum = haber_acum - debe_acum
+            
+            # Period
+            haber_prev = row_prev['HaberAcum'].sum() if not row_prev.empty else 0.0
+            debe_prev = row_prev['DebeAcum'].sum() if not row_prev.empty else 0.0
+            real_period = real_acum - (haber_prev - debe_prev)
+            
+            # Budget Data - Look up in budget_data dict (efficiently)
+            # Try exact match first
+            months = budget_data.get(acc)
+            if not months:
+                # Try prefix match (e.g. Sage 7000000001 vs Excel 700000001)
+                for b_code, b_months in budget_data.items():
+                    if acc.startswith(b_code) or b_code.startswith(acc):
+                        months = b_months
+                        break
+            
+            presu_period = 0.0
+            presu_acum = 0.0
+            if months:
+                # Sum range for period
+                presu_period = sum(months[max(0, m_from-1) : min(12, m_to)])
+                # Sum up to m_to for accumulated
+                presu_acum = sum(months[:min(12, m_to)])
+            
+            # Sign correction: Income (7) positive, Expense (6) negative
+            sign = -1.0 if acc.startswith('6') else 1.0
+            signed_presu_period = presu_period * sign
+            signed_presu_acum = presu_acum * sign
+            
+            if abs(real_acum) < 0.01 and abs(real_period) < 0.01 and abs(signed_presu_period) < 0.01 and abs(signed_presu_acum) < 0.01:
+                continue
+                
+            processed_accounts.append({
+                "code": acc,
+                "name": names_map.get(acc, f"Cuenta {acc}"),
+                "real_p": float(real_period),
+                "presu_p": float(signed_presu_period),
+                "real_a": float(real_acum),
+                "presu_a": float(signed_presu_acum)
+            })
+
+        # 5. Build Hierarchy
+        def build_tree(structure, accounts):
+            results = []
+            for node in structure:
+                node_data = {
+                    "id": node["id"],
+                    "name": node["name"],
+                    "children": [],
+                    "accounts": [],
+                    "real_p": 0.0,
+                    "presu_p": 0.0,
+                    "real_a": 0.0,
+                    "presu_a": 0.0
+                }
+                
+                # Direct accounts mapping to this node
+                patterns = node.get("patterns", [])
+                for p in patterns:
+                    p_clean = p.replace("%", "").strip()
+                    for acc in accounts:
+                        if acc["code"].startswith(p_clean):
+                            node_data["accounts"].append(acc)
+                            node_data["real_p"] += acc["real_p"]
+                            node_data["presu_p"] += acc["presu_p"]
+                            node_data["real_a"] += acc["real_a"]
+                            node_data["presu_a"] += acc["presu_a"]
+                
+                # Recursive children
+                if "children" in node:
+                    node_data["children"] = build_tree(node["children"], accounts)
+                    for child in node_data["children"]:
+                        node_data["real_p"] += child["real_p"]
+                        node_data["presu_p"] += child["presu_p"]
+                        node_data["real_a"] += child["real_a"]
+                        node_data["presu_a"] += child["presu_a"]
+                
+                # Check if this node has ANY value or children
+                if abs(node_data["real_a"]) > 0.001 or abs(node_data["presu_a"]) > 0.001 or node_data["children"]:
+                    results.append(node_data)
+                    
+            return results
+
+        tree = build_tree(pgc_mapping.PGC_PG_STRUCTURE, processed_accounts)
+        
+        # Summary totals
+        res_real_p = sum(n["real_p"] for n in tree if n["id"] in ['A', 'B'])
+        res_presu_p = sum(n["presu_p"] for n in tree if n["id"] in ['A', 'B'])
+        res_real_a = sum(n["real_a"] for n in tree if n["id"] in ['A', 'B'])
+        res_presu_a = sum(n["presu_a"] for n in tree if n["id"] in ['A', 'B'])
+
+        return {
+            "tree": tree,
+            "summary": {
+                "real_p": float(res_real_p),
+                "presu_p": float(res_presu_p),
+                "real_a": float(res_real_a),
+                "presu_a": float(res_presu_a)
+            }
+        }
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
