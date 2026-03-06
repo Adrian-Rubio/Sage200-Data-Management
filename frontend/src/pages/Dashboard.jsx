@@ -265,6 +265,7 @@ export default function Dashboard() {
                 ) : (
                     <div className="animate-fadeIn">
                         <DashboardTablesCarousel
+                            filters={filters}
                             topClientsData={data?.charts?.top_clients || []}
                             invoicesListData={data?.charts?.invoices_list || []}
                         />

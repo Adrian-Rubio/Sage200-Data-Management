@@ -52,6 +52,16 @@ export const fetchSalesDashboard = async (filters) => {
     }
 };
 
+export const fetchSalesInvoices = async (filters) => {
+    try {
+        const response = await api.post('/sales/invoices', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching sales invoices:", error);
+        throw error;
+    }
+};
+
 export const fetchSalesComparison = async (filters) => {
     try {
         const response = await api.post('/sales/comparison', filters);

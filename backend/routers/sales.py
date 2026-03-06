@@ -29,6 +29,10 @@ class DashboardFilters(BaseModel):
     series_id: Optional[str] = None
     division: Optional[str] = None
 
+class InvoiceFilters(DashboardFilters):
+    page: Optional[int] = 1
+    page_size: Optional[int] = 20
+
 @router.post("/dashboard")
 def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     # Create a deterministic cache key from filters and user context
@@ -341,6 +345,94 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
 
     except Exception as e:
         print(f"Error in dashboard: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/invoices")
+def get_paginated_invoices(filters: InvoiceFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        # Re-use logic for allowed reps
+        divisions = {
+            'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
+            'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
+            'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
+        }
+        all_reps = [r for reps in divisions.values() for r in reps]
+        
+        current_allowed_reps = all_reps
+        if filters.division:
+            current_allowed_reps = divisions.get(filters.division, [])
+
+        has_manage_permission = (current_user.role == "admin") or (
+            current_user.role_obj and current_user.role_obj.name == "admin"
+        ) or (
+            current_user.role_obj and current_user.role_obj.can_manage_users
+        )
+        if not has_manage_permission and current_user.sales_rep_id:
+            current_allowed_reps = [rep for rep in current_allowed_reps if rep == current_user.sales_rep_id.upper()]
+
+        # Build query
+        params = {'company_id': '2'} # Fixed to 2 as per user request for 2025+
+        where_clause = "WHERE CodigoEmpresa = :company_id"
+        
+        if current_allowed_reps:
+            placeholders = [f":rep_{i}" for i in range(len(current_allowed_reps))]
+            where_clause += f" AND UPPER(RTRIM(LTRIM(Comisionista))) IN ({', '.join(placeholders)})"
+            for i, rep in enumerate(current_allowed_reps):
+                params[f'rep_{i}'] = rep
+        else:
+            where_clause += " AND 1=0"
+
+        if filters.start_date:
+            where_clause += " AND TRY_CONVERT(date, FechaFactura) >= :start_date"
+            params['start_date'] = filters.start_date
+        if filters.end_date:
+            where_clause += " AND TRY_CONVERT(date, FechaFactura) <= :end_date"
+            params['end_date'] = filters.end_date
+        if filters.sales_rep_id:
+            where_clause += " AND UPPER(RTRIM(LTRIM(Comisionista))) = :rep_f"
+            params['rep_f'] = filters.sales_rep_id.upper()
+        if filters.client_id:
+            where_clause += " AND CodigoCliente = :client_id"
+            params['client_id'] = filters.client_id
+
+        # Get Total Count
+        count_query = f"SELECT COUNT(*) as total FROM Vis_AEL_DiarioFactxComercial {where_clause}"
+        total_count = int(pd.read_sql(text(count_query), db.bind, params=params).iloc[0]['total'])
+
+        # Get Paginated Data
+        offset = (filters.page - 1) * filters.page_size
+        data_query = f"""
+            SELECT 
+                NumeroFactura, 
+                FechaFactura, 
+                CodigoCliente,
+                RazonSocial as Cliente, 
+                Comisionista,
+                BaseImponible as TotalBase
+            FROM Vis_AEL_DiarioFactxComercial
+            {where_clause}
+            ORDER BY FechaFactura DESC, NumeroFactura DESC
+            OFFSET :offset ROWS FETCH NEXT :page_size ROWS ONLY
+        """
+        params['offset'] = offset
+        params['page_size'] = filters.page_size
+        
+        df_inv = pd.read_sql(text(data_query), db.bind, params=params)
+        invoices = []
+        if not df_inv.empty:
+             df_inv['FechaFactura'] = pd.to_datetime(df_inv['FechaFactura']).dt.strftime('%Y-%m-%d')
+             invoices = df_inv.to_dict(orient='records')
+
+        return {
+            "data": invoices,
+            "total": total_count,
+            "page": filters.page,
+            "page_size": filters.page_size,
+            "total_pages": (total_count + filters.page_size - 1) // filters.page_size
+        }
+
+    except Exception as e:
+        print(f"Error in paginated invoices: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 class ComparisonFilters(BaseModel):

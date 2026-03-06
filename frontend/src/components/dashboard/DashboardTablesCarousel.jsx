@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { TopClientsTable } from './TopClientsTable';
 import { SalesInvoicesTable } from './SalesInvoicesTable';
 
-export function DashboardTablesCarousel({ topClientsData, invoicesListData }) {
+export function DashboardTablesCarousel({ filters, topClientsData, invoicesListData }) {
     const [activeTab, setActiveTab] = useState('invoices'); // 'invoices' is principal
 
     return (
@@ -39,7 +39,10 @@ export function DashboardTablesCarousel({ topClientsData, invoicesListData }) {
             <div className="p-1 transition-all duration-300">
                 {activeTab === 'invoices' ? (
                     <div className="animate-fadeIn">
-                        <SalesInvoicesTable data={invoicesListData || []} />
+                        <SalesInvoicesTable
+                            initialData={invoicesListData || []}
+                            filters={filters}
+                        />
                     </div>
                 ) : (
                     <div className="animate-fadeIn">
