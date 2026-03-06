@@ -8,6 +8,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
     PieChart, Pie
 } from 'recharts';
+import { PageHeader } from '../components/common/PageHeader';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -138,32 +139,15 @@ export default function CierreMes() {
     return (
         <div className="p-6 max-w-[1720px] mx-auto min-h-screen bg-[#f8fafc] text-gray-800 font-sans">
 
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
-                        <span className="bg-emerald-600 text-white px-4 py-1.5 rounded text-xl">REPORTE</span>
-                        Cierre de Mes
-                    </h1>
-
-                </div>
-                <div className="flex gap-3">
-                    <span className="text-slate-600 font-medium text-sm flex items-center mr-2">{user?.username}</span>
-                    <button
-                        onClick={handleExport}
-                        className="bg-emerald-600 text-white px-4 py-2 rounded shadow-sm hover:bg-emerald-700 transition font-bold text-sm h-[38px] flex items-center gap-2"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                        Exportar
-                    </button>
-                    <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 px-4 py-2 rounded shadow-sm transition font-medium text-sm h-[38px]">
-                        Cerrar Sesión
-                    </button>
-                    <Link to="/" className="bg-white text-slate-600 border border-slate-300 px-4 py-2 rounded shadow-sm hover:bg-slate-50 transition font-medium text-sm h-[38px] flex items-center justify-center">
-                        Volver al Menú
-                    </Link>
-                </div>
-            </div>
+            <PageHeader moduleName="Cierre de Mes" showRefresh={false}>
+                <button
+                    onClick={handleExport}
+                    className="bg-emerald-600 text-white px-3 py-1.5 rounded shadow-sm hover:bg-emerald-700 transition font-bold text-xs h-[34px] flex items-center gap-2 whitespace-nowrap"
+                >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    Exportar
+                </button>
+            </PageHeader>
 
             {/* Filters */}
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-8 items-end mb-10 animate-fadeIn">

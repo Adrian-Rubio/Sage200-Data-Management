@@ -19,7 +19,7 @@ export function SalesMarginEvolutionChart({ data, isEmbed }) {
 
     return (
         <div className={containerClass}>
-            <h3 className="text-gray-700 font-semibold mb-4 text-center">Evolución de Margen por División (%)</h3>
+            <h3 className="text-slate-700 font-bold text-xs uppercase tracking-tight mb-2 text-center">Evolución Margen (%)</h3>
             <div style={{ width: '100%', height: '100%', minHeight: 0, flexGrow: 1 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>

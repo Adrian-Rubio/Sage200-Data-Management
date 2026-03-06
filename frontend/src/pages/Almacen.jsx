@@ -7,6 +7,7 @@ import {
 import { fetchAlmacenStats, fetchOperators } from '../services/api';
 import { KpiCard } from '../components/dashboard/KpiCard';
 import useAuthStore from '../store/authStore';
+import { PageHeader } from '../components/common/PageHeader';
 
 export default function Almacen() {
     const { logoutUser } = useAuthStore();
@@ -110,21 +111,7 @@ export default function Almacen() {
 
     return (
         <div className="w-full min-h-screen bg-[#f8fafc] p-6 text-gray-800 font-sans">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    <span className="bg-[#f04a24] text-white px-3 py-1 rounded">CENVALSA</span>
-                    Dashboard Almacén
-                </h1>
-                <div className="flex gap-4">
-                    <Link to="/" className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition font-medium text-sm">
-                        Menú Principal
-                    </Link>
-                    <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded hover:bg-red-100 transition font-medium text-sm">
-                        Cerrar Sesión
-                    </button>
-                </div>
-            </div>
+            <PageHeader moduleName="Almacén" showRefresh={true} onRefresh={loadStats} />
 
             {/* Filters Row */}
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-4 items-end">

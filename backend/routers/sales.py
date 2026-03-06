@@ -41,7 +41,7 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
         "filters": filter_dict,
         "role": current_user.role,
         "rep": current_user.sales_rep_id,
-        "v": 10 # Version 10: Clear stale cache after fix
+        "v": 11 # Version 11: Clear stale cache after fix
     }
     cache_str = json.dumps(cache_payload, sort_keys=True)
     cache_key = hashlib.md5(cache_str.encode()).hexdigest()
@@ -136,14 +136,42 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
                 if 'FechaFactura' in df_tmp.columns:
                     df_tmp['FechaFactura'] = pd.to_datetime(df_tmp['FechaFactura'], errors='coerce')
 
-        # --- PENDING INVOICES (Raw) ---
+        # --- PENDING INVOICES ---
         total_pending_amount = 0.0
         pending_map = {}
         try:
-            p_params = {}
+            # We want to apply as many filters as possible to "Pdte. Facturar"
+            p_params = common_params.copy()
             p_where = f"WHERE k.StatusFacturado = 0 AND {company_filter.replace('CodigoEmpresa', 'k.CodigoEmpresa')}"
-            p_query = f"SELECT k.ImporteLiquido, c.RazonSocial, com.Comisionista FROM CabeceraAlbaranCliente k JOIN Clientes c ON k.CodigoCliente = c.CodigoCliente AND k.CodigoEmpresa = c.CodigoEmpresa JOIN Comisionistas com ON k.CodigoComisionista = com.CodigoComisionista {p_where}"
+            
+            if filters.start_date:
+                p_where += " AND TRY_CONVERT(date, k.FechaAlbaran) >= :start_date"
+            if filters.end_date:
+                p_where += " AND TRY_CONVERT(date, k.FechaAlbaran) <= :end_date"
+            if filters.client_id:
+                p_where += " AND k.CodigoCliente = :client_id"
+            
+            p_query = f"""
+                SELECT k.ImporteLiquido, c.RazonSocial, com.Comisionista 
+                FROM CabeceraAlbaranCliente k 
+                JOIN Clientes c ON k.CodigoCliente = c.CodigoCliente AND k.CodigoEmpresa = c.CodigoEmpresa 
+                JOIN Comisionistas com ON k.CodigoComisionista = com.CodigoComisionista 
+                {p_where}
+            """
+            
+            # Apply Rep filtering
+            if current_allowed_reps:
+                placeholders = [f":rep_{i}" for i in range(len(current_allowed_reps))]
+                p_query += f" AND UPPER(RTRIM(LTRIM(com.Comisionista))) IN ({', '.join(placeholders)})"
+            
+            if filters.sales_rep_id:
+                # Re-use sales_rep_id_f from common_params if it exists, else set it
+                if 'sales_rep_id_f' not in p_params:
+                    p_params['sales_rep_id_f'] = filters.sales_rep_id.upper()
+                p_query += " AND UPPER(RTRIM(LTRIM(com.Comisionista))) = :sales_rep_id_f"
+
             df_pending_raw = pd.read_sql(text(p_query), db.bind, params=p_params)
+            
             if not df_pending_raw.empty:
                 total_pending_amount = float(df_pending_raw['ImporteLiquido'].sum())
                 df_pending_raw['Comisionista'] = df_pending_raw['Comisionista'].str.strip().str.upper()
@@ -151,17 +179,17 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
                 # Group by client first to sum multiple pending albaranes for the same client
                 df_grouped = df_pending_raw.groupby(['Comisionista', 'RazonSocial'], as_index=False)['ImporteLiquido'].sum()
                 
-                pending_map = df_grouped.groupby('Comisionista').apply(
-                    lambda x: x.nlargest(5, 'ImporteLiquido')[['RazonSocial', 'ImporteLiquido']].to_dict('records')
-                ).to_dict()
+                pending_map = {}
+                for rep, group in df_grouped.groupby('Comisionista'):
+                    pending_map[rep] = group.nlargest(5, 'ImporteLiquido')[['RazonSocial', 'ImporteLiquido']].to_dict('records')
         except Exception as e:
             with open("dashboard_debug.log", "a") as f:
                 f.write(f"DEBUG: Pending query error: {e}\n")
 
-        if df_rev.empty and df_marg.empty:
+        if df_rev.empty and df_marg.empty and df_pending_raw.empty:
             with open("dashboard_debug.log", "a") as f:
-                f.write("DEBUG: BOTH DFS EMPTY\n")
-            return {"kpis": {"revenue": 0, "sales_margin": 0, "pending_invoice": total_pending_amount, "clients": 0, "invoices": 0}, "charts": {"sales_by_rep": [], "sales_by_day": [], "sales_margin_evolution": [], "top_clients": []}}
+                f.write("DEBUG: ALL DFS EMPTY\n")
+            return {"kpis": {"revenue": 0, "sales_margin": 0, "pending_invoice": 0, "clients": 0, "invoices": 0}, "charts": {"sales_by_rep": [], "sales_by_day": [], "sales_margin_evolution": [], "top_clients": [], "orders_list": []}}
 
         # --- CALCULATIONS REVENUE ---
         total_revenue = float(df_rev['BaseImponible'].sum()) if not df_rev.empty else 0.0
@@ -242,6 +270,52 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
             pivot_evol = pivot_evol.sort_values('Periodo')
             margin_evolution_data = pivot_evol.to_dict(orient='records')
 
+        # --- INVOICES LIST ---
+        invoices_list = []
+        try:
+            inv_params = common_params.copy()
+            inv_params['company_id'] = company_filter.split('=')[1].strip().replace("'", "") # Extract company_id from company_filter
+            inv_where = f"WHERE CodigoEmpresa = :company_id"
+            
+            if filters.start_date:
+                inv_where += " AND TRY_CONVERT(date, FechaFactura) >= :start_date"
+            if filters.end_date:
+                inv_where += " AND TRY_CONVERT(date, FechaFactura) <= :end_date"
+            if filters.client_id:
+                inv_where += " AND CodigoCliente = :client_id"
+            
+            inv_query = f"""
+                SELECT TOP 100
+                    NumeroFactura, 
+                    FechaFactura, 
+                    CodigoCliente,
+                    RazonSocial as Cliente, 
+                    Comisionista,
+                    BaseImponible as TotalBase
+                FROM Vis_AEL_DiarioFactxComercial
+                {inv_where}
+            """
+            
+            # Apply Rep filtering
+            if current_allowed_reps:
+                placeholders = [f":rep_{i}" for i in range(len(current_allowed_reps))]
+                inv_query += f" AND UPPER(RTRIM(LTRIM(Comisionista))) IN ({', '.join(placeholders)})"
+            
+            if filters.sales_rep_id:
+                if 'rep_f' not in inv_params:
+                    inv_params['rep_f'] = filters.sales_rep_id.upper()
+                inv_query += " AND UPPER(RTRIM(LTRIM(Comisionista))) = :rep_f"
+                
+            inv_query += " ORDER BY FechaFactura DESC"
+            
+            df_inv = pd.read_sql(text(inv_query), db.bind, params=inv_params)
+            if not df_inv.empty:
+                df_inv['FechaFactura'] = pd.to_datetime(df_inv['FechaFactura']).dt.strftime('%Y-%m-%d')
+                invoices_list = df_inv.to_dict(orient='records')
+        except Exception as e:
+            with open("dashboard_debug.log", "a") as f:
+                f.write(f"DEBUG: Invoices query error: {e}\n")
+
         result = {
             "kpis": {
                 "revenue": total_revenue,
@@ -256,12 +330,14 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
                 "sales_by_rep": sales_by_rep_data,
                 "sales_by_day": sales_by_day_data,
                 "sales_margin_evolution": margin_evolution_data,
-                "top_clients": top_clients_data
+                "top_clients": top_clients_data,
+                "invoices_list": invoices_list
             }
         }
         
         dashboard_cache[cache_key] = result
         return result
+
 
     except Exception as e:
         print(f"Error in dashboard: {e}")

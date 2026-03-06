@@ -1,5 +1,5 @@
 
-export function KpiCard({ title, value, subtext, isWarning, isPercentage }) {
+export function KpiCard({ title, value, subtext, isWarning, isPercentage, tooltip }) {
     const isMonetary = !isPercentage && (
         title.toLowerCase().includes('factura') ||
         title.toLowerCase().includes('comisión') ||
@@ -33,10 +33,17 @@ export function KpiCard({ title, value, subtext, isWarning, isPercentage }) {
     const bgColor = isWarning ? "bg-orange-50" : "bg-white";
 
     return (
-        <div className={`${bgColor} p-6 rounded-lg shadow-sm border ${borderColor} flex flex-col items-center justify-center text-center transition-all hover:shadow-md`}>
-            <h3 className={`${titleColor} font-medium text-sm uppercase tracking-wider mb-2`}>{title}</h3>
-            <div className={`text-3xl font-bold ${valueColor}`}>{formattedValue}</div>
-            {subtext && <p className="text-gray-400 text-xs mt-2">{subtext}</p>}
+        <div className={`group relative ${bgColor} p-4 rounded-lg shadow-sm border ${borderColor} flex flex-col items-center justify-center text-center transition-all hover:shadow-md cursor-help h-full`}>
+            {tooltip && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-[10px] rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    {tooltip}
+                    {/* Tooltip arrow */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-800"></div>
+                </div>
+            )}
+            <h3 className={`${titleColor} font-bold text-[10px] uppercase tracking-tighter mb-1`}>{title}</h3>
+            <div className={`text-2xl font-black ${valueColor}`}>{formattedValue}</div>
+            {subtext && <div className="text-gray-400 text-[9px] mt-1 font-medium">{subtext}</div>}
         </div>
     );
 }

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { PageHeader } from '../components/common/PageHeader';
 
 export default function Contabilidad() {
     const { logoutUser } = useAuthStore();
@@ -25,21 +26,7 @@ export default function Contabilidad() {
 
     return (
         <div className="w-full min-h-screen bg-[#f8fafc] p-6 text-gray-800 font-sans flex flex-col items-center">
-            {/* Header */}
-            <div className="w-full max-w-5xl flex justify-between items-center mb-12">
-                <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    <span className="bg-slate-800 text-white px-3 py-1 rounded">MÓDULO</span>
-                    Contabilidad y Finanzas
-                </h1>
-                <div className="flex gap-4">
-                    <Link to="/" className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition font-medium text-sm">
-                        Volver al Menú
-                    </Link>
-                    <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded hover:bg-red-100 transition font-medium text-sm">
-                        Cerrar Sesión
-                    </button>
-                </div>
-            </div>
+            <PageHeader moduleName="Contabilidad" showRefresh={false} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mt-12">
                 {sections.map((sec) => (

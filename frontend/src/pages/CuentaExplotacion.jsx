@@ -3,6 +3,7 @@ import { fetchFinancePnLDetailed } from '../services/api';
 import { Link } from 'react-router-dom';
 import { BarChart3, ChevronRight, ChevronDown, Home, Download, AlertCircle } from 'lucide-react';
 import useAuthStore from '../store/authStore';
+import { PageHeader } from '../components/common/PageHeader';
 
 export default function CuentaExplotacion() {
     const { logoutUser } = useAuthStore();
@@ -171,34 +172,15 @@ export default function CuentaExplotacion() {
 
     return (
         <div className="w-full min-h-screen bg-[#f8fafc] p-6 lg:p-8 font-sans text-slate-900">
-            {/* Header */}
-            <div className="max-w-[1800px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-                <div className="flex items-center gap-5">
-                    <div className="bg-emerald-600 text-white p-3.5 rounded-2xl shadow-xl shadow-emerald-200">
-                        <BarChart3 className="w-7 h-7" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-black text-slate-800 tracking-tight leading-none mb-2">Cuenta de Explotación Detallada</h1>
-                        <div className="flex items-center gap-3">
-                            <span className="bg-slate-200 text-slate-600 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest">Comparativa Presupuesto</span>
-                            <span className="text-slate-400 text-xs font-medium italic">Empresa: {companies.find(c => c.id === filters.company_id)?.name}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 bg-white text-slate-600 border border-slate-200 px-5 py-2.5 rounded-xl hover:bg-slate-50 transition shadow-sm font-bold text-xs uppercase tracking-wider group">
-                        <Download className="w-4 h-4 group-hover:scale-110 transition" />
-                        Exportar Excel
-                    </button>
-                    <Link to="/contabilidad" className="bg-white text-slate-600 border border-slate-200 px-5 py-2.5 rounded-xl hover:bg-slate-50 transition shadow-sm font-bold text-xs uppercase tracking-wider">
-                        Volver
-                    </Link>
-                    <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-100 px-5 py-2.5 rounded-xl hover:bg-red-100 transition font-bold text-xs uppercase tracking-wider">
-                        Cerrar Sesión
-                    </button>
-                </div>
-            </div>
+            <PageHeader moduleName="Cuenta de Explotación" showRefresh={false}>
+                <button className="flex items-center gap-2 bg-white text-slate-600 border border-slate-200 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 transition font-bold text-xs whitespace-nowrap group h-[34px]">
+                    <Download className="w-4 h-4 group-hover:scale-110 transition" />
+                    Excel
+                </button>
+                <Link to="/contabilidad" className="bg-white text-slate-600 border border-slate-200 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 transition font-bold text-xs h-[34px] flex items-center justify-center whitespace-nowrap">
+                    Contabilidad
+                </Link>
+            </PageHeader>
 
             {/* Filters Bar */}
             <div className="max-w-[1800px] mx-auto bg-white p-5 px-8 rounded-[2rem] shadow-sm border border-slate-100 mb-8 flex flex-wrap items-center gap-10">

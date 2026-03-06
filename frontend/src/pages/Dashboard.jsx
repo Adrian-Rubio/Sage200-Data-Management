@@ -6,9 +6,10 @@ import { SalesByRepChart } from '../components/dashboard/SalesByRepChart';
 import { SalesByDayChart } from '../components/dashboard/SalesByDayChart';
 import { SalesMarginEvolutionChart } from '../components/dashboard/SalesMarginEvolutionChart';
 import { DashboardCarousel } from '../components/dashboard/DashboardCarousel';
-import { TopClientsTable } from '../components/dashboard/TopClientsTable';
+import { DashboardTablesCarousel } from '../components/dashboard/DashboardTablesCarousel';
 import useAuthStore from '../store/authStore';
 import useDataStore from '../store/dataStore';
+import { PageHeader } from '../components/common/PageHeader';
 
 export default function Dashboard() {
     const { user, logoutUser } = useAuthStore();
@@ -17,6 +18,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [options, setOptions] = useState({ companies: [], reps: [], clients: [], series: [] });
+    const [showTables, setShowTables] = useState(false);
 
     const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || user?.role_obj?.name === 'admin' || user?.role_obj?.can_manage_users;
 
@@ -130,46 +132,23 @@ export default function Dashboard() {
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
     return (
-        <div className="w-full min-h-screen bg-[#f8fafc] p-4 text-gray-800 font-sans">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <span className="bg-slate-800 text-white px-3 py-1 rounded text-lg">CENVALSA</span>
-                        Módulo de Ventas
-                    </h1>
-                </div>
-                <div className="flex gap-3">
-                    <span className="text-slate-600 font-medium text-sm flex items-center mr-2">{user?.sub}</span>
-                    <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 px-4 py-2 rounded shadow-sm transition font-medium text-sm h-[38px] flex items-center justify-center">
-                        Cerrar Sesión
-                    </button>
-                    <Link to="/" className="bg-white text-slate-600 border border-slate-300 px-4 py-2 rounded shadow-sm hover:bg-slate-50 transition font-medium text-sm h-[38px] flex items-center justify-center">
-                        Volver al Menú
-                    </Link>
-                    <button onClick={() => window.location.reload(true)} className="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded shadow-sm hover:bg-blue-100 transition font-medium text-sm h-[38px] flex items-center justify-center">
-                        Refrescar App
-                    </button>
-                </div>
-            </div>
+        <div className="w-full min-h-screen bg-slate-50 p-4 md:p-6 text-slate-900 font-sans scale-[0.98] origin-top transition-all duration-500">
+            <PageHeader moduleName="Ventas" />
 
             {/* Filters */}
-            <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end w-full">
+            <div className="bg-white p-3 rounded-lg shadow-sm mb-4 flex flex-wrap gap-3 items-end w-full border border-slate-100">
                 <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Inicio</label>
-                    <input type="date" name="start_date" value={filters.start_date || ''} onChange={handleFilterChange} className="block w-40 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white" />
+                    <label className="text-xs font-bold text-slate-500 mb-1 uppercase tracking-tighter">Inicio</label>
+                    <input type="date" name="start_date" value={filters.start_date || ''} onChange={handleFilterChange} className="block w-32 rounded border border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs p-1.5 text-slate-700 bg-white" />
                 </div>
                 <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Fin</label>
-                    <input type="date" name="end_date" value={filters.end_date || ''} onChange={handleFilterChange} className="block w-40 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white" />
+                    <label className="text-xs font-bold text-slate-500 mb-1 uppercase tracking-tighter">Fin</label>
+                    <input type="date" name="end_date" value={filters.end_date || ''} onChange={handleFilterChange} className="block w-32 rounded border border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs p-1.5 text-slate-700 bg-white" />
                 </div>
 
-
-
-
                 <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">División</label>
-                    <select name="division" value={filters.division || ''} onChange={handleFilterChange} className="block w-48 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white">
+                    <label className="text-xs font-bold text-slate-500 mb-1 uppercase tracking-tighter">División</label>
+                    <select name="division" value={filters.division || ''} onChange={handleFilterChange} className="block w-40 rounded border border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs p-1.5 text-slate-700 bg-white">
                         <option value="">Todas</option>
                         <option value="Conectrónica">Conectrónica</option>
                         <option value="Sismecánica">Sismecánica</option>
@@ -178,24 +157,20 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Comercial</label>
+                    <label className="text-xs font-bold text-slate-500 mb-1 uppercase tracking-tighter">Comercial</label>
                     <select
                         name="sales_rep_id"
                         value={filters.sales_rep_id || ''}
                         onChange={handleFilterChange}
                         disabled={isRestrictedToRep}
-                        className={`block w-48 rounded-md border border-gray-300 shadow-sm sm:text-sm p-2 ${isRestrictedToRep ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'focus:border-green-500 focus:ring-green-500 text-gray-900 bg-white'}`}
+                        className={`block w-40 rounded border border-slate-200 shadow-sm text-xs p-1.5 ${isRestrictedToRep ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'focus:border-blue-500 focus:ring-blue-500 text-slate-700 bg-white'}`}
                     >
                         {!isRestrictedToRep && <option value="">Todos</option>}
                         {options.reps
                             .filter(r => {
                                 if (!filters.division) return true;
-                                const divisions = {
-                                    'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
-                                    'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
-                                    'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
-                                };
-                                return divisions[filters.division] ? divisions[filters.division].includes(r.name) : true;
+                                const rep_name = r.name?.toUpperCase();
+                                return divisions[filters.division]?.some(d => rep_name.includes(d.toUpperCase()));
                             })
                             .map(r => (
                                 <option key={r.id} value={r.id}>{r.name}</option>
@@ -204,32 +179,25 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Cliente (Top 50)</label>
-                    <select name="client_id" value={filters.client_id || ''} onChange={handleFilterChange} className="block w-48 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white">
-                        <option value="">Todos</option>
-                        {options.clients.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Buscar Cliente (Código)</label>
-                    <input
-                        type="text"
-                        placeholder="Ej: 430001"
-                        value={filters.client_id || ''}
-                        onChange={(e) => setFilters(prev => ({ ...prev, client_id: e.target.value }))}
-                        className="block w-40 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white"
-                    />
+                    <label className="text-xs font-bold text-slate-500 mb-1 uppercase tracking-tighter">Cliente (Cód)</label>
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Ej: 430001"
+                            value={filters.client_id || ''}
+                            onChange={(e) => setFilters(prev => ({ ...prev, client_id: e.target.value }))}
+                            className="block w-32 rounded border border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs p-1.5 pl-7 text-slate-700 bg-white"
+                        />
+                        <svg className="w-3.5 h-3.5 absolute left-2 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
                 </div>
 
                 <div className="flex gap-2 ml-auto">
-                    <Link to="/pedidos-pendientes-pbix" className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 transition font-medium h-10 flex items-center justify-center shadow-sm">
-                        Pedidos pendientes →
+                    <Link to="/pedidos-pendientes-pbix" className="bg-slate-800 text-white px-3 py-1.5 rounded hover:bg-slate-900 transition font-bold text-xs h-8 flex items-center justify-center shadow-md">
+                        Pendientes →
                     </Link>
-                    <Link to="/comparison" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium h-10 flex items-center justify-center shadow-sm">
-                        Comparativa Anual →
+                    <Link to="/comparison" className="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition font-bold text-xs h-8 flex items-center justify-center shadow-md">
+                        Comparativa →
                     </Link>
                 </div>
             </div>
@@ -237,45 +205,73 @@ export default function Dashboard() {
 
 
             {/* Top Row: KPIs */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
                 <KpiCard
                     title="Facturación"
                     value={data?.kpis?.revenue_gross || 0}
+                    tooltip={`Facturación total en el periodo: ${filters.start_date || 'inicio'} hasta ${filters.end_date || 'fin'}`}
                     subtext={
-                        <div className="flex flex-col items-center gap-1">
-                            <span>Ventas Brutas</span>
-                            <div className="flex gap-2 text-[10px] font-bold">
+                        <div className="flex flex-col items-center gap-0.5">
+                            <span className="scale-90 tracking-tighter">Ventas Brutas</span>
+                            <div className="flex gap-1.5 text-[9px] font-bold">
                                 <span className="text-red-500">Abonos: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.returns || 0)}</span>
                                 <span className="text-slate-500">Neto: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.revenue || 0)}</span>
                             </div>
                         </div>
                     }
                 />
-                <KpiCard title="Margen" value={data?.kpis?.sales_margin || 0} subtext="Promedio comercial" isPercentage={true} />
-                <KpiCard title="Pdte. Facturar" value={data?.kpis?.pending_invoice || 0} subtext="Albaranes" isWarning={true} />
-                <KpiCard title="Clientes" value={data?.kpis?.clients || 0} subtext="Activos" />
-                <KpiCard title="Facturas" value={data?.kpis?.invoices || 0} subtext="Emitidas" />
-            </div>
-
-            {/* Carousel Area (Zona Roja) */}
-            <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-slate-100 mb-6 relative overflow-hidden">
-                {/* Decorative background for the "Zona Roja" concept */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full -mr-16 -mt-16 pointer-events-none" />
-
-                <div className="min-h-[500px] h-[600px]">
-                    <DashboardCarousel
-                        salesByRepData={data?.charts?.sales_by_rep || []}
-                        salesByDayData={data?.charts?.sales_by_day || []}
-                        marginEvolutionData={data?.charts?.sales_margin_evolution || []}
+                <KpiCard
+                    title="Margen"
+                    value={data?.kpis?.sales_margin || 0}
+                    subtext="Promedio comercial"
+                    isPercentage={true}
+                    tooltip="Porcentaje de beneficio sobre preventa"
+                />
+                <KpiCard
+                    title="Pdte. Facturar"
+                    value={data?.kpis?.pending_invoice || 0}
+                    subtext="Albaranes"
+                    isWarning={true}
+                    tooltip="Importe total de albaranes pendientes de facturar en el periodo seleccionado"
+                />
+                <KpiCard
+                    title="Clientes"
+                    value={data?.kpis?.clients || 0}
+                    subtext="Activos"
+                    tooltip="Número de clientes con operaciones en el periodo"
+                />
+                <div onClick={() => setShowTables(!showTables)} className="h-full cursor-pointer transform hover:scale-[1.02] transition-transform active:scale-95">
+                    <KpiCard
+                        title="Facturas"
+                        value={data?.kpis?.invoices || 0}
+                        subtext={showTables ? "Ocultar detalles" : "Ver detalles"}
+                        tooltip="Haz clic para alternar con la lista detallada"
                     />
                 </div>
             </div>
 
-            {/* Bottom Section: Table */}
-            <div className="grid grid-cols-1 gap-6">
-                <TopClientsTable data={data?.charts?.top_clients || []} />
-            </div>
+            {/* Main Content Area: Alternates between Charts and Tables */}
+            <div className="bg-white p-4 rounded-xl shadow border border-slate-100 mb-6 relative overflow-hidden min-h-[500px]">
+                {/* Decorative background element */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-12 -mt-12 pointer-events-none" />
 
+                {!showTables ? (
+                    <div className="h-[460px] animate-fadeIn">
+                        <DashboardCarousel
+                            salesByRepData={data?.charts?.sales_by_rep || []}
+                            salesByDayData={data?.charts?.sales_by_day || []}
+                            marginEvolutionData={data?.charts?.sales_margin_evolution || []}
+                        />
+                    </div>
+                ) : (
+                    <div className="animate-fadeIn">
+                        <DashboardTablesCarousel
+                            topClientsData={data?.charts?.top_clients || []}
+                            invoicesListData={data?.charts?.invoices_list || []}
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

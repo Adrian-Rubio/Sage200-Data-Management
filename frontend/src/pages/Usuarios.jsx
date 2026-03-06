@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { PageHeader } from '../components/common/PageHeader';
 import { fetchUsers, createUser, updateUser, deleteUser, fetchRoles, createRole, updateRole, deleteRole, fetchFilterOptions } from '../services/api';
 
 export default function Usuarios() {
@@ -213,29 +214,15 @@ export default function Usuarios() {
 
     return (
         <div className="w-full min-h-screen bg-[#f8fafc] p-6 text-gray-800 font-sans">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
-                        <span className="bg-slate-800 text-white px-3 py-1 rounded text-2xl">CENVALSA</span>
-                        Seguridad y Permisos
-                    </h1>
-                    <p className="text-slate-500 mt-1">Gestión avanzada de usuarios, roles y permisos granulares</p>
-                </div>
-                <div className="flex gap-3">
-                    <button
-                        onClick={() => { cerrarModal(); activeTab === 'usuarios' ? setIsUserModalOpen(true) : setIsRoleModalOpen(true); }}
-                        className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg shadow-md hover:bg-indigo-700 transition font-bold flex items-center gap-2"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-                        {activeTab === 'usuarios' ? 'Nuevo Usuario' : 'Nuevo Rol'}
-                    </button>
-                    <Link to="/" className="bg-white text-slate-600 border border-slate-300 px-5 py-2.5 rounded-lg shadow-sm hover:bg-slate-50 transition font-medium flex items-center gap-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                        Volver al Menú
-                    </Link>
-                </div>
-            </div>
+            <PageHeader moduleName="Usuarios y Permisos" showRefresh={false}>
+                <button
+                    onClick={() => { cerrarModal(); activeTab === 'usuarios' ? setIsUserModalOpen(true) : setIsRoleModalOpen(true); }}
+                    className="bg-indigo-600 text-white px-3 py-1.5 rounded shadow-sm hover:bg-indigo-700 transition font-bold text-xs h-[34px] flex items-center gap-2 whitespace-nowrap"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                    {activeTab === 'usuarios' ? 'Nuevo Usuario' : 'Nuevo Rol'}
+                </button>
+            </PageHeader>
 
             {/* Tab Navigation */}
             <div className="flex gap-2 mb-6 bg-slate-200/50 p-1 w-fit rounded-xl">

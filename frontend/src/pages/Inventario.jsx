@@ -4,6 +4,7 @@ import { InventoryCarousel } from '../components/dashboard/InventoryCarousel';
 import { DivisionInventoryTable } from '../components/dashboard/DivisionInventoryTable';
 import { fetchInventoryDashboard } from '../services/api';
 import useAuthStore from '../store/authStore';
+import { PageHeader } from '../components/common/PageHeader';
 
 export default function Inventario() {
     const { user, token, logoutUser } = useAuthStore();
@@ -43,27 +44,7 @@ export default function Inventario() {
 
     return (
         <div className="p-4 max-w-[1600px] mx-auto min-h-screen bg-[#f8fafc] text-gray-800 font-sans">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <span className="bg-slate-800 text-white px-3 py-1 rounded text-lg">CENVALSA</span>
-                        Módulo de Inventario
-                    </h1>
-                </div>
-                <div className="flex gap-3">
-                    <span className="text-slate-600 font-medium text-sm flex items-center mr-2">{user?.sub || user?.username}</span>
-                    <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 px-4 py-2 rounded shadow-sm transition font-medium text-sm h-[38px] flex items-center justify-center">
-                        Cerrar Sesión
-                    </button>
-                    <Link to="/" className="bg-white text-slate-600 border border-slate-300 px-4 py-2 rounded shadow-sm hover:bg-slate-50 transition font-medium text-sm h-[38px] flex items-center justify-center">
-                        Volver al Menú
-                    </Link>
-                    <button onClick={() => window.location.reload(true)} className="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded shadow-sm hover:bg-blue-100 transition font-medium text-sm h-[38px] flex items-center justify-center">
-                        Refrescar App
-                    </button>
-                </div>
-            </div>
+            <PageHeader moduleName="Inventario" />
 
             {/* Filters */}
             <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end w-full border border-gray-100">

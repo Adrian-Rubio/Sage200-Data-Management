@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { fetchPendingOrders, fetchFilterOptions } from '../services/api';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
+import { PageHeader } from '../components/common/PageHeader';
 
 export default function PendingOrders() {
     const [data, setData] = useState(null);
@@ -55,25 +56,15 @@ export default function PendingOrders() {
     const formatCurrency = (val) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
     return (
-        <div className="w-full min-h-screen bg-[#dcfce7] p-6 text-gray-800">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-green-900 flex items-center gap-2">
-                    <span className="bg-green-800 text-white p-2 rounded">CENVALSA</span>
-                    Pedidos Pendientes
-                </h1>
-                <div className="flex gap-4">
-                    <Link to="/" className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition font-medium">
-                        Menú Principal
-                    </Link>
-                    <Link to="/ventas" className="bg-white text-green-700 border border-green-600 px-4 py-2 rounded hover:bg-green-50 transition font-medium">
-                        Dashboard Ventas
-                    </Link>
-                    <Link to="/comparison" className="bg-white text-green-700 border border-green-600 px-4 py-2 rounded hover:bg-green-50 transition font-medium">
-                        Comparativa Anual
-                    </Link>
-                </div>
-            </div>
+        <div className="w-full min-h-screen bg-[#f8fafc] p-6 text-gray-800">
+            <PageHeader moduleName="Ventas Pendientes" onRefresh={loadData}>
+                <Link to="/ventas" className="bg-white text-slate-600 border border-slate-200 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 transition font-bold text-xs h-[34px] flex items-center justify-center whitespace-nowrap">
+                    Ventas
+                </Link>
+                <Link to="/comparison" className="bg-white text-slate-600 border border-slate-200 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 transition font-bold text-xs h-[34px] flex items-center justify-center whitespace-nowrap">
+                    Comparativa
+                </Link>
+            </PageHeader>
 
             {/* Filters */}
             <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end">
@@ -203,8 +194,8 @@ export default function PendingOrders() {
                                     <td className="px-6 py-4 text-gray-600">{order.Comisionista}</td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${order.Division === 'Conectrónica' ? 'bg-blue-100 text-blue-700' :
-                                                order.Division === 'Mecánica' ? 'bg-orange-100 text-orange-700' :
-                                                    'bg-purple-100 text-purple-700'
+                                            order.Division === 'Mecánica' ? 'bg-orange-100 text-orange-700' :
+                                                'bg-purple-100 text-purple-700'
                                             }`}>
                                             {order.Division}
                                         </span>

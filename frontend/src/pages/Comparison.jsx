@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import useDataStore from '../store/dataStore';
 import useAuthStore from '../store/authStore';
+import { PageHeader } from '../components/common/PageHeader';
 
 const COLORS = ['#9ca3af', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -130,26 +131,15 @@ export default function Comparison() {
     const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
     return (
-        <div className="w-full min-h-screen bg-[#dcfce7] p-6 text-gray-800">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-green-900 flex items-center gap-2">
-                    <span className="bg-green-800 text-white p-2 rounded">CENVALSA</span>
-                    Comparativa Anual
-                </h1>
-                <div className="flex gap-4">
-                    <Link to="/" className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition font-medium">
-                        Menú Principal
-                    </Link>
-                    <Link to="/ventas" className="bg-white text-green-700 border border-green-600 px-4 py-2 rounded hover:bg-green-50 transition font-medium">
-                        ← Dashboard
-                    </Link>
-                    {/* Botón temporalmente oculto a petición
-                    <Link to="/pending-orders" className="bg-white text-green-700 border border-green-600 px-4 py-2 rounded hover:bg-green-50 transition font-medium">
-                        Pedidos Pendientes
-                    </Link>
-                    */}
-                </div>
-            </div>
+        <div className="w-full min-h-screen bg-[#f8fafc] p-6 text-gray-800">
+            <PageHeader moduleName="Comparativa Anual" onRefresh={loadComparison}>
+                <Link to="/ventas" className="bg-white text-slate-600 border border-slate-200 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 transition font-bold text-xs h-[34px] flex items-center justify-center whitespace-nowrap">
+                    Ventas
+                </Link>
+                <Link to="/pending-orders" className="bg-white text-slate-600 border border-slate-200 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 transition font-bold text-xs h-[34px] flex items-center justify-center whitespace-nowrap">
+                    Pendientes
+                </Link>
+            </PageHeader>
 
             {/* Filters */}
             <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end w-full">

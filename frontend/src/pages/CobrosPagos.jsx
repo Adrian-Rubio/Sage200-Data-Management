@@ -3,6 +3,7 @@ import { fetchFinancePayments } from '../services/api';
 import { Link } from 'react-router-dom';
 import { KpiCard } from '../components/dashboard/KpiCard';
 import useAuthStore from '../store/authStore';
+import { PageHeader } from '../components/common/PageHeader';
 
 export default function CobrosPagos() {
     const { logoutUser } = useAuthStore();
@@ -75,21 +76,11 @@ export default function CobrosPagos() {
 
     return (
         <div className="w-full min-h-screen bg-[#f8fafc] p-6 text-gray-800 font-sans">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    <span className="bg-blue-600 text-white px-3 py-1 rounded">FINANZAS</span>
-                    Tesorería: Cobros y Pagos
-                </h1>
-                <div className="flex gap-4">
-                    <Link to="/contabilidad" className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition font-medium text-sm">
-                        Volver a Contabilidad
-                    </Link>
-                    <button onClick={logoutUser} className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded hover:bg-red-100 transition font-medium text-sm">
-                        Cerrar Sesión
-                    </button>
-                </div>
-            </div>
+            <PageHeader moduleName="Cobros y Pagos" onRefresh={loadData}>
+                <Link to="/contabilidad" className="bg-white text-slate-600 border border-slate-200 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 transition font-bold text-xs h-[34px] flex items-center justify-center whitespace-nowrap">
+                    Contabilidad
+                </Link>
+            </PageHeader>
 
             {/* Filters Row */}
             <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6 space-y-4">

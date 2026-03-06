@@ -5,6 +5,7 @@ import { KpiCard } from '../components/dashboard/KpiCard';
 import { PurchasesCarousel } from '../components/dashboard/PurchasesCarousel';
 import { DivisionPurchasesTable } from '../components/dashboard/DivisionPurchasesTable';
 import useAuthStore from '../store/authStore';
+import { PageHeader } from '../components/common/PageHeader';
 
 export default function ComprasDashboard() {
     const { user, logoutUser } = useAuthStore();
@@ -64,20 +65,7 @@ export default function ComprasDashboard() {
 
     return (
         <div className="w-full min-h-screen bg-[#f8fafc] p-6 text-gray-800 font-sans flex flex-col">
-            {/* Header - Balanced */}
-            <div className="flex justify-between items-center mb-5">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-                        <span className="bg-indigo-600 text-white px-3 py-1 rounded-lg text-lg shadow-sm">PURCHASES</span>
-                        Dashboard de Compras
-                    </h1>
-                </div>
-                <div className="flex gap-3">
-                    <Link to="/" className="bg-white text-slate-600 border border-slate-200 px-5 py-2 rounded-lg shadow-sm hover:bg-slate-50 transition font-bold text-sm h-[40px] flex items-center justify-center">
-                        Volver al Menú
-                    </Link>
-                </div>
-            </div>
+            <PageHeader moduleName="Compras" onRefresh={loadDashboard} />
 
             {/* Filters Bar - Balanced */}
             <div className="bg-white px-6 py-4 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-wrap gap-6 items-end">

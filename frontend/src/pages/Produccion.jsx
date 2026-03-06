@@ -2,6 +2,7 @@ import { useState, useEffect, Fragment } from 'react';
 import { fetchProductionOrders, fetchProductionOperations } from '../services/api';
 import { Link } from 'react-router-dom';
 import useDataStore from '../store/dataStore';
+import { PageHeader } from '../components/common/PageHeader';
 
 // Helper for status badges
 const StatusBadge = ({ statusId, statusDesc }) => {
@@ -250,20 +251,7 @@ export default function Produccion() {
 
     return (
         <div className="w-full min-h-screen bg-[#f8fafc] p-4 text-gray-800 font-sans">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <span className="bg-[#d88900] text-white px-3 py-1 rounded text-lg">CENVALSA</span>
-                        Módulo de Producción
-                    </h1>
-                </div>
-                <div className="flex gap-3">
-                    <Link to="/" className="bg-white text-slate-600 border border-slate-300 px-4 py-2 rounded shadow-sm hover:bg-slate-50 transition font-medium text-sm">
-                        Volver al Menú
-                    </Link>
-                </div>
-            </div>
+            <PageHeader moduleName="Producción" showRefresh={false} />
 
             {/* Advanced Filters Bar - ERP Style */}
             <form onSubmit={loadData} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-4">

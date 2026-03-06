@@ -64,20 +64,20 @@ export function SalesByRepChart({ data, isEmbed }) {
 
     return (
         <div className={containerClass}>
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-gray-700 font-semibold">Facturación por Comercial</h3>
-                <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider">
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-2.5 h-2.5 rounded-sm bg-[#10b981]"></div>
-                        <span className="text-slate-500">Conectrónica</span>
+            <div className="flex justify-between items-center mb-2 px-2">
+                <h3 className="text-slate-700 font-bold text-xs uppercase tracking-tight">Ventas por Comercial</h3>
+                <div className="flex gap-3 text-[9px] font-bold uppercase tracking-tighter">
+                    <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-sm bg-[#10b981]"></div>
+                        <span className="text-slate-400">CONE</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-2.5 h-2.5 rounded-sm bg-[#3b82f6]"></div>
-                        <span className="text-slate-500">Sismecánica</span>
+                    <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-sm bg-[#3b82f6]"></div>
+                        <span className="text-slate-400">SISM</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-2.5 h-2.5 rounded-sm bg-[#8b5cf6]"></div>
-                        <span className="text-slate-500">Informática Industrial</span>
+                    <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-sm bg-[#8b5cf6]"></div>
+                        <span className="text-slate-400">INDU</span>
                     </div>
                 </div>
             </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { fetchPendingPurchases, fetchFilterOptions } from '../services/api';
 import { Link } from 'react-router-dom';
 import useDataStore from '../store/dataStore';
+import { PageHeader } from '../components/common/PageHeader';
 
 // Helper for status badges
 const StatusBadge = ({ status }) => {
@@ -135,23 +136,11 @@ export default function PedidosCompra() {
 
     return (
         <div className="w-full min-h-screen bg-[#f8fafc] p-4 text-gray-800 font-sans">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <span className="bg-indigo-600 text-white px-3 py-1 rounded text-lg">CENVALSA</span>
-                        Gestión de Pedidos de Compra
-                    </h1>
-                </div>
-                <div className="flex gap-3">
-                    <Link to="/compras" className="bg-indigo-50 text-indigo-600 border border-indigo-200 px-4 py-2 rounded shadow-sm hover:bg-indigo-100 transition font-bold text-sm h-[38px] flex items-center justify-center">
-                        ← Volver al Dashboard
-                    </Link>
-                    <Link to="/" className="bg-white text-slate-600 border border-slate-300 px-4 py-2 rounded shadow-sm hover:bg-slate-50 transition font-medium text-sm h-[38px] flex items-center justify-center">
-                        Menú Principal
-                    </Link>
-                </div>
-            </div>
+            <PageHeader moduleName="Gestión de Pedidos de Compra" onRefresh={loadData}>
+                <Link to="/compras" className="bg-white text-slate-600 border border-slate-200 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 transition font-bold text-xs h-[34px] flex items-center justify-center whitespace-nowrap">
+                    Compras
+                </Link>
+            </PageHeader>
 
             {/* Advanced Filters Bar - ERP Style */}
             <form onSubmit={(e) => { e.preventDefault(); loadData(); }} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 font-sans">
