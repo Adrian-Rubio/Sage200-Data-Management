@@ -96,6 +96,7 @@ export default function Dashboard() {
         const { name, value } = e.target;
 
         setFilters(prev => {
+            const newFilters = { ...prev, [name]: value || null };
             if (name === 'sales_rep_id' && value) {
                 // Find rep name from options
                 const rep = options.reps.find(r => r.id === value);
