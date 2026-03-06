@@ -11,6 +11,12 @@ import useAuthStore from '../store/authStore';
 import useDataStore from '../store/dataStore';
 import { PageHeader } from '../components/common/PageHeader';
 
+const DIVISIONS_MAP = {
+    'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
+    'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
+    'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
+};
+
 export default function Dashboard() {
     const { user, logoutUser } = useAuthStore();
     const { dashboardData, dashboardFiltersHash, setDashboardData, filterOptions, setFilterOptions } = useDataStore();
@@ -90,19 +96,11 @@ export default function Dashboard() {
         const { name, value } = e.target;
 
         setFilters(prev => {
-            const newFilters = { ...prev, [name]: value || null };
-
-            const divisions = {
-                'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
-                'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
-                'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
-            };
-
             if (name === 'sales_rep_id' && value) {
                 // Find rep name from options
                 const rep = options.reps.find(r => r.id === value);
                 if (rep) {
-                    for (const [div, reps] of Object.entries(divisions)) {
+                    for (const [div, reps] of Object.entries(DIVISIONS_MAP)) {
                         if (reps.includes(rep.name)) {
                             newFilters.division = div;
                             break;
@@ -114,7 +112,7 @@ export default function Dashboard() {
             if (name === 'division') {
                 // If division changes, clear selected rep if they don't belong to new division
                 if (value && prev.sales_rep_id) {
-                    const allowedReps = divisions[value] || [];
+                    const allowedReps = DIVISIONS_MAP[value] || [];
                     const currentRep = options.reps.find(r => r.id === prev.sales_rep_id);
                     if (currentRep && !allowedReps.includes(currentRep.name)) {
                         newFilters.sales_rep_id = null;
@@ -169,8 +167,8 @@ export default function Dashboard() {
                         {options.reps
                             .filter(r => {
                                 if (!filters.division) return true;
-                                const rep_name = r.name?.toUpperCase();
-                                return divisions[filters.division]?.some(d => rep_name.includes(d.toUpperCase()));
+                                const rep_name = (r.name || '').toUpperCase();
+                                return DIVISIONS_MAP[filters.division]?.some(d => rep_name.includes(d.toUpperCase()));
                             })
                             .map(r => (
                                 <option key={r.id} value={r.id}>{r.name}</option>

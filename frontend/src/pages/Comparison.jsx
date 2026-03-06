@@ -6,6 +6,12 @@ import useDataStore from '../store/dataStore';
 import useAuthStore from '../store/authStore';
 import { PageHeader } from '../components/common/PageHeader';
 
+const DIVISIONS_MAP = {
+    'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE'],
+    'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
+    'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
+};
+
 const COLORS = ['#9ca3af', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function Comparison() {
@@ -82,12 +88,7 @@ export default function Comparison() {
             if (name === 'sales_rep_id' && value) {
                 const rep = options.reps.find(r => r.id === value);
                 if (rep) {
-                    const divisions = {
-                        'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE'],
-                        'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
-                        'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
-                    };
-                    for (const [div, reps] of Object.entries(divisions)) {
+                    for (const [div, reps] of Object.entries(DIVISIONS_MAP)) {
                         if (reps.includes(rep.name)) {
                             newFilters.division = div;
                             break;
@@ -96,12 +97,7 @@ export default function Comparison() {
                 }
             }
             if (name === 'division' && value && prev.sales_rep_id) {
-                const divisions = {
-                    'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE'],
-                    'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
-                    'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
-                };
-                const allowedReps = divisions[value] || [];
+                const allowedReps = DIVISIONS_MAP[value] || [];
                 const currentRep = options.reps.find(r => r.id === prev.sales_rep_id);
                 if (currentRep && !allowedReps.includes(currentRep.name)) {
                     newFilters.sales_rep_id = null;
@@ -189,12 +185,7 @@ export default function Comparison() {
                         {options.reps
                             .filter(r => {
                                 if (!filters.division) return true;
-                                const divisions = {
-                                    'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE'],
-                                    'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
-                                    'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
-                                };
-                                return divisions[filters.division] ? divisions[filters.division].includes(r.name) : true;
+                                return DIVISIONS_MAP[filters.division] ? DIVISIONS_MAP[filters.division].includes(r.name) : true;
                             })
                             .map(r => (
                                 <option key={r.id} value={r.id}>{r.name}</option>
