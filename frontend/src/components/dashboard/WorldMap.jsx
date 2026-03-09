@@ -23,6 +23,18 @@ const iso3ToIso2 = {
     'GRC': 'GR', 'MAR': 'MA', 'DZA': 'DZ', 'TUN': 'TN'
 };
 
+const spanishCountryNames = {
+    'Turkey': 'Turquía', 'Peru': 'Perú', 'Germany': 'Alemania', 'India': 'India', 'Chile': 'Chile',
+    'Norway': 'Noruega', 'Singapore': 'Singapur', 'British Virgin Islands': 'Islas Vírgenes Británicas',
+    'Luxembourg': 'Luxemburgo', 'Finland': 'Finlandia', 'France': 'Francia', 'Italy': 'Italia',
+    'Portugal': 'Portugal', 'United Kingdom': 'Reino Unido', 'United States of America': 'EE.UU.',
+    'China': 'China', 'Morocco': 'Marruecos', 'Algeria': 'Argelia', 'Tunisia': 'Túnez', 'Mexico': 'México',
+    'Brazil': 'Brasil', 'Argentina': 'Argentina', 'Sweden': 'Suecia', 'Netherlands': 'Países Bajos',
+    'Belgium': 'Bélgica', 'Uruguay': 'Uruguay', 'Colombia': 'Colombia', 'Switzerland': 'Suiza',
+    'Poland': 'Polonia', 'Ireland': 'Irlanda', 'Czech Rep.': 'República Checa', 'Romania': 'Rumanía',
+    'Greece': 'Grecia'
+};
+
 export default function WorldMap({ data = [], onRegionClick }) {
     const maxRevenue = useMemo(() => {
         if (data.length === 0) return 1;
@@ -55,8 +67,10 @@ export default function WorldMap({ data = [], onRegionClick }) {
                         {({ geographies }) =>
                             geographies.map((geo) => {
                                 // Match SAGE ISO2 ('MX') with GeoJSON properties
+                                const geoName = geo.properties.name;
+                                const spanishName = spanishCountryNames[geoName] || geoName;
                                 const iso3 = geo.properties.ISO_A3 || geo.id;
-                                const iso2 = iso3ToIso2[iso3] || Object.keys(countryCodeMap).find(key => countryCodeMap[key] === geo.properties.name);
+                                const iso2 = iso3ToIso2[iso3] || Object.keys(countryCodeMap).find(key => countryCodeMap[key] === geoName);
 
                                 const regionData = dataMap[iso2];
                                 const hasData = !!regionData;
@@ -66,7 +80,7 @@ export default function WorldMap({ data = [], onRegionClick }) {
                                     <Geography
                                         key={geo.rsmKey}
                                         geography={geo}
-                                        onClick={() => hasData && onRegionClick(geo.properties.name, regionData)}
+                                        onClick={() => hasData && onRegionClick(spanishName, regionData)}
                                         style={{
                                             default: {
                                                 fill: hasData ? colorScale(revenue) : "#f1f5f9",
@@ -115,7 +129,9 @@ export default function WorldMap({ data = [], onRegionClick }) {
                     <div className="space-y-1.5">
                         {data.slice(0, 5).map((d, i) => (
                             <div key={i} className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-slate-700 truncate mr-2">{d.region}</span>
+                                <span className="text-[10px] font-bold text-slate-700 truncate mr-2">
+                                    {spanishCountryNames[countryCodeMap[d.region]] || d.region}
+                                </span>
                                 <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md">{d.clients} cl.</span>
                             </div>
                         ))}
