@@ -1,0 +1,12 @@
+                 TABLE_NAME                COLUMN_NAME
+61   CabeceraAlbaranCliente        CodigoMotivoAbonoLc
+244  CabeceraAlbaranCliente                RazonSocial
+245  CabeceraAlbaranCliente               RazonSocial2
+246  CabeceraAlbaranCliente         RazonSocial2Envios
+247  CabeceraAlbaranCliente          RazonSocialEnvios
+345                Clientes          CodigoMotivoAbono
+346                Clientes  CodigoMotivoBajaClienteLc
+445                Clientes                RazonSocial
+446                Clientes               RazonSocial2
+575         MovimientoStock                   Unidades
+576         MovimientoStock                 Unidades2_

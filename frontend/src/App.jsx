@@ -17,6 +17,7 @@ import Contabilidad from './pages/Contabilidad';
 import Inventario from './pages/Inventario';
 import CierreMes from './pages/CierreMes';
 import PrivateRoute from './components/PrivateRoute';
+import RmaDashboard from './pages/RmaDashboard';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
           <Route path="/compras/pedidos-pendientes" element={<PedidosCompra />} />
           <Route path="/usuarios" element={<Usuarios />} />
           <Route path="/produccion" element={<Produccion />} />
+          <Route path="/produccion/rma" element={<RmaDashboard />} />
           <Route path="/almacen" element={<Almacen />} />
           <Route path="/inventario" element={<Inventario />} />
           <Route path="/cierre-mes" element={<CierreMes />} />

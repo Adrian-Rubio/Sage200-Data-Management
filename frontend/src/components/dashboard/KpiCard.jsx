@@ -13,6 +13,8 @@ export function KpiCard({ title, value, subtext, isWarning, isPercentage, toolti
         title.toLowerCase().includes('total')
     )
         && !title.toLowerCase().includes('número')
+        && !title.toLowerCase().includes('nº')
+        && !title.toLowerCase().includes('partes')
         && title.toLowerCase() !== 'facturas' // Literal "Facturas" is a count
         && !title.toLowerCase().includes('clientes');
 

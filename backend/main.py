@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import get_db, engine
 from sqlalchemy import text
-from routers import sales, filters, orders, users, purchases, production, almacen, finance, inventory, reports
+from routers import sales, filters, orders, users, purchases, production, almacen, finance, inventory, reports, rma
 import models
 
 models.Base.metadata.create_all(bind=engine)
@@ -29,6 +29,7 @@ app.include_router(almacen.router)
 app.include_router(finance.router)
 app.include_router(inventory.router, prefix="/api/inventory", tags=["inventory"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
+app.include_router(rma.router)
 
 @app.get("/")
 def read_root():
