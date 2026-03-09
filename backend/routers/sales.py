@@ -33,6 +33,12 @@ class InvoiceFilters(DashboardFilters):
     page: Optional[int] = 1
     page_size: Optional[int] = 20
 
+class GeographyFilters(DashboardFilters):
+    scope: str = "nacional"
+
+class RegionDetailFilters(GeographyFilters):
+    region: str
+
 @router.post("/dashboard")
 def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     # Create a deterministic cache key from filters and user context
@@ -593,4 +599,163 @@ def get_sales_comparison(filters: ComparisonFilters, db: Session = Depends(get_d
 
     except Exception as e:
         print(f"Error in comparison: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/by-geography")
+def get_sales_by_geography(filters: GeographyFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        # RBAC and Rep Filtering - Simplified Re-implementation
+        divisions = {
+            'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
+            'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
+            'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
+        }
+        all_reps = [r for reps in divisions.values() for r in reps]
+        
+        current_allowed_reps = all_reps
+        if filters.division:
+            current_allowed_reps = divisions.get(filters.division, [])
+
+        has_manage_permission = (current_user.role == "admin") or (
+            current_user.role_obj and current_user.role_obj.name == "admin"
+        ) or (
+            current_user.role_obj and current_user.role_obj.can_manage_users
+        )
+        if not has_manage_permission and current_user.sales_rep_id:
+            current_allowed_reps = [rep for rep in current_allowed_reps if rep == current_user.sales_rep_id.upper()]
+
+        common_where = ""
+        common_params = {}
+        company_filter = "v.CodigoEmpresa = '2'" # Focus on 2025+ mostly for this new feature
+
+        if current_allowed_reps:
+            placeholders = [f":rep_{i}" for i in range(len(current_allowed_reps))]
+            common_where += f" AND UPPER(RTRIM(LTRIM(v.Comisionista))) IN ({', '.join(placeholders)})"
+            for i, rep in enumerate(current_allowed_reps):
+                common_params[f'rep_{i}'] = rep
+        else:
+            common_where += " AND 1=0"
+
+        if filters.start_date:
+            common_where += " AND TRY_CONVERT(date, v.FechaFactura) >= :start_date"
+            common_params['start_date'] = filters.start_date
+        if filters.end_date:
+            common_where += " AND TRY_CONVERT(date, v.FechaFactura) <= :end_date"
+            common_params['end_date'] = filters.end_date
+        if filters.sales_rep_id:
+            common_where += " AND UPPER(RTRIM(LTRIM(v.Comisionista))) = :sales_rep_id_f"
+            common_params['sales_rep_id_f'] = filters.sales_rep_id.upper()
+        if filters.client_id:
+            common_where += " AND v.CodigoCliente = :client_id"
+            common_params['client_id'] = filters.client_id
+
+        # Regional Aggregation
+        if filters.scope == "nacional":
+            geo_field = "c.Provincia"
+            geo_cond = "(c.SiglaNacion = 'E' OR c.SiglaNacion IS NULL OR c.SiglaNacion = '')"
+        else:
+            geo_field = "c.SiglaNacion"
+            geo_cond = "(c.SiglaNacion != 'E' AND c.SiglaNacion IS NOT NULL AND c.SiglaNacion != '')"
+
+        query = f"""
+            SELECT 
+                {geo_field} as region,
+                SUM(v.BaseImponible) as revenue,
+                COUNT(DISTINCT v.CodigoCliente) as clients,
+                COUNT(v.NumeroFactura) as invoices
+            FROM Vis_AEL_DiarioFactxComercial v
+            JOIN Clientes c ON v.CodigoCliente = c.CodigoCliente AND v.CodigoEmpresa = c.CodigoEmpresa
+            WHERE {company_filter} AND {geo_cond} {common_where}
+            GROUP BY {geo_field}
+            ORDER BY revenue DESC
+        """
+        
+        df = pd.read_sql(text(query), db.bind, params=common_params)
+        return {"regions": df.to_dict(orient='records')}
+
+    except Exception as e:
+        print(f"Error in get_sales_by_geography: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/region-detail")
+def get_region_detail(filters: RegionDetailFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        # Re-use RBAC but simplified
+        divisions = {
+            'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
+            'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
+            'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
+        }
+        all_reps = [r for reps in divisions.values() for r in reps]
+        
+        current_allowed_reps = all_reps
+        if filters.division:
+            current_allowed_reps = divisions.get(filters.division, [])
+
+        has_manage_permission = (current_user.role == "admin") or (
+            current_user.role_obj and current_user.role_obj.name == "admin"
+        ) or (
+            current_user.role_obj and current_user.role_obj.can_manage_users
+        )
+        if not has_manage_permission and current_user.sales_rep_id:
+            current_allowed_reps = [rep for rep in current_allowed_reps if rep == current_user.sales_rep_id.upper()]
+
+        common_where = ""
+        common_params = {}
+        company_filter = "v.CodigoEmpresa = '2'"
+
+        if current_allowed_reps:
+            placeholders = [f":rep_{i}" for i in range(len(current_allowed_reps))]
+            common_where += f" AND UPPER(RTRIM(LTRIM(v.Comisionista))) IN ({', '.join(placeholders)})"
+            for i, rep in enumerate(current_allowed_reps):
+                common_params[f'rep_{i}'] = rep
+        else:
+            common_where += " AND 1=0"
+
+        if filters.start_date:
+            common_where += " AND TRY_CONVERT(date, v.FechaFactura) >= :start_date"
+            common_params['start_date'] = filters.start_date
+        if filters.end_date:
+            common_where += " AND TRY_CONVERT(date, v.FechaFactura) <= :end_date"
+            common_params['end_date'] = filters.end_date
+        if filters.sales_rep_id:
+            common_where += " AND UPPER(RTRIM(LTRIM(v.Comisionista))) = :sales_rep_id_f"
+            common_params['sales_rep_id_f'] = filters.sales_rep_id.upper()
+        if filters.client_id:
+            common_where += " AND v.CodigoCliente = :client_id"
+            common_params['client_id'] = filters.client_id
+
+        if filters.scope == "nacional":
+            geo_cond = "c.Provincia = :region"
+        else:
+            geo_cond = "c.SiglaNacion = :region"
+        
+        common_params['region'] = filters.region
+
+        query = f"""
+            SELECT 
+                c.RazonSocial as name,
+                c.CodigoCliente as code,
+                SUM(v.BaseImponible) as revenue,
+                COUNT(v.NumeroFactura) as invoices,
+                v.Comisionista as rep,
+                MAX(v.FechaFactura) as last_date
+            FROM Vis_AEL_DiarioFactxComercial v
+            JOIN Clientes c ON v.CodigoCliente = c.CodigoCliente AND v.CodigoEmpresa = c.CodigoEmpresa
+            WHERE {company_filter} AND {geo_cond} {common_where}
+            GROUP BY c.RazonSocial, c.CodigoCliente, v.Comisionista
+            ORDER BY revenue DESC
+        """
+        
+        df = pd.read_sql(text(query), db.bind, params=common_params)
+        if not df.empty:
+            df['last_date'] = df['last_date'].apply(lambda x: x.isoformat() if x else None)
+
+        return {
+            "region": filters.region,
+            "clients": df.to_dict(orient='records')
+        }
+
+    except Exception as e:
+        print(f"Error in get_region_detail: {e}")
         raise HTTPException(status_code=500, detail=str(e))

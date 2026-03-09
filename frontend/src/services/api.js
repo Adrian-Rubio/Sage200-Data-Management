@@ -289,3 +289,22 @@ export const fetchRmaData = async () => {
         throw error;
     }
 };
+export const fetchSalesByGeography = async (filters, scope = 'nacional') => {
+    try {
+        const response = await api.post('/sales/by-geography', { ...filters, scope });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching sales by geography:", error);
+        throw error;
+    }
+};
+
+export const fetchRegionDetail = async (filters, scope, region) => {
+    try {
+        const response = await api.post('/sales/region-detail', { ...filters, scope, region });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching region detail:", error);
+        throw error;
+    }
+};

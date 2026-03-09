@@ -10,6 +10,7 @@ import { DashboardTablesCarousel } from '../components/dashboard/DashboardTables
 import useAuthStore from '../store/authStore';
 import useDataStore from '../store/dataStore';
 import { PageHeader } from '../components/common/PageHeader';
+import GeographyMapModal from '../components/dashboard/GeographyMapModal';
 
 const DIVISIONS_MAP = {
     'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
@@ -25,6 +26,7 @@ export default function Dashboard() {
     const [error, setError] = useState(null);
     const [options, setOptions] = useState({ companies: [], reps: [], clients: [], series: [] });
     const [showTables, setShowTables] = useState(false);
+    const [showGeoMap, setShowGeoMap] = useState(false);
 
     const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || user?.role_obj?.name === 'admin' || user?.role_obj?.can_manage_users;
 
@@ -233,12 +235,14 @@ export default function Dashboard() {
                     isWarning={true}
                     tooltip="Importe total de albaranes pendientes de facturar en el periodo seleccionado"
                 />
-                <KpiCard
-                    title="Clientes"
-                    value={data?.kpis?.clients || 0}
-                    subtext="Activos"
-                    tooltip="Número de clientes con operaciones en el periodo"
-                />
+                <div onClick={() => setShowGeoMap(true)} className="h-full cursor-pointer transform hover:scale-[1.02] transition-transform active:scale-95">
+                    <KpiCard
+                        title="Clientes"
+                        value={data?.kpis?.clients || 0}
+                        subtext="Activos"
+                        tooltip="Haz clic para ver la distribución geográfica (Mapa de Calor)"
+                    />
+                </div>
                 <div onClick={() => setShowTables(!showTables)} className="h-full cursor-pointer transform hover:scale-[1.02] transition-transform active:scale-95">
                     <KpiCard
                         title="Facturas"
@@ -272,6 +276,13 @@ export default function Dashboard() {
                     </div>
                 )}
             </div>
+
+            {showGeoMap && (
+                <GeographyMapModal
+                    filters={filters}
+                    onClose={() => setShowGeoMap(false)}
+                />
+            )}
         </div>
     );
 }
