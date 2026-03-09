@@ -649,13 +649,12 @@ def get_sales_by_geography(filters: GeographyFilters, db: Session = Depends(get_
             common_where += " AND v.CodigoCliente = :client_id"
             common_params['client_id'] = filters.client_id
 
-        # Regional Aggregation
         if filters.scope == "nacional":
-            geo_field = "c.Provincia"
-            geo_cond = "(c.SiglaNacion = 'E' OR c.SiglaNacion IS NULL OR c.SiglaNacion = '')"
+            geo_field = "ISNULL(NULLIF(c.Provincia, ''), 'SIN PROVINCIA')"
+            geo_cond = "c.SiglaNacion = 'ES'"
         else:
             geo_field = "c.SiglaNacion"
-            geo_cond = "(c.SiglaNacion != 'E' AND c.SiglaNacion IS NOT NULL AND c.SiglaNacion != '')"
+            geo_cond = "c.SiglaNacion != 'ES' AND c.SiglaNacion IS NOT NULL AND c.SiglaNacion != ''"
 
         query = f"""
             SELECT 
@@ -727,6 +726,8 @@ def get_region_detail(filters: RegionDetailFilters, db: Session = Depends(get_db
 
         if filters.scope == "nacional":
             geo_cond = "c.Provincia = :region"
+            if filters.region == "SIN PROVINCIA":
+                geo_cond = "(c.Provincia IS NULL OR c.Provincia = '')"
         else:
             geo_cond = "c.SiglaNacion = :region"
         
