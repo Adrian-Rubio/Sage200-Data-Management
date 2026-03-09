@@ -8,13 +8,13 @@ import numpy as np
 import logging
 
 router = APIRouter(
-    prefix="/api/rma",
+    prefix="/api",
     tags=["RMA"]
 )
 
 logger = logging.getLogger(__name__)
 
-@router.get("")
+@router.get("/rma")
 def get_rma_data(db: Session = Depends(get_db)):
     try:
         query = """
