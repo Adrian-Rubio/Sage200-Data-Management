@@ -251,7 +251,7 @@ export default function RmaDashboard() {
                     </div>
                 </div>
                 <div className="flex-1 w-full">
-                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                    <ResponsiveContainer width="100%" height={300}>
                         <BarChart
                             data={errorChartData}
                             margin={{ top: 20, right: 40, left: 100, bottom: 20 }}

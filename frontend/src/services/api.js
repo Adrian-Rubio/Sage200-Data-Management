@@ -282,7 +282,7 @@ export const fetchFinancePnLDetailed = async (filters) => {
 
 export const fetchRmaData = async () => {
     try {
-        const response = await api.get('/rma/');
+        const response = await api.get('/rma');
         return response.data;
     } catch (error) {
         console.error("Error fetching RMA data:", error);

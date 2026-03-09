@@ -14,7 +14,7 @@ router = APIRouter(
 
 logger = logging.getLogger(__name__)
 
-@router.get("/")
+@router.get("")
 def get_rma_data(db: Session = Depends(get_db)):
     try:
         query = """
