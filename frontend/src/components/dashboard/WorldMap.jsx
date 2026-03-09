@@ -4,17 +4,6 @@ import { scaleLinear } from 'd3-scale';
 
 const GEO_URL = '/geo/world-countries.json';
 
-// SAGE (ISO2) -> Map (Name in GeoJSON or ISO3)
-const countryCodeMap = {
-    'TR': 'Turkey', 'PE': 'Peru', 'DE': 'Germany', 'IN': 'India', 'CL': 'Chile',
-    'NO': 'Norway', 'SG': 'Singapore', 'VG': 'British Virgin Islands', 'LU': 'Luxembourg', 'FI': 'Finland',
-    'FR': 'France', 'IT': 'Italy', 'PT': 'Portugal', 'GB': 'United Kingdom', 'US': 'United States of America',
-    'CN': 'China', 'MA': 'Morocco', 'DZ': 'Algeria', 'TN': 'Tunisia', 'MX': 'Mexico', 'BR': 'Brazil',
-    'AR': 'Argentina', 'SE': 'Sweden', 'NL': 'Netherlands', 'BE': 'Belgium', 'UY': 'Uruguay', 'CO': 'Colombia',
-    'CH': 'Switzerland', 'PL': 'Poland', 'IE': 'Ireland', 'CZ': 'Czech Rep.', 'RO': 'Romania', 'GR': 'Greece'
-};
-
-// ISO3 -> ISO2 for mapping GeoJSON features back to SAGE data
 const iso3ToIso2 = {
     'TUR': 'TR', 'PER': 'PE', 'DEU': 'DE', 'IND': 'IN', 'CHL': 'CL', 'NOR': 'NO', 'SGP': 'SG',
     'LUX': 'LU', 'FIN': 'FI', 'FRA': 'FR', 'ITA': 'IT', 'PRT': 'PT', 'GBR': 'GB', 'USA': 'US',
@@ -35,6 +24,15 @@ const spanishCountryNames = {
     'Greece': 'Grecia'
 };
 
+const countryCodeMap = {
+    'TR': 'Turkey', 'PE': 'Peru', 'DE': 'Germany', 'IN': 'India', 'CL': 'Chile',
+    'NO': 'Norway', 'SG': 'Singapore', 'VG': 'British Virgin Islands', 'LU': 'Luxembourg', 'FI': 'Finland',
+    'FR': 'France', 'IT': 'Italy', 'PT': 'Portugal', 'GB': 'United Kingdom', 'US': 'United States of America',
+    'CN': 'China', 'MA': 'Morocco', 'DZ': 'Algeria', 'TN': 'Tunisia', 'MX': 'Mexico', 'BR': 'Brazil',
+    'AR': 'Argentina', 'SE': 'Sweden', 'NL': 'Netherlands', 'BE': 'Belgium', 'UY': 'Uruguay', 'CO': 'Colombia',
+    'CH': 'Switzerland', 'PL': 'Poland', 'IE': 'Ireland', 'CZ': 'Czech Rep.', 'RO': 'Romania', 'GR': 'Greece'
+};
+
 export default function WorldMap({ data = [], onRegionClick }) {
     const maxRevenue = useMemo(() => {
         if (data.length === 0) return 1;
@@ -43,8 +41,8 @@ export default function WorldMap({ data = [], onRegionClick }) {
 
     const colorScale = useMemo(() => {
         return scaleLinear()
-            .domain([0, maxRevenue * 0.1, maxRevenue])
-            .range(["#f8fafc", "#bae6fd", "#0284c7"]);
+            .domain([0, maxRevenue * 0.2, maxRevenue])
+            .range(["#fdfaff", "#818cf8", "#4338ca"]);
     }, [maxRevenue]);
 
     const dataMap = useMemo(() => {
@@ -57,16 +55,15 @@ export default function WorldMap({ data = [], onRegionClick }) {
     }, [data]);
 
     return (
-        <div className="w-full h-full bg-slate-50 relative rounded-xl overflow-hidden shadow-inner border border-slate-200">
+        <div className="w-full h-full bg-[#f8fafc] relative rounded-2xl overflow-hidden shadow-inner border border-slate-200">
             <ComposableMap
-                projectionConfig={{ scale: 150 }}
+                projectionConfig={{ scale: 155 }}
                 style={{ width: "100%", height: "100%" }}
             >
                 <ZoomableGroup center={[10, 20]} zoom={1}>
                     <Geographies geography={GEO_URL}>
                         {({ geographies }) =>
                             geographies.map((geo) => {
-                                // Match SAGE ISO2 ('MX') with GeoJSON properties
                                 const geoName = geo.properties.name;
                                 const spanishName = spanishCountryNames[geoName] || geoName;
                                 const iso3 = geo.properties.ISO_A3 || geo.id;
@@ -83,68 +80,55 @@ export default function WorldMap({ data = [], onRegionClick }) {
                                         onClick={() => hasData && onRegionClick(spanishName, regionData)}
                                         style={{
                                             default: {
-                                                fill: hasData ? colorScale(revenue) : "#f1f5f9",
-                                                stroke: hasData ? "#0369a1" : "#e2e8f0",
-                                                strokeWidth: hasData ? 1 : 0.3,
+                                                fill: hasData ? colorScale(revenue) : "#ffffff",
+                                                stroke: hasData ? "#312e81" : "#e2e8f0",
+                                                strokeWidth: hasData ? 1.5 : 0.5,
                                                 outline: "none",
                                             },
                                             hover: {
-                                                fill: hasData ? "#fbbf24" : "#f1f5f9",
-                                                stroke: hasData ? "#b45309" : "#e2e8f0",
-                                                strokeWidth: hasData ? 2 : 0.3,
+                                                fill: hasData ? "#ec4899" : "#ffffff",
+                                                stroke: hasData ? "#9d174d" : "#e2e8f0",
+                                                strokeWidth: 2,
                                                 outline: "none",
                                                 cursor: hasData ? "pointer" : "default"
                                             },
-                                            pressed: { fill: "#f59e0b", outline: "none" }
+                                            pressed: { fill: "#db2777", outline: "none" }
                                         }}
                                     />
                                 );
                             })
                         }
                     </Geographies>
-
-                    {/* Labels for active countries */}
-                    {geographies =>
-                        geographies && geographies.map(geo => {
-                            const iso3 = geo.properties.ISO_A3 || geo.id;
-                            const iso2 = iso3ToIso2[iso3];
-                            const regionData = dataMap[iso2];
-
-                            if (!regionData || regionData.clients === 0) return null;
-
-                            // We'd need centroids for all countries to place markers perfectly.
-                            // For now, let's stick to the color highlights or a very limited set.
-                            return null;
-                        })
-                    }
                 </ZoomableGroup>
             </ComposableMap>
 
-            <div className="absolute top-4 left-4 pointer-events-none space-y-2">
-                <div className="bg-white/90 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-xl w-48">
-                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1">
-                        <div className="w-1.5 h-3 bg-blue-600 rounded-full"></div>
+            <div className="absolute top-6 left-6 pointer-events-none space-y-2">
+                <div className="bg-white/70 backdrop-blur-xl p-4 rounded-3xl border border-white/40 shadow-2xl w-56 flex flex-col gap-3">
+                    <h4 className="text-[11px] font-black text-indigo-900 uppercase tracking-[0.1em] flex items-center gap-2">
+                        <span className="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span>
                         Ventas Globales
                     </h4>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                         {data.slice(0, 5).map((d, i) => (
-                            <div key={i} className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-slate-700 truncate mr-2">
+                            <div key={i} className="flex items-center justify-between group">
+                                <span className="text-[11px] font-bold text-slate-700 truncate mr-2">
                                     {spanishCountryNames[countryCodeMap[d.region]] || d.region}
                                 </span>
-                                <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md">{d.clients} cl.</span>
+                                <span className="text-[10px] font-black text-white bg-indigo-600 px-2 py-0.5 rounded-full shadow-sm">
+                                    {d.clients}
+                                </span>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-lg flex flex-col gap-1">
-                <span className="text-[9px] font-black text-slate-500 uppercase">Intensidad Ventas</span>
-                <div className="flex items-center gap-2">
-                    <span className="text-[8px] font-bold text-slate-400">0€</span>
-                    <div className="w-32 h-1.5 rounded-full bg-gradient-to-r from-[#bae6fd] to-[#0284c7]"></div>
-                    <span className="text-[8px] font-bold text-slate-600">{new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(maxRevenue)}€</span>
+            <div className="absolute bottom-6 right-6 bg-white/70 backdrop-blur-xl p-4 rounded-3xl border border-white/40 shadow-2xl flex flex-col gap-2">
+                <span className="text-[10px] font-black text-indigo-900 uppercase tracking-wider">Flujo de Ventas</span>
+                <div className="flex items-center gap-3">
+                    <span className="text-[9px] font-bold text-slate-400">0€</span>
+                    <div className="w-36 h-2 rounded-full bg-gradient-to-r from-[#818cf8] to-[#4338ca] shadow-inner"></div>
+                    <span className="text-[9px] font-extrabold text-indigo-800">{new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(maxRevenue)}€</span>
                 </div>
             </div>
         </div>

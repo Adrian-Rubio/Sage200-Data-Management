@@ -4,7 +4,6 @@ import { scaleLinear } from 'd3-scale';
 
 const GEO_URL = '/geo/spain-provinces.json';
 
-// Coordenadas aproximadas para los nombres de las provincias (centros)
 const provinceCentroids = {
     "MALAGA": [-4.42, 36.72], "MADRID": [-3.70, 40.41], "BARCELONA": [2.17, 41.38],
     "VALENCIA": [-0.37, 39.46], "SEVILLA": [-5.98, 37.38], "ZARAGOZA": [-0.88, 41.64],
@@ -47,8 +46,8 @@ export default function SpainMap({ data = [], onRegionClick }) {
 
     const colorScale = useMemo(() => {
         return scaleLinear()
-            .domain([0, maxRevenue * 0.1, maxRevenue])
-            .range(["#f8fafc", "#bae6fd", "#0284c7"]);
+            .domain([0, maxRevenue * 0.2, maxRevenue])
+            .range(["#fdfaff", "#818cf8", "#4338ca"]); // De lavanda a índigo intenso
     }, [maxRevenue]);
 
     const dataMap = useMemo(() => {
@@ -61,7 +60,7 @@ export default function SpainMap({ data = [], onRegionClick }) {
     }, [data]);
 
     return (
-        <div className="w-full h-full bg-slate-50 relative rounded-xl overflow-hidden shadow-inner border border-slate-200">
+        <div className="w-full h-full bg-[#f8fafc] relative rounded-2xl overflow-hidden shadow-inner border border-slate-200">
             <ComposableMap
                 projection="geoMercator"
                 projectionConfig={{
@@ -86,19 +85,19 @@ export default function SpainMap({ data = [], onRegionClick }) {
                                         onClick={() => onRegionClick(geo.properties.name, regionData)}
                                         style={{
                                             default: {
-                                                fill: hasData ? colorScale(revenue) : "#f1f5f9",
-                                                stroke: hasData ? "#0369a1" : "#e2e8f0",
+                                                fill: hasData ? colorScale(revenue) : "#ffffff",
+                                                stroke: hasData ? "#312e81" : "#e2e8f0",
                                                 strokeWidth: hasData ? 1.5 : 0.5,
                                                 outline: "none",
                                             },
                                             hover: {
-                                                fill: "#fbbf24",
-                                                stroke: "#b45309",
-                                                strokeWidth: 2,
+                                                fill: "#ec4899", // Rosa neón al pasar el ratón (muy intuitivo)
+                                                stroke: "#9d174d",
+                                                strokeWidth: 2.5,
                                                 outline: "none",
                                                 cursor: "pointer"
                                             },
-                                            pressed: { fill: "#f59e0b", outline: "none" }
+                                            pressed: { fill: "#db2777", outline: "none" }
                                         }}
                                     />
                                 );
@@ -106,7 +105,6 @@ export default function SpainMap({ data = [], onRegionClick }) {
                         }
                     </Geographies>
 
-                    {/* ETIQUETAS DIRECTAS: Sólo para donde hay clientes */}
                     {data.filter(d => d.clients > 0).map((d) => {
                         const key = normalizeName(d.region);
                         const coords = provinceCentroids[key];
@@ -116,24 +114,26 @@ export default function SpainMap({ data = [], onRegionClick }) {
                             <Marker key={key} coordinates={coords}>
                                 <g transform="translate(-10, -10)">
                                     <rect
-                                        x="-2" y="-12"
-                                        width={d.region.length * 5 + 25} height="16"
-                                        rx="8"
-                                        fill="white" fillOpacity="0.85"
-                                        stroke="#0369a1" strokeWidth="1"
+                                        x="-4" y="-14"
+                                        width={d.region.length * 5 + 35} height="20"
+                                        rx="10"
+                                        fill="white" fillOpacity="0.95"
+                                        stroke="#4338ca" strokeWidth="1.5"
+                                        className="shadow-sm"
                                     />
                                     <text
                                         textAnchor="start"
+                                        x="4"
                                         y="0"
                                         style={{
-                                            fontFamily: "system-ui",
-                                            fontSize: "8px",
+                                            fontFamily: "Inter, system-ui",
+                                            fontSize: "9px",
                                             fontWeight: "900",
-                                            fill: "#0c4a6e",
+                                            fill: "#1e1b4b",
                                             letterSpacing: "-0.2px"
                                         }}
                                     >
-                                        {d.region} <tspan fill="#0284c7">({d.clients})</tspan>
+                                        {d.region} <tspan fill="#6366f1">({d.clients})</tspan>
                                     </text>
                                 </g>
                             </Marker>
@@ -142,33 +142,33 @@ export default function SpainMap({ data = [], onRegionClick }) {
                 </ZoomableGroup>
             </ComposableMap>
 
-            {/* Panel de ranking rápido a la izquierda */}
-            <div className="absolute top-4 left-4 pointer-events-none space-y-2">
-                <div className="bg-white/90 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-xl w-48">
-                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1">
-                        <div className="w-1.5 h-3 bg-blue-600 rounded-full"></div>
-                        Top 5 Provincias
+            {/* Ranking con diseño Premium */}
+            <div className="absolute top-6 left-6 pointer-events-none">
+                <div className="bg-white/70 backdrop-blur-xl p-4 rounded-3xl border border-white/40 shadow-2xl w-56 flex flex-col gap-3">
+                    <h4 className="text-[11px] font-black text-indigo-900 uppercase tracking-[0.1em] flex items-center gap-2">
+                        <span className="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        Top Provincias
                     </h4>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                         {data.slice(0, 5).map((d, i) => (
-                            <div key={i} className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-slate-700 truncate mr-2">{d.region}</span>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md">{d.clients} cl.</span>
-                                </div>
+                            <div key={i} className="flex items-center justify-between group">
+                                <span className="text-[11px] font-bold text-slate-700">{d.region}</span>
+                                <span className="text-[10px] font-black text-white bg-indigo-600 px-2 py-0.5 rounded-full shadow-sm">
+                                    {d.clients}
+                                </span>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* Leyenda inteligente */}
-            <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-lg flex flex-col gap-1">
-                <span className="text-[9px] font-black text-slate-500 uppercase">Volumen Ventas</span>
-                <div className="flex items-center gap-2">
-                    <span className="text-[8px] font-bold text-slate-400">0€</span>
-                    <div className="w-32 h-1.5 rounded-full bg-gradient-to-r from-[#bae6fd] to-[#0284c7]"></div>
-                    <span className="text-[8px] font-bold text-slate-600">{new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(maxRevenue)}€</span>
+            {/* Leyenda Inteligente */}
+            <div className="absolute bottom-6 right-6 bg-white/70 backdrop-blur-xl p-4 rounded-3xl border border-white/40 shadow-2xl flex flex-col gap-2">
+                <span className="text-[10px] font-black text-indigo-900 uppercase tracking-wider">Flujo de Ventas</span>
+                <div className="flex items-center gap-3">
+                    <span className="text-[9px] font-bold text-slate-400">0€</span>
+                    <div className="w-36 h-2 rounded-full bg-gradient-to-r from-[#818cf8] to-[#4338ca] shadow-inner"></div>
+                    <span className="text-[9px] font-extrabold text-indigo-800">{new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(maxRevenue)}€</span>
                 </div>
             </div>
         </div>
