@@ -99,15 +99,15 @@ def get_article_sales(code: str, db: Session = Depends(get_db), current_user: mo
         query = """
             SELECT 
                 l.SeriePedido + '/' + CAST(l.NumeroPedido as varchar) as order_num,
-                l.CodigoCliente as client_code,
-                c.NombreCliente as client_name,
+                l.CodigodelCliente as client_code,
+                c.Nombre as client_name,
                 l.UnidadesPedidas as qty_ordered,
                 l.UnidadesServidas as qty_served,
                 l.UnidadesPendientes as qty_pending,
                 l.FechaEntrega as date_expected,
                 l.Estado as status
             FROM LineasPedidoCliente l
-            LEFT JOIN Clientes c ON l.CodigoCliente = c.CodigoCliente AND l.CodigoEmpresa = c.CodigoEmpresa
+            LEFT JOIN Clientes c ON l.CodigodelCliente = c.CodigoCliente AND l.CodigoEmpresa = c.CodigoEmpresa
             WHERE l.CodigoEmpresa = 2 
               AND l.CodigoArticulo = :code
               AND l.UnidadesPendientes > 0
@@ -132,7 +132,7 @@ def get_article_purchases(code: str, db: Session = Depends(get_db), current_user
             SELECT 
                 l.SeriePedido + '/' + CAST(l.NumeroPedido as varchar) as order_num,
                 l.CodigodelProveedor as vendor_code,
-                p.NombreProveedor as vendor_name,
+                p.Nombre as vendor_name,
                 l.UnidadesPedidas as qty_ordered,
                 l.UnidadesRecibidas as qty_received,
                 l.UnidadesPendientes as qty_pending,
