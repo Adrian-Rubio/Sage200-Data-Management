@@ -34,13 +34,13 @@ api.interceptors.response.use(
     }
 );
 
-// --- Authentication ---
+// --- Authentication & User Management ---
 export const loginUser = async (username, password) => {
     const formData = new URLSearchParams();
     formData.append('username', username);
     formData.append('password', password);
     try {
-        const response = await api.post('/token', formData, {
+        const response = await api.post('/auth/login', formData, {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
         return response.data;
@@ -52,10 +52,90 @@ export const loginUser = async (username, password) => {
 
 export const fetchCurrentUser = async () => {
     try {
-        const response = await api.get('/users/me');
+        const response = await api.get('/auth/users/me');
         return response.data;
     } catch (error) {
         console.error("Error fetching current user:", error);
+        throw error;
+    }
+};
+
+export const fetchUsers = async () => {
+    try {
+        const response = await api.get('/auth/users');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        throw error;
+    }
+};
+
+export const createUser = async (userData) => {
+    try {
+        const response = await api.post('/auth/users', userData);
+        return response.data;
+    } catch (error) {
+        console.error("Error creating user:", error);
+        throw error;
+    }
+};
+
+export const updateUser = async (userId, userData) => {
+    try {
+        const response = await api.put(`/auth/users/${userId}`, userData);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating user:", error);
+        throw error;
+    }
+};
+
+export const deleteUser = async (userId) => {
+    try {
+        const response = await api.delete(`/auth/users/${userId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        throw error;
+    }
+};
+
+export const fetchRoles = async () => {
+    try {
+        const response = await api.get('/auth/roles');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching roles:", error);
+        throw error;
+    }
+};
+
+export const createRole = async (roleData) => {
+    try {
+        const response = await api.post('/auth/roles', roleData);
+        return response.data;
+    } catch (error) {
+        console.error("Error creating role:", error);
+        throw error;
+    }
+};
+
+export const updateRole = async (roleId, roleData) => {
+    try {
+        const response = await api.put(`/auth/roles/${roleId}`, roleData);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating role:", error);
+        throw error;
+    }
+};
+
+export const deleteRole = async (roleId) => {
+    try {
+        const response = await api.delete(`/auth/roles/${roleId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting role:", error);
         throw error;
     }
 };
@@ -205,6 +285,26 @@ export const fetchProductionDashboard = async (filters) => {
     }
 };
 
+export const fetchProductionOrders = async (filters) => {
+    try {
+        const response = await api.post('/production/orders', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching production orders:", error);
+        throw error;
+    }
+};
+
+export const fetchProductionOperations = async (exercise, workNum) => {
+    try {
+        const response = await api.get(`/production/operations/${exercise}/${workNum}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching production operations:", error);
+        throw error;
+    }
+};
+
 // --- Purchases ---
 export const fetchPurchasesDashboard = async (filters) => {
     try {
@@ -279,8 +379,18 @@ export const fetchReportsList = async () => {
     }
 };
 
+export const fetchMonthlyClose = async (filters) => {
+    try {
+        const response = await api.post('/reports/monthly-close', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching monthly close report:", error);
+        throw error;
+    }
+};
+
 // --- RMA ---
-export const fetchRMAData = async () => {
+export const fetchRmaData = async () => {
     try {
         const response = await api.get('/rma');
         return response.data;
