@@ -132,7 +132,9 @@ export default function ArticleDashboard({ articleCode, onBack }) {
                             <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
                             Ventas Pendientes
                         </h3>
-                        <span className="text-[10px] font-black bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full uppercase">{sales.length} Pedidos</span>
+                        <span className="text-[10px] font-black bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full uppercase">
+                            {sales.length} Pedidos · {sales.reduce((sum, s) => sum + (s.qty_pending || 0), 0).toLocaleString('es-ES', { maximumFractionDigits: 0 })} u.
+                        </span>
                     </div>
                     <div className="flex-1 overflow-x-auto">
                         <table className="w-full text-left text-xs">
@@ -174,7 +176,9 @@ export default function ArticleDashboard({ articleCode, onBack }) {
                             <div className="w-1.5 h-6 bg-orange-500 rounded-full"></div>
                             Compras a Recibir
                         </h3>
-                        <span className="text-[10px] font-black bg-orange-50 text-orange-600 px-2 py-1 rounded-full uppercase">{purchases.length} Marít./Terrest.</span>
+                        <span className="text-[10px] font-black bg-orange-50 text-orange-600 px-2 py-1 rounded-full uppercase">
+                            {purchases.length} Pedidos · {purchases.reduce((sum, p) => sum + (p.qty_pending || 0), 0).toLocaleString('es-ES', { maximumFractionDigits: 0 })} u.
+                        </span>
                     </div>
                     <div className="flex-1 overflow-x-auto">
                         <table className="w-full text-left text-xs">
@@ -216,7 +220,9 @@ export default function ArticleDashboard({ articleCode, onBack }) {
                             <div className="w-1.5 h-6 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
                             Órdenes de Fabricación en Curso
                         </h3>
-                        <span className="text-[10px] font-black bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full uppercase tracking-widest">Live Flow</span>
+                        <span className="text-[10px] font-black bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full uppercase tracking-widest">
+                            {production.length} OT · {production.reduce((sum, r) => sum + ((r.qty_to_make || 0) - (r.qty_made || 0)), 0).toLocaleString('es-ES', { maximumFractionDigits: 0 })} u.
+                        </span>
                     </div>
                     <div className="flex-1 overflow-x-auto">
                         <table className="w-full text-left text-xs">

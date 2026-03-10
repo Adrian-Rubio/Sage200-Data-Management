@@ -203,29 +203,29 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
         
         query_comp = """
             SELECT 
-                op.EjercicioTrabajo as exercise,
-                op.NumeroTrabajo as work_num,
-                SUM(op.UnidadesPendientesPresupuesto) as qty_to_make,
+                mat.EjercicioTrabajo as exercise,
+                mat.NumeroTrabajo as work_num,
+                SUM(mat.UnidadesPrevistas - mat.UnidadesReales) as qty_to_make,
                 0 as qty_made,
                 ot.EstadoOT as status,
                 ot.FechaFinalPrevista as date_expected,
                 'COMPONENTE' as role
-            FROM ComponentesOT op
-            JOIN OrdenesTrabajo ot ON op.CodigoEmpresa = ot.CodigoEmpresa 
-                                AND op.EjercicioTrabajo = ot.EjercicioTrabajo 
-                                AND op.NumeroTrabajo = ot.NumeroTrabajo
-            WHERE op.CodigoEmpresa = :comp 
-              AND op.CodigoArticulo = :code
+            FROM pwb_MaterialesOrdenTrabajo mat
+            JOIN OrdenesTrabajo ot ON mat.EjercicioTrabajo = ot.EjercicioTrabajo 
+                                AND mat.NumeroTrabajo = ot.NumeroTrabajo
+                                AND ot.CodigoEmpresa = :comp
+            WHERE mat.CodigoArticulo = :code
               AND ot.EstadoOT IN (0, 1)
-              AND op.UnidadesPendientesPresupuesto > 0
-            GROUP BY op.EjercicioTrabajo, op.NumeroTrabajo, ot.EstadoOT, ot.FechaFinalPrevista
+              AND (mat.UnidadesPrevistas - mat.UnidadesReales) > 0
+            GROUP BY mat.EjercicioTrabajo, mat.NumeroTrabajo, ot.EstadoOT, ot.FechaFinalPrevista
         """
         try:
             df_comp = pd.read_sql(text(query_comp), db.bind, params={"code": code, "comp": TARGET_COMPANY})
             if not df_comp.empty:
                 df_comp['qty_to_make'] = df_comp['qty_to_make'].astype(float)
                 df_comp['qty_made'] = df_comp['qty_made'].astype(float)
-        except:
+        except Exception as e:
+            print(f"Error fetching components for dashboard: {e}")
             df_comp = pd.DataFrame()
 
         df = pd.concat([df_of, df_comp]) if not df_comp.empty else df_of
