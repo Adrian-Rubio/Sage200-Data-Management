@@ -1,7 +1,5 @@
 import axios from 'axios';
 
-// Create an instance of axios with base URL
-// Use the relative path to be handled by the development server proxy or environment variable
 const api = axios.create({
     baseURL: '/api',
 });
@@ -27,7 +25,6 @@ api.interceptors.response.use(
     },
     (error) => {
         if (error.response && error.response.status === 401) {
-            // Clear token and redirect to login if not already there
             localStorage.removeItem('token');
             if (window.location.pathname !== '/login') {
                 window.location.href = '/login';
@@ -37,50 +34,14 @@ api.interceptors.response.use(
     }
 );
 
-// Sales endpoints
-export const fetchSalesDashboard = async (filters) => {
-    try {
-        const response = await api.post('/sales/dashboard', filters);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching sales dashboard:", error);
-        throw error;
-    }
-};
-
-// Filter options endpoints
-export const fetchFilterOptions = async () => {
-    try {
-        const response = await api.get('/filters/options');
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching filter options:", error);
-        throw error;
-    }
-};
-
-// Orders endpoints
-export const fetchOrders = async (filters) => {
-    try {
-        const response = await api.post('/orders/list', filters);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching orders:", error);
-        throw error;
-    }
-};
-
-// Authentication endpoints
+// --- Authentication ---
 export const loginUser = async (username, password) => {
     const formData = new URLSearchParams();
     formData.append('username', username);
     formData.append('password', password);
-
     try {
         const response = await api.post('/token', formData, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
         return response.data;
     } catch (error) {
@@ -89,7 +50,6 @@ export const loginUser = async (username, password) => {
     }
 };
 
-// User info
 export const fetchCurrentUser = async () => {
     try {
         const response = await api.get('/users/me');
@@ -100,7 +60,80 @@ export const fetchCurrentUser = async () => {
     }
 };
 
-// Finance endpoints
+// --- Filters ---
+export const fetchFilterOptions = async () => {
+    try {
+        const response = await api.get('/filters/options');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching filter options:", error);
+        throw error;
+    }
+};
+
+// --- Sales ---
+export const fetchSalesDashboard = async (filters) => {
+    try {
+        const response = await api.post('/sales/dashboard', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching sales dashboard:", error);
+        throw error;
+    }
+};
+
+export const fetchSalesInvoices = async (filters) => {
+    try {
+        const response = await api.post('/sales/invoices', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching sales invoices:", error);
+        throw error;
+    }
+};
+
+export const fetchSalesComparison = async (filters) => {
+    try {
+        const response = await api.post('/sales/comparison', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching sales comparison:", error);
+        throw error;
+    }
+};
+
+export const fetchSalesByGeography = async (filters, scope = 'nacional') => {
+    try {
+        const response = await api.post('/sales/by-geography', { ...filters, scope });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching geography data:", error);
+        throw error;
+    }
+};
+
+export const fetchRegionDetail = async (filters, scope, region) => {
+    try {
+        const response = await api.post('/sales/region-detail', { ...filters, scope, region });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching region detail:", error);
+        throw error;
+    }
+};
+
+// --- Orders ---
+export const fetchOrders = async (filters) => {
+    try {
+        const response = await api.post('/orders/list', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching orders:", error);
+        throw error;
+    }
+};
+
+// --- Finance ---
 export const fetchFinanceDashboard = async (filters) => {
     try {
         const response = await api.post('/finance/dashboard', filters);
@@ -111,7 +144,7 @@ export const fetchFinanceDashboard = async (filters) => {
     }
 };
 
-// Production endpoints
+// --- Production ---
 export const fetchProductionDashboard = async (filters) => {
     try {
         const response = await api.post('/production/dashboard', filters);
@@ -122,29 +155,7 @@ export const fetchProductionDashboard = async (filters) => {
     }
 };
 
-// Inventory endpoints
-export const fetchInventoryDashboard = async (filters) => {
-    try {
-        const response = await api.post('/inventory/dashboard', filters);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching inventory dashboard:", error);
-        throw error;
-    }
-};
-
-// Almacen endpoints
-export const fetchAlmacenStock = async () => {
-    try {
-        const response = await api.get('/almacen/stock-by-warehouse');
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching warehouse stock:", error);
-        throw error;
-    }
-};
-
-// Purchases endpoints
+// --- Purchases ---
 export const fetchPurchasesDashboard = async (filters) => {
     try {
         const response = await api.post('/purchases/dashboard', filters);
@@ -155,7 +166,49 @@ export const fetchPurchasesDashboard = async (filters) => {
     }
 };
 
-// Reports endpoints
+// --- Inventory ---
+export const fetchInventoryDashboard = async (filters) => {
+    try {
+        const response = await api.post('/inventory/dashboard', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching inventory dashboard:", error);
+        throw error;
+    }
+};
+
+// --- Almacen ---
+export const fetchAlmacenStock = async () => {
+    try {
+        const response = await api.get('/almacen/stock-by-warehouse');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching warehouse stock:", error);
+        throw error;
+    }
+};
+
+export const fetchAlmacenStats = async (filters) => {
+    try {
+        const response = await api.post('/almacen/stats', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching warehouse stats:", error);
+        throw error;
+    }
+};
+
+export const fetchOperators = async () => {
+    try {
+        const response = await api.get('/almacen/operators');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching operators:", error);
+        throw error;
+    }
+};
+
+// --- Reports ---
 export const fetchReportsList = async () => {
     try {
         const response = await api.get('/reports/list');
@@ -166,7 +219,7 @@ export const fetchReportsList = async () => {
     }
 };
 
-// RMA endpoints
+// --- RMA ---
 export const fetchRMAData = async () => {
     try {
         const response = await api.get('/rma');
@@ -177,7 +230,7 @@ export const fetchRMAData = async () => {
     }
 };
 
-// Inventory Tracking
+// --- Inventory Tracking (New Feature) ---
 export const searchArticles = async (query) => {
     try {
         const response = await api.get(`/inventory-tracking/search?q=${encodeURIComponent(query)}`);
