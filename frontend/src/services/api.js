@@ -133,6 +133,16 @@ export const fetchOrders = async (filters) => {
     }
 };
 
+export const fetchPendingOrders = async (filters) => {
+    try {
+        const response = await api.post('/orders/pending', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching pending orders:", error);
+        throw error;
+    }
+};
+
 // --- Finance ---
 export const fetchFinanceDashboard = async (filters) => {
     try {
@@ -140,6 +150,46 @@ export const fetchFinanceDashboard = async (filters) => {
         return response.data;
     } catch (error) {
         console.error("Error fetching finance dashboard:", error);
+        throw error;
+    }
+};
+
+export const fetchFinancePayments = async (filters) => {
+    try {
+        const response = await api.post('/finance/payments', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching finance payments:", error);
+        throw error;
+    }
+};
+
+export const fetchFinancePnl = async (filters) => {
+    try {
+        const response = await api.post('/finance/pnl', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching P&L:", error);
+        throw error;
+    }
+};
+
+export const fetchFinancePnlEvolution = async (filters) => {
+    try {
+        const response = await api.post('/finance/pnl-evolution', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching P&L evolution:", error);
+        throw error;
+    }
+};
+
+export const fetchFinancePnLDetailed = async (filters) => {
+    try {
+        const response = await api.post('/finance/pnl-detailed', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching detailed P&L:", error);
         throw error;
     }
 };
