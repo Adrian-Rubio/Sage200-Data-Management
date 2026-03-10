@@ -120,14 +120,18 @@ def get_article_sales(code: str, db: Session = Depends(get_db), current_user: mo
             SELECT 
                 l.SeriePedido + '/' + CAST(l.NumeroPedido as varchar) as order_num,
                 l.CodigodelCliente as client_code,
-                c.Nombre as client_name,
+                cab.RazonSocial as client_name,
                 l.UnidadesPedidas as qty_ordered,
                 l.UnidadesServidas as qty_served,
                 l.UnidadesPendientes as qty_pending,
                 l.FechaEntrega as date_expected,
                 l.Estado as status
             FROM LineasPedidoCliente l
-            LEFT JOIN Clientes c ON l.CodigodelCliente = c.CodigoCliente AND l.CodigoEmpresa = c.CodigoEmpresa
+            LEFT JOIN CabeceraPedidoCliente cab 
+                ON l.CodigoEmpresa = cab.CodigoEmpresa 
+                AND l.EjercicioPedido = cab.EjercicioPedido 
+                AND l.SeriePedido = cab.SeriePedido 
+                AND l.NumeroPedido = cab.NumeroPedido
             WHERE l.CodigoEmpresa = :comp 
               AND l.CodigoArticulo = :code
               AND l.UnidadesPendientes > 0
@@ -150,14 +154,18 @@ def get_article_purchases(code: str, db: Session = Depends(get_db), current_user
             SELECT 
                 l.SeriePedido + '/' + CAST(l.NumeroPedido as varchar) as order_num,
                 l.CodigodelProveedor as vendor_code,
-                p.Nombre as vendor_name,
+                cab.RazonSocial as vendor_name,
                 l.UnidadesPedidas as qty_ordered,
                 l.UnidadesRecibidas as qty_received,
                 l.UnidadesPendientes as qty_pending,
                 l.FechaRecepcion as date_expected,
                 l.Estado as status
             FROM LineasPedidoProveedor l
-            LEFT JOIN Proveedores p ON l.CodigodelProveedor = p.CodigoProveedor AND l.CodigoEmpresa = p.CodigoEmpresa
+            LEFT JOIN CabeceraPedidoProveedor cab 
+                ON l.CodigoEmpresa = cab.CodigoEmpresa 
+                AND l.EjercicioPedido = cab.EjercicioPedido 
+                AND l.SeriePedido = cab.SeriePedido 
+                AND l.NumeroPedido = cab.NumeroPedido
             WHERE l.CodigoEmpresa = :comp 
               AND l.CodigoArticulo = :code
               AND l.UnidadesPendientes > 0
