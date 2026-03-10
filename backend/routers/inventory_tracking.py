@@ -15,14 +15,17 @@ router = APIRouter()
 def search_articles(q: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
         # Search by code or description
+        # Using both company 1 and 2 to be safe, or just 2 as main.
+        # But maybe we should check both or have a company filter.
+        # For now, searching wherever it is.
         query = """
             SELECT TOP 50 
                 CodigoArticulo as code, 
                 DescripcionArticulo as description,
-                UnidadMedidaVentas_ as unit
+                UnidadMedidaVentas_ as unit,
+                CodigoEmpresa as company
             FROM Articulos
-            WHERE CodigoEmpresa = 2 
-              AND (CodigoArticulo LIKE :q OR DescripcionArticulo LIKE :q)
+            WHERE CodigoArticulo LIKE :q OR DescripcionArticulo LIKE :q
             ORDER BY CodigoArticulo
         """
         df = pd.read_sql(text(query), db.bind, params={"q": f"%{q}%"})
@@ -31,7 +34,7 @@ def search_articles(q: str, db: Session = Depends(get_db), current_user: models.
         print(f"Error in search_articles: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/article/{code}/info")
+@router.get("/article/{code:path}/info")
 def get_article_info(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
         query = """
@@ -44,13 +47,18 @@ def get_article_info(code: str, db: Session = Depends(get_db), current_user: mod
                 PrecioVenta as sale_price,
                 StockMinimo as min_stock,
                 StockMaximo as max_stock,
-                FechaAlta as date_created
+                FechaAlta as date_created,
+                CodigoEmpresa as company
             FROM Articulos
-            WHERE CodigoEmpresa = 2 AND CodigoArticulo = :code
+            WHERE CodigoArticulo = :code
         """
         df = pd.read_sql(text(query), db.bind, params={"code": code})
         if df.empty:
-            raise HTTPException(status_code=404, detail="Article not found")
+            raise HTTPException(status_code=404, detail=f"Article '{code}' not found")
+        
+        # If multiple companies, take the first one found or prioritize 2.
+        if len(df) > 1:
+            df = df[df['company'] == 2] if 2 in df['company'].values else df.iloc[:1]
         
         res = df.iloc[0].to_dict()
         # Handle dates/decimals
@@ -66,35 +74,48 @@ def get_article_info(code: str, db: Session = Depends(get_db), current_user: mod
         print(f"Error in get_article_info: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/article/{code}/stock")
+@router.get("/article/{code:path}/stock")
 def get_article_stock(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
-        # Crucial to get most recent stock. 
-        # Using PowerBi_AcumuladoStock as it was used in inventory.py
-        # Need to find latest period
-        latest_query = "SELECT MAX(Ejercicio) as ex, MAX(Periodo) as per FROM PowerBi_AcumuladoStock WHERE CodigoEmpresa = 2"
-        latest = pd.read_sql(text(latest_query), db.bind).iloc[0]
+        # Get article info first to know company
+        article_info = db.execute(text("SELECT CodigoEmpresa FROM Articulos WHERE CodigoArticulo = :code"), {"code": code}).fetchone()
+        if not article_info:
+            return []
+        
+        comp = article_info[0]
+        
+        latest_query = "SELECT MAX(Ejercicio) as ex, MAX(Periodo) as per FROM PowerBi_AcumuladoStock WHERE CodigoEmpresa = :comp"
+        latest = pd.read_sql(text(latest_query), db.bind, params={"comp": comp}).iloc[0]
         
         query = """
             SELECT 
                 Almacen as warehouse,
                 UnidadSaldo as stock
             FROM PowerBi_AcumuladoStock
-            WHERE CodigoEmpresa = 2 
+            WHERE CodigoEmpresa = :comp 
               AND CodigoArticulo = :code
               AND Ejercicio = :ex
               AND Periodo = :per
             ORDER BY UnidadSaldo DESC
         """
-        df = pd.read_sql(text(query), db.bind, params={"code": code, "ex": int(latest['ex']), "per": int(latest['per'])})
+        df = pd.read_sql(text(query), db.bind, params={
+            "code": code, 
+            "comp": comp,
+            "ex": int(latest['ex']), 
+            "per": int(latest['per'])
+        })
         return df.to_dict(orient='records')
     except Exception as e:
         print(f"Error in get_article_stock: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/article/{code}/sales")
+@router.get("/article/{code:path}/sales")
 def get_article_sales(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
+        article_info = db.execute(text("SELECT CodigoEmpresa FROM Articulos WHERE CodigoArticulo = :code"), {"code": code}).fetchone()
+        if not article_info: return []
+        comp = article_info[0]
+
         # Pending sales orders
         query = """
             SELECT 
@@ -108,12 +129,12 @@ def get_article_sales(code: str, db: Session = Depends(get_db), current_user: mo
                 l.Estado as status
             FROM LineasPedidoCliente l
             LEFT JOIN Clientes c ON l.CodigodelCliente = c.CodigoCliente AND l.CodigoEmpresa = c.CodigoEmpresa
-            WHERE l.CodigoEmpresa = 2 
+            WHERE l.CodigoEmpresa = :comp 
               AND l.CodigoArticulo = :code
               AND l.UnidadesPendientes > 0
             ORDER BY l.FechaEntrega ASC
         """
-        df = pd.read_sql(text(query), db.bind, params={"code": code})
+        df = pd.read_sql(text(query), db.bind, params={"code": code, "comp": comp})
         
         res = df.to_dict(orient='records')
         for r in res:
@@ -124,9 +145,13 @@ def get_article_sales(code: str, db: Session = Depends(get_db), current_user: mo
         print(f"Error in get_article_sales: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/article/{code}/purchases")
+@router.get("/article/{code:path}/purchases")
 def get_article_purchases(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
+        article_info = db.execute(text("SELECT CodigoEmpresa FROM Articulos WHERE CodigoArticulo = :code"), {"code": code}).fetchone()
+        if not article_info: return []
+        comp = article_info[0]
+
         # Pending purchase orders
         query = """
             SELECT 
@@ -140,12 +165,12 @@ def get_article_purchases(code: str, db: Session = Depends(get_db), current_user
                 l.Estado as status
             FROM LineasPedidoProveedor l
             LEFT JOIN Proveedores p ON l.CodigodelProveedor = p.CodigoProveedor AND l.CodigoEmpresa = p.CodigoEmpresa
-            WHERE l.CodigoEmpresa = 2 
+            WHERE l.CodigoEmpresa = :comp 
               AND l.CodigoArticulo = :code
               AND l.UnidadesPendientes > 0
             ORDER BY l.FechaRecepcion ASC
         """
-        df = pd.read_sql(text(query), db.bind, params={"code": code})
+        df = pd.read_sql(text(query), db.bind, params={"code": code, "comp": comp})
         
         res = df.to_dict(orient='records')
         for r in res:
@@ -156,9 +181,13 @@ def get_article_purchases(code: str, db: Session = Depends(get_db), current_user
         print(f"Error in get_article_purchases: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/article/{code}/production")
+@router.get("/article/{code:path}/production")
 def get_article_production(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
+        article_info = db.execute(text("SELECT CodigoEmpresa FROM Articulos WHERE CodigoArticulo = :code"), {"code": code}).fetchone()
+        if not article_info: return []
+        comp = article_info[0]
+
         # Active manufacturing orders
         query = """
             SELECT 
@@ -169,12 +198,12 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
                 EstadoOT as status,
                 FechaFinalPrevista as date_expected
             FROM OrdenesTrabajo
-            WHERE CodigoEmpresa = 2 
+            WHERE CodigoEmpresa = :comp 
               AND CodigoArticulo = :code
               AND EstadoOT IN (0, 1) -- Preparada, Abierta
             ORDER BY FechaFinalPrevista ASC
         """
-        df = pd.read_sql(text(query), db.bind, params={"code": code})
+        df = pd.read_sql(text(query), db.bind, params={"code": code, "comp": comp})
         
         res = df.to_dict(orient='records')
         for r in res:
