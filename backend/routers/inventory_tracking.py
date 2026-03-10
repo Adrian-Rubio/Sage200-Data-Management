@@ -11,13 +11,14 @@ import json
 
 router = APIRouter()
 
+@router.get("/ping")
+def ping_tracking():
+    return {"status": "ok", "message": "Inventory tracking router is active"}
+
 @router.get("/search")
 def search_articles(q: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
         # Search by code or description
-        # Using both company 1 and 2 to be safe, or just 2 as main.
-        # But maybe we should check both or have a company filter.
-        # For now, searching wherever it is.
         query = """
             SELECT TOP 50 
                 CodigoArticulo as code, 
@@ -34,7 +35,7 @@ def search_articles(q: str, db: Session = Depends(get_db), current_user: models.
         print(f"Error in search_articles: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/article/{code:path}/info")
+@router.get("/article-info")
 def get_article_info(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
         query = """
@@ -56,12 +57,10 @@ def get_article_info(code: str, db: Session = Depends(get_db), current_user: mod
         if df.empty:
             raise HTTPException(status_code=404, detail=f"Article '{code}' not found")
         
-        # If multiple companies, take the first one found or prioritize 2.
         if len(df) > 1:
             df = df[df['company'] == 2] if 2 in df['company'].values else df.iloc[:1]
         
         res = df.iloc[0].to_dict()
-        # Handle dates/decimals
         for k, v in res.items():
             if pd.isnull(v): res[k] = None
             elif hasattr(v, 'isoformat'): res[k] = v.isoformat()
@@ -74,14 +73,11 @@ def get_article_info(code: str, db: Session = Depends(get_db), current_user: mod
         print(f"Error in get_article_info: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/article/{code:path}/stock")
+@router.get("/article-stock")
 def get_article_stock(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
-        # Get article info first to know company
         article_info = db.execute(text("SELECT CodigoEmpresa FROM Articulos WHERE CodigoArticulo = :code"), {"code": code}).fetchone()
-        if not article_info:
-            return []
-        
+        if not article_info: return []
         comp = article_info[0]
         
         latest_query = "SELECT MAX(Ejercicio) as ex, MAX(Periodo) as per FROM PowerBi_AcumuladoStock WHERE CodigoEmpresa = :comp"
@@ -109,14 +105,13 @@ def get_article_stock(code: str, db: Session = Depends(get_db), current_user: mo
         print(f"Error in get_article_stock: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/article/{code:path}/sales")
+@router.get("/article-sales")
 def get_article_sales(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
         article_info = db.execute(text("SELECT CodigoEmpresa FROM Articulos WHERE CodigoArticulo = :code"), {"code": code}).fetchone()
         if not article_info: return []
         comp = article_info[0]
 
-        # Pending sales orders
         query = """
             SELECT 
                 l.SeriePedido + '/' + CAST(l.NumeroPedido as varchar) as order_num,
@@ -139,20 +134,18 @@ def get_article_sales(code: str, db: Session = Depends(get_db), current_user: mo
         res = df.to_dict(orient='records')
         for r in res:
             if pd.notnull(r['date_expected']): r['date_expected'] = str(r['date_expected']).split(' ')[0]
-            
         return res
     except Exception as e:
         print(f"Error in get_article_sales: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/article/{code:path}/purchases")
+@router.get("/article-purchases")
 def get_article_purchases(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
         article_info = db.execute(text("SELECT CodigoEmpresa FROM Articulos WHERE CodigoArticulo = :code"), {"code": code}).fetchone()
         if not article_info: return []
         comp = article_info[0]
 
-        # Pending purchase orders
         query = """
             SELECT 
                 l.SeriePedido + '/' + CAST(l.NumeroPedido as varchar) as order_num,
@@ -175,20 +168,18 @@ def get_article_purchases(code: str, db: Session = Depends(get_db), current_user
         res = df.to_dict(orient='records')
         for r in res:
             if pd.notnull(r['date_expected']): r['date_expected'] = str(r['date_expected']).split(' ')[0]
-            
         return res
     except Exception as e:
         print(f"Error in get_article_purchases: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/article/{code:path}/production")
+@router.get("/article-production")
 def get_article_production(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
         article_info = db.execute(text("SELECT CodigoEmpresa FROM Articulos WHERE CodigoArticulo = :code"), {"code": code}).fetchone()
         if not article_info: return []
         comp = article_info[0]
 
-        # Active manufacturing orders
         query = """
             SELECT 
                 EjercicioTrabajo as exercise,
@@ -200,7 +191,7 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
             FROM OrdenesTrabajo
             WHERE CodigoEmpresa = :comp 
               AND CodigoArticulo = :code
-              AND EstadoOT IN (0, 1) -- Preparada, Abierta
+              AND EstadoOT IN (0, 1)
             ORDER BY FechaFinalPrevista ASC
         """
         df = pd.read_sql(text(query), db.bind, params={"code": code, "comp": comp})
@@ -208,10 +199,8 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
         res = df.to_dict(orient='records')
         for r in res:
             if pd.notnull(r['date_expected']): r['date_expected'] = str(r['date_expected']).split(' ')[0]
-            # Map status
             if r['status'] == 0: r['status_desc'] = 'Preparada'
             elif r['status'] == 1: r['status_desc'] = 'En Curso'
-            
         return res
     except Exception as e:
         print(f"Error in get_article_production: {e}")

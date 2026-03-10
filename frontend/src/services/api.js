@@ -1,28 +1,35 @@
 import axios from 'axios';
 
-const API_URL = '/api';
-
+// Create an instance of axios with base URL
+// Use the relative path to be handled by the development server proxy or environment variable
 const api = axios.create({
-    baseURL: API_URL,
+    baseURL: '/api',
 });
 
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+// Add a request interceptor to include the bearer token
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
     }
-    return config;
-}, (error) => {
-    return Promise.reject(error);
-});
+);
 
+// Add a response interceptor to handle 401 errors
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        return response;
+    },
     (error) => {
         if (error.response && error.response.status === 401) {
-            // Token expired or unauthorized
+            // Clear token and redirect to login if not already there
+            localStorage.removeItem('token');
             if (window.location.pathname !== '/login') {
-                localStorage.removeItem('token');
                 window.location.href = '/login';
             }
         }
@@ -30,18 +37,7 @@ api.interceptors.response.use(
     }
 );
 
-export default api;
-
-export const fetchFilterOptions = async () => {
-    try {
-        const response = await api.get('/filters/options');
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching filter options:", error);
-        return { companies: [], reps: [], clients: [], series: [] };
-    }
-};
-
+// Sales endpoints
 export const fetchSalesDashboard = async (filters) => {
     try {
         const response = await api.post('/sales/dashboard', filters);
@@ -52,206 +48,82 @@ export const fetchSalesDashboard = async (filters) => {
     }
 };
 
-export const fetchSalesInvoices = async (filters) => {
+// Filter options endpoints
+export const fetchFilterOptions = async () => {
     try {
-        const response = await api.post('/sales/invoices', filters);
+        const response = await api.get('/filters/options');
         return response.data;
     } catch (error) {
-        console.error("Error fetching sales invoices:", error);
+        console.error("Error fetching filter options:", error);
         throw error;
     }
 };
 
-export const fetchSalesComparison = async (filters) => {
+// Orders endpoints
+export const fetchOrders = async (filters) => {
     try {
-        const response = await api.post('/sales/comparison', filters);
+        const response = await api.post('/orders/list', filters);
         return response.data;
     } catch (error) {
-        console.error("Error fetching sales comparison:", error);
+        console.error("Error fetching orders:", error);
         throw error;
     }
 };
 
-export const fetchPendingOrders = async (filters) => {
+// Authentication endpoints
+export const loginUser = async (username, password) => {
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
+
     try {
-        const response = await api.post('/orders/pending', filters);
+        const response = await api.post('/token', formData, {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        });
         return response.data;
     } catch (error) {
-        console.error("Error fetching pending orders:", error);
+        console.error("Login error:", error);
         throw error;
     }
 };
 
-export const fetchPendingPurchases = async (filters = {}) => {
+// User info
+export const fetchCurrentUser = async () => {
     try {
-        const response = await api.post('/purchases/pending', filters);
+        const response = await api.get('/users/me');
         return response.data;
     } catch (error) {
-        console.error("Error fetching pending purchases:", error);
+        console.error("Error fetching current user:", error);
         throw error;
     }
 };
 
-export const fetchPurchasesDashboard = async (filters = {}) => {
+// Finance endpoints
+export const fetchFinanceDashboard = async (filters) => {
     try {
-        const response = await api.post('/purchases/dashboard', filters);
+        const response = await api.post('/finance/dashboard', filters);
         return response.data;
     } catch (error) {
-        console.error("Error fetching purchases dashboard:", error);
+        console.error("Error fetching finance dashboard:", error);
         throw error;
     }
 };
 
-export const fetchProductionOrders = async (filters = {}) => {
+// Production endpoints
+export const fetchProductionDashboard = async (filters) => {
     try {
-        const response = await api.post('/production/orders', filters);
+        const response = await api.post('/production/dashboard', filters);
         return response.data;
     } catch (error) {
-        console.error("Error fetching production orders:", error);
+        console.error("Error fetching production dashboard:", error);
         throw error;
     }
 };
 
-export const fetchProductionOperations = async (exercise, workNum) => {
-    try {
-        const response = await api.get(`/production/operations/${exercise}/${workNum}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching production operations:", error);
-        return [];
-    }
-};
-
-export const fetchUsers = async () => {
-    try {
-        const response = await api.get('/auth/users');
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching users:", error);
-        throw error;
-    }
-};
-
-export const createUser = async (userData) => {
-    try {
-        const response = await api.post('/auth/users', userData);
-        return response.data;
-    } catch (error) {
-        console.error("Error creating user:", error);
-        throw error;
-    }
-};
-
-export const fetchRoles = async () => {
-    try {
-        const response = await api.get('/auth/roles');
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching roles:", error);
-        throw error;
-    }
-};
-
-export const createRole = async (roleData) => {
-    try {
-        const response = await api.post('/auth/roles', roleData);
-        return response.data;
-    } catch (error) {
-        console.error("Error creating role:", error);
-        throw error;
-    }
-};
-export const updateUser = async (userId, userData) => {
-    try {
-        const response = await api.put(`/auth/users/${userId}`, userData);
-        return response.data;
-    } catch (error) {
-        console.error("Error updating user:", error);
-        throw error;
-    }
-};
-
-export const deleteUser = async (userId) => {
-    try {
-        const response = await api.delete(`/auth/users/${userId}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error deleting user:", error);
-        throw error;
-    }
-};
-
-export const updateRole = async (roleId, roleData) => {
-    try {
-        const response = await api.put(`/auth/roles/${roleId}`, roleData);
-        return response.data;
-    } catch (error) {
-        console.error("Error updating role:", error);
-        throw error;
-    }
-};
-
-export const deleteRole = async (roleId) => {
-    try {
-        const response = await api.delete(`/auth/roles/${roleId}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error deleting role:", error);
-        throw error;
-    }
-};
-
-export const fetchAlmacenStats = async (filters) => {
-    try {
-        const response = await api.post('/almacen/stats', filters);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching almacen stats:", error);
-        throw error;
-    }
-};
-
-export const fetchOperators = async () => {
-    try {
-        const response = await api.get('/almacen/operators');
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching operators:", error);
-        throw error;
-    }
-};
-
-export const fetchFinancePayments = async (filters) => {
-    try {
-        const response = await api.post('/finance/payments', filters);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching finance payments:", error);
-        throw error;
-    }
-};
-
-export const fetchFinancePnL = async (filters) => {
-    try {
-        const response = await api.post('/finance/pnl', filters);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching finance PnL:", error);
-        throw error;
-    }
-};
-
-export const fetchFinancePnLEvolution = async (filters) => {
-    try {
-        const response = await api.post('/finance/pnl-evolution', filters);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching finance PnL evolution:", error);
-        throw error;
-    }
-};
-
-export const fetchInventoryDashboard = async (filters = {}) => {
+// Inventory endpoints
+export const fetchInventoryDashboard = async (filters) => {
     try {
         const response = await api.post('/inventory/dashboard', filters);
         return response.data;
@@ -261,50 +133,46 @@ export const fetchInventoryDashboard = async (filters = {}) => {
     }
 };
 
-export const fetchMonthlyClose = async (filters) => {
+// Almacen endpoints
+export const fetchAlmacenStock = async () => {
     try {
-        const response = await api.post('/reports/monthly-close', filters);
+        const response = await api.get('/almacen/stock-by-warehouse');
         return response.data;
     } catch (error) {
-        console.error("Error fetching monthly close report:", error);
-        throw error;
-    }
-};
-export const fetchFinancePnLDetailed = async (filters) => {
-    try {
-        const response = await api.post('/finance/pnl-detailed', filters);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching detailed PnL:", error);
+        console.error("Error fetching warehouse stock:", error);
         throw error;
     }
 };
 
-export const fetchRmaData = async () => {
+// Purchases endpoints
+export const fetchPurchasesDashboard = async (filters) => {
+    try {
+        const response = await api.post('/purchases/dashboard', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching purchases dashboard:", error);
+        throw error;
+    }
+};
+
+// Reports endpoints
+export const fetchReportsList = async () => {
+    try {
+        const response = await api.get('/reports/list');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching reports list:", error);
+        throw error;
+    }
+};
+
+// RMA endpoints
+export const fetchRMAData = async () => {
     try {
         const response = await api.get('/rma');
         return response.data;
     } catch (error) {
         console.error("Error fetching RMA data:", error);
-        throw error;
-    }
-};
-export const fetchSalesByGeography = async (filters, scope = 'nacional') => {
-    try {
-        const response = await api.post('/sales/by-geography', { ...filters, scope });
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching sales by geography:", error);
-        throw error;
-    }
-};
-
-export const fetchRegionDetail = async (filters, scope, region) => {
-    try {
-        const response = await api.post('/sales/region-detail', { ...filters, scope, region });
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching region detail:", error);
         throw error;
     }
 };
@@ -322,7 +190,7 @@ export const searchArticles = async (query) => {
 
 export const fetchArticleInfo = async (code) => {
     try {
-        const response = await api.get(`/inventory-tracking/article/${code}/info`);
+        const response = await api.get(`/inventory-tracking/article-info?code=${encodeURIComponent(code)}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching article info:", error);
@@ -332,7 +200,7 @@ export const fetchArticleInfo = async (code) => {
 
 export const fetchArticleStock = async (code) => {
     try {
-        const response = await api.get(`/inventory-tracking/article/${code}/stock`);
+        const response = await api.get(`/inventory-tracking/article-stock?code=${encodeURIComponent(code)}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching article stock:", error);
@@ -342,7 +210,7 @@ export const fetchArticleStock = async (code) => {
 
 export const fetchArticleSales = async (code) => {
     try {
-        const response = await api.get(`/inventory-tracking/article/${code}/sales`);
+        const response = await api.get(`/inventory-tracking/article-sales?code=${encodeURIComponent(code)}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching article sales:", error);
@@ -352,7 +220,7 @@ export const fetchArticleSales = async (code) => {
 
 export const fetchArticlePurchases = async (code) => {
     try {
-        const response = await api.get(`/inventory-tracking/article/${code}/purchases`);
+        const response = await api.get(`/inventory-tracking/article-purchases?code=${encodeURIComponent(code)}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching article purchases:", error);
@@ -362,10 +230,12 @@ export const fetchArticlePurchases = async (code) => {
 
 export const fetchArticleProduction = async (code) => {
     try {
-        const response = await api.get(`/inventory-tracking/article/${code}/production`);
+        const response = await api.get(`/inventory-tracking/article-production?code=${encodeURIComponent(code)}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching article production:", error);
         throw error;
     }
 };
+
+export default api;
