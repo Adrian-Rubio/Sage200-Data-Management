@@ -308,3 +308,64 @@ export const fetchRegionDetail = async (filters, scope, region) => {
         throw error;
     }
 };
+
+// Inventory Tracking
+export const searchArticles = async (query) => {
+    try {
+        const response = await api.get(`/inventory-tracking/search?q=${encodeURIComponent(query)}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error searching articles:", error);
+        throw error;
+    }
+};
+
+export const fetchArticleInfo = async (code) => {
+    try {
+        const response = await api.get(`/inventory-tracking/article/${code}/info`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching article info:", error);
+        throw error;
+    }
+};
+
+export const fetchArticleStock = async (code) => {
+    try {
+        const response = await api.get(`/inventory-tracking/article/${code}/stock`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching article stock:", error);
+        throw error;
+    }
+};
+
+export const fetchArticleSales = async (code) => {
+    try {
+        const response = await api.get(`/inventory-tracking/article/${code}/sales`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching article sales:", error);
+        throw error;
+    }
+};
+
+export const fetchArticlePurchases = async (code) => {
+    try {
+        const response = await api.get(`/inventory-tracking/article/${code}/purchases`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching article purchases:", error);
+        throw error;
+    }
+};
+
+export const fetchArticleProduction = async (code) => {
+    try {
+        const response = await api.get(`/inventory-tracking/article/${code}/production`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching article production:", error);
+        throw error;
+    }
+};
