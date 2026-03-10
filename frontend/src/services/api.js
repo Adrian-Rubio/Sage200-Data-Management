@@ -216,6 +216,16 @@ export const fetchPurchasesDashboard = async (filters) => {
     }
 };
 
+export const fetchPendingPurchases = async (filters) => {
+    try {
+        const response = await api.post('/purchases/pending', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching pending purchases:", error);
+        throw error;
+    }
+};
+
 // --- Inventory ---
 export const fetchInventoryDashboard = async (filters) => {
     try {
