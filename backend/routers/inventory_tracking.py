@@ -98,8 +98,8 @@ def get_article_sales(code: str, db: Session = Depends(get_db), current_user: mo
         # Pending sales orders
         query = """
             SELECT 
-                l.SeriePedido + '/' + CAST(l.NumerodelPedido as varchar) as order_num,
-                l.CodigodelCliente as client_code,
+                l.SeriePedido + '/' + CAST(l.NumeroPedido as varchar) as order_num,
+                l.CodigoCliente as client_code,
                 c.NombreCliente as client_name,
                 l.UnidadesPedidas as qty_ordered,
                 l.UnidadesServidas as qty_served,
@@ -107,7 +107,7 @@ def get_article_sales(code: str, db: Session = Depends(get_db), current_user: mo
                 l.FechaEntrega as date_expected,
                 l.Estado as status
             FROM LineasPedidoCliente l
-            LEFT JOIN Clientes c ON l.CodigodelCliente = c.CodigoCliente AND l.CodigoEmpresa = c.CodigoEmpresa
+            LEFT JOIN Clientes c ON l.CodigoCliente = c.CodigoCliente AND l.CodigoEmpresa = c.CodigoEmpresa
             WHERE l.CodigoEmpresa = 2 
               AND l.CodigoArticulo = :code
               AND l.UnidadesPendientes > 0
@@ -130,7 +130,7 @@ def get_article_purchases(code: str, db: Session = Depends(get_db), current_user
         # Pending purchase orders
         query = """
             SELECT 
-                l.SeriePedido + '/' + CAST(l.NumerodelPedido as varchar) as order_num,
+                l.SeriePedido + '/' + CAST(l.NumeroPedido as varchar) as order_num,
                 l.CodigodelProveedor as vendor_code,
                 p.NombreProveedor as vendor_name,
                 l.UnidadesPedidas as qty_ordered,
