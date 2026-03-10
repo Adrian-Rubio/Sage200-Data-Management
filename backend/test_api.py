@@ -1,15 +1,10 @@
-import urllib.request
+from fastapi.testclient import TestClient
+from main import app
 import json
 
-url = 'http://127.0.0.1:8000/api/production/orders'
-data = json.dumps({"exercise": 2026}).encode('utf-8')
-req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+client = TestClient(app)
 
-try:
-    response = urllib.request.urlopen(req)
-    print("SUCCESS JSON:", response.read().decode('utf-8'))
-except urllib.error.HTTPError as e:
-    print("HTTP ERROR:", e.code)
-    print("RESPONSE:", e.read().decode('utf-8'))
-except Exception as e:
-    print("ERROR:", str(e))
+print("\n--- TEST SEARCH ENDPOINT ---")
+response = client.get("/api/inventory-tracking/search?q=21100464")
+print(f"Status: {response.status_code}")
+print("Response:", json.dumps(response.json(), indent=2))
