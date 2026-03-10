@@ -14,6 +14,19 @@ router = APIRouter()
 # Global constant to lock the router to Company 2 as requested by the user
 TARGET_COMPANY = 2
 
+def clean_nan(records):
+    """Helper to convert Pandas NaN/NaT to None for strict JSON serialization."""
+    cleaned = []
+    for r in records:
+        clean_dict = {}
+        for k, v in r.items():
+            if pd.isna(v):
+                clean_dict[k] = None
+            else:
+                clean_dict[k] = v
+        cleaned.append(clean_dict)
+    return cleaned
+
 @router.get("/ping")
 def ping_tracking():
     return {"status": "ok", "message": f"Inventory tracking router is active for company {TARGET_COMPANY}"}
@@ -21,7 +34,6 @@ def ping_tracking():
 @router.get("/search")
 def search_articles(q: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
-        # Search restricted ONLY to company 2
         query = """
             SELECT TOP 50
                 CodigoArticulo as code, 
@@ -34,8 +46,7 @@ def search_articles(q: str, db: Session = Depends(get_db), current_user: models.
             ORDER BY CodigoArticulo
         """
         df = pd.read_sql(text(query), db.bind, params={"q": f"%{q}%", "comp": TARGET_COMPANY})
-        df = df.where(pd.notnull(df), None)
-        return df.to_dict(orient='records')
+        return clean_nan(df.to_dict(orient='records'))
     except Exception as e:
         print(f"Error in search_articles: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -59,18 +70,15 @@ def get_article_info(code: str, db: Session = Depends(get_db), current_user: mod
             WHERE CodigoArticulo = :code AND CodigoEmpresa = :comp
         """
         df = pd.read_sql(text(query), db.bind, params={"code": code, "comp": TARGET_COMPANY})
-        df = df.where(pd.notnull(df), None)
         
         if df.empty:
             raise HTTPException(status_code=404, detail=f"Article '{code}' not found in Company {TARGET_COMPANY}")
         
-        res = df.iloc[0].to_dict()
+        # Clean before sending
+        res = clean_nan(df.to_dict(orient='records'))[0]
         for k, v in res.items():
-            if v is None: pass
-            elif hasattr(v, 'isoformat'): res[k] = v.isoformat()
-            elif isinstance(v, (int, float, complex)): pass
-            else: res[k] = str(v)
-            
+            if hasattr(v, 'isoformat') and v is not None:
+                res[k] = v.isoformat()
         return res
     except Exception as e:
         if isinstance(e, HTTPException): raise e
@@ -80,8 +88,6 @@ def get_article_info(code: str, db: Session = Depends(get_db), current_user: mod
 @router.get("/article-stock")
 def get_article_stock(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
-        # Stock uses Periodo 99 consistently in Sage 200 for accumulated / final states.
-        # We find the maximum Ejercicio for this article that has a Periodo 99, or just use the system's latest.
         query = """
             SELECT 
                 a.Almacen as warehouse,
@@ -102,8 +108,7 @@ def get_article_stock(code: str, db: Session = Depends(get_db), current_user: mo
             "code": code, 
             "comp": TARGET_COMPANY
         })
-        df = df.where(pd.notnull(df), None)
-        return df.to_dict(orient='records')
+        return clean_nan(df.to_dict(orient='records'))
     except Exception as e:
         print(f"Error in get_article_stock: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -129,9 +134,8 @@ def get_article_sales(code: str, db: Session = Depends(get_db), current_user: mo
             ORDER BY l.FechaEntrega ASC
         """
         df = pd.read_sql(text(query), db.bind, params={"code": code, "comp": TARGET_COMPANY})
-        df = df.where(pd.notnull(df), None)
         
-        res = df.to_dict(orient='records')
+        res = clean_nan(df.to_dict(orient='records'))
         for r in res:
             if r['date_expected']: r['date_expected'] = str(r['date_expected']).split(' ')[0]
         return res
@@ -160,11 +164,11 @@ def get_article_purchases(code: str, db: Session = Depends(get_db), current_user
             ORDER BY l.FechaRecepcion ASC
         """
         df = pd.read_sql(text(query), db.bind, params={"code": code, "comp": TARGET_COMPANY})
-        df = df.where(pd.notnull(df), None)
         
-        res = df.to_dict(orient='records')
+        res = clean_nan(df.to_dict(orient='records'))
         for r in res:
             if r['date_expected']: r['date_expected'] = str(r['date_expected']).split(' ')[0]
+            if r['date_expected'] == 'NaT': r['date_expected'] = None
         return res
     except Exception as e:
         print(f"Error in get_article_purchases: {e}")
@@ -173,7 +177,6 @@ def get_article_purchases(code: str, db: Session = Depends(get_db), current_user
 @router.get("/article-production")
 def get_article_production(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
-        # 1. Orders for this finished product
         query_of = """
             SELECT 
                 EjercicioTrabajo as exercise,
@@ -189,9 +192,7 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
               AND EstadoOT IN (0, 1)
         """
         df_of = pd.read_sql(text(query_of), db.bind, params={"code": code, "comp": TARGET_COMPANY})
-        df_of = df_of.where(pd.notnull(df_of), None)
         
-        # 2. Orders where this is a component (Consumptions)
         query_comp = """
             SELECT 
                 op.EjercicioTrabajo as exercise,
@@ -213,7 +214,6 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
         """
         try:
             df_comp = pd.read_sql(text(query_comp), db.bind, params={"code": code, "comp": TARGET_COMPANY})
-            df_comp = df_comp.where(pd.notnull(df_comp), None)
             if not df_comp.empty:
                 df_comp['qty_to_make'] = df_comp['qty_to_make'].astype(float)
                 df_comp['qty_made'] = df_comp['qty_made'].astype(float)
@@ -224,12 +224,12 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
         
         if df.empty: return []
 
-        df = df.where(pd.notnull(df), None)
         df = df.sort_values(by='date_expected', ascending=True, na_position='last')
         
-        res = df.to_dict(orient='records')
+        res = clean_nan(df.to_dict(orient='records'))
         for r in res:
             if r['date_expected']: r['date_expected'] = str(r['date_expected']).split(' ')[0]
+            if r['date_expected'] == 'NaT': r['date_expected'] = None
             if r['status'] == 0: r['status_desc'] = 'Preparada'
             elif r['status'] == 1: r['status_desc'] = 'En Curso'
         return res
