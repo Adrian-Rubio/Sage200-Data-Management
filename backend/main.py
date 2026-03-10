@@ -30,7 +30,7 @@ app.include_router(finance.router)
 app.include_router(inventory.router, prefix="/api/inventory", tags=["inventory"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
 app.include_router(rma.router)
-app.include_router(inventory_tracking.router)
+app.include_router(inventory_tracking.router, prefix="/api/inventory-tracking", tags=["Inventory Tracking"])
 
 @app.get("/")
 def read_root():

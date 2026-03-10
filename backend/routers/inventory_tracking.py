@@ -9,10 +9,7 @@ import auth
 import models
 import json
 
-router = APIRouter(
-    prefix="/api/inventory-tracking",
-    tags=["Inventory Tracking"]
-)
+router = APIRouter()
 
 class ArticleSearchFilters(BaseModel):
     query: str
