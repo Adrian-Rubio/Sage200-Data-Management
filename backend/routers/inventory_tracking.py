@@ -19,7 +19,7 @@ def search_articles(q: str, db: Session = Depends(get_db), current_user: models.
             SELECT TOP 50 
                 CodigoArticulo as code, 
                 DescripcionArticulo as description,
-                UnidadMedida1_ as unit
+                UnidadMedidaVentas_ as unit
             FROM Articulos
             WHERE CodigoEmpresa = 2 
               AND (CodigoArticulo LIKE :q OR DescripcionArticulo LIKE :q)
@@ -39,7 +39,7 @@ def get_article_info(code: str, db: Session = Depends(get_db), current_user: mod
                 CodigoArticulo as code, 
                 DescripcionArticulo as description,
                 Descripcion2Articulo as description2,
-                UnidadMedida1_ as unit,
+                UnidadMedidaVentas_ as unit,
                 PrecioCompra as purchase_price,
                 PrecioVenta as sale_price,
                 StockMinimo as min_stock,
@@ -63,7 +63,8 @@ def get_article_info(code: str, db: Session = Depends(get_db), current_user: mod
         return res
     except Exception as e:
         if isinstance(e, HTTPException): raise e
-        return {"error": str(e)}
+        print(f"Error in get_article_info: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/article/{code}/stock")
 def get_article_stock(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
@@ -88,7 +89,8 @@ def get_article_stock(code: str, db: Session = Depends(get_db), current_user: mo
         df = pd.read_sql(text(query), db.bind, params={"code": code, "ex": int(latest['ex']), "per": int(latest['per'])})
         return df.to_dict(orient='records')
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Error in get_article_stock: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/article/{code}/sales")
 def get_article_sales(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
@@ -119,7 +121,8 @@ def get_article_sales(code: str, db: Session = Depends(get_db), current_user: mo
             
         return res
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Error in get_article_sales: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/article/{code}/purchases")
 def get_article_purchases(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
@@ -150,7 +153,8 @@ def get_article_purchases(code: str, db: Session = Depends(get_db), current_user
             
         return res
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Error in get_article_purchases: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/article/{code}/production")
 def get_article_production(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
@@ -181,4 +185,5 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
             
         return res
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Error in get_article_production: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
