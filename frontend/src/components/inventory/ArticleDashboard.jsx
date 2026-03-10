@@ -229,6 +229,7 @@ export default function ArticleDashboard({ articleCode, onBack }) {
                             <thead>
                                 <tr className="text-slate-500 font-black uppercase text-[9px] tracking-widest border-b border-slate-800">
                                     <th className="pb-4">Nº Trabajo</th>
+                                    <th className="pb-4">Rol</th>
                                     <th className="pb-4">Estado</th>
                                     <th className="pb-4 text-center">Unidades (Progreso)</th>
                                     <th className="pb-4 text-right">Finalización Prevista</th>
@@ -238,6 +239,11 @@ export default function ArticleDashboard({ articleCode, onBack }) {
                                 {production.map((item, idx) => (
                                     <tr key={idx} className="group hover:bg-white/5 transition-colors">
                                         <td className="py-4 font-bold text-blue-400">{item.work_num} <span className="text-[10px] text-slate-600 ml-1">/{item.exercise}</span></td>
+                                        <td className="py-4">
+                                            <span className={`px-2 py-0.5 rounded text-[9px] font-black ${item.role === 'COMPONENTE' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                                                {item.role === 'COMPONENTE' ? 'CONSUMO' : 'FICHA'}
+                                            </span>
+                                        </td>
                                         <td className="py-4">
                                             <span className={`px-2 py-1 rounded-lg font-black text-[9px] uppercase tracking-widest shadow-sm ${item.status === 1 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
                                                 {item.status_desc}
@@ -263,7 +269,7 @@ export default function ArticleDashboard({ articleCode, onBack }) {
                                     </tr>
                                 ))}
                                 {production.length === 0 && (
-                                    <tr><td colSpan="4" className="py-10 text-center text-slate-600 italic">No hay órdenes de fabricación activas para este artículo.</td></tr>
+                                    <tr><td colSpan="5" className="py-10 text-center text-slate-600 italic">No hay órdenes de fabricación activas para este artículo.</td></tr>
                                 )}
                             </tbody>
                         </table>
