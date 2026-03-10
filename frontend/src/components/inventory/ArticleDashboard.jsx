@@ -107,7 +107,7 @@ export default function ArticleDashboard({ articleCode, onBack }) {
                     <div className="z-10">
                         <h3 className="text-blue-100 text-[10px] font-black uppercase tracking-widest mb-1">Stock Total</h3>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-5xl font-black tracking-tighter">{Math.round(totalStock).toLocaleString('es-ES')}</span>
+                            <span className="text-5xl font-black tracking-tighter">{totalStock.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             <span className="text-xl font-bold text-blue-200">{info?.unit || 'u.'}</span>
                         </div>
                     </div>
@@ -115,7 +115,7 @@ export default function ArticleDashboard({ articleCode, onBack }) {
                         {stock.map((s, idx) => (
                             <div key={idx} className="flex justify-between items-center text-xs py-1 border-b border-blue-500/30 font-medium">
                                 <span className="text-blue-100">{s.warehouse || 'Almacén Desconocido'}</span>
-                                <span className="font-bold">{Math.round(s.stock)}</span>
+                                <span className="font-bold">{(s.stock || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                         ))}
                     </div>
@@ -149,13 +149,10 @@ export default function ArticleDashboard({ articleCode, onBack }) {
                                     <tr key={idx} className="group hover:bg-slate-50 transition-colors">
                                         <td className="py-4 font-bold text-slate-500">{item.order_num}</td>
                                         <td className="py-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-slate-700 leading-tight">{item.client_name}</span>
-                                                <span className="text-[10px] text-slate-400 font-medium">Cód: {item.client_code}</span>
-                                            </div>
+                                            <span className="font-bold text-slate-700 leading-tight">{item.client_name || item.client_code || '—'}</span>
                                         </td>
                                         <td className="py-4 text-center">
-                                            <span className="bg-slate-100 px-2 py-1 rounded-lg font-black text-slate-700">{Math.round(item.qty_pending)}</span>
+                                            <span className="bg-slate-100 px-2 py-1 rounded-lg font-black text-slate-700">{(item.qty_pending || 0).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
                                         </td>
                                         <td className="py-4 text-right">
                                             <span className="font-black text-emerald-600">{item.date_expected}</span>
@@ -194,13 +191,10 @@ export default function ArticleDashboard({ articleCode, onBack }) {
                                     <tr key={idx} className="group hover:bg-slate-50 transition-colors">
                                         <td className="py-4 font-bold text-slate-500">{item.order_num}</td>
                                         <td className="py-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-slate-700 leading-tight">{item.vendor_name}</span>
-                                                <span className="text-[10px] text-slate-400 font-medium">Cód: {item.vendor_code}</span>
-                                            </div>
+                                            <span className="font-bold text-slate-700 leading-tight">{item.vendor_name || item.vendor_code || '—'}</span>
                                         </td>
                                         <td className="py-4 text-center">
-                                            <span className="bg-slate-100 px-2 py-1 rounded-lg font-black text-slate-700">{Math.round(item.qty_pending)}</span>
+                                            <span className="bg-slate-100 px-2 py-1 rounded-lg font-black text-slate-700">{(item.qty_pending || 0).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
                                         </td>
                                         <td className="py-4 text-right">
                                             <span className="font-black text-orange-600">{item.date_expected || 'S.F.'}</span>
