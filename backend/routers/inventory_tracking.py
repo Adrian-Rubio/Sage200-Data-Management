@@ -28,7 +28,8 @@ def search_articles(q: str, db: Session = Depends(get_db), current_user: models.
         df = pd.read_sql(text(query), db.bind, params={"q": f"%{q}%"})
         return df.to_dict(orient='records')
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Error in search_articles: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/article/{code}/info")
 def get_article_info(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):

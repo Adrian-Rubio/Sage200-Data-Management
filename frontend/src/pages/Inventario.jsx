@@ -85,7 +85,7 @@ export default function Inventario() {
                     {(results.length > 0 || searching) && (
                         <div className="absolute mt-4 w-full bg-white rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden z-50 animate-fadeInScale">
                             <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
-                                {results.map((art, idx) => (
+                                {Array.isArray(results) && results.map((art, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => setSelectedArticle(art.code)}
