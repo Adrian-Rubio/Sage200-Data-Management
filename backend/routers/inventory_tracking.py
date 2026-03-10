@@ -11,9 +11,6 @@ import json
 
 router = APIRouter()
 
-class ArticleSearchFilters(BaseModel):
-    query: str
-
 @router.get("/search")
 def search_articles(q: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
