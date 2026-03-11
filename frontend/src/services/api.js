@@ -411,6 +411,26 @@ export const searchArticles = async (query) => {
     }
 };
 
+export const fetchFrequentArticles = async () => {
+    try {
+        const response = await api.get('/inventory-tracking/frequent-articles');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching frequent articles:", error);
+        throw error;
+    }
+};
+
+export const fetchArticlesInFabrication = async () => {
+    try {
+        const response = await api.get('/inventory-tracking/articles-in-fabrication');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching articles in fabrication:", error);
+        throw error;
+    }
+};
+
 export const fetchArticleInfo = async (code) => {
     try {
         const response = await api.get(`/inventory-tracking/article-info?code=${encodeURIComponent(code)}`);

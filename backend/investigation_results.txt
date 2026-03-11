@@ -1,0 +1,42 @@
+--- ARTICLE ---
+    CodigoArticulo                                 DescripcionArticulo
+0  OM05544-000/000   Rugged AI Inference Platform i5-12400/16GB RTX-A2
+1  OM05544-001/000   Rugged AI Inference Platform i7-12700/32GB RTX-A2
+2  OM06690-000/000  Rugged AI Inference Platform i7-13700/32GB/RTX3050
+3  OM05487-000/001  RUGGED AI INFERENCE PLATFORM I9-13900/32GB/RTX3050
+4  OM05487-000/002  RUGGED AI INFERENCE PLATFORM I9-13900/32GB/RTX3050
+
+Article Code found: OM05544-000/000
+
+--- ORDENES TRABAJO ---
+   NumeroTrabajo  EjercicioTrabajo   CodigoArticulo                                 DescripcionArticulo  UnidadesAFabricar  UnidadesFabricadas  EstadoOT
+0            773              2026  OM05487-000/002  RUGGED AI INFERENCE PLATFORM I9-13900/32GB/RTX3050                2.0                 0.0         0
+1            774              2026  OM05487-000/002  RUGGED AI INFERENCE PLATFORM I9-13900/32GB/RTX3050                2.0                 0.0         0
+
+--- CONSUMOS OT (ANY ARTICLE) ---
+    NumeroTrabajo  EjercicioTrabajo   CodigoArticulo                             DescripcionArticulo  UnidadesNecesarias  UnidadesUsadas
+0             773              2026  OM05487-000/002      PC Fanless Intel 12ºGen/NVIDIA RTX Support                 1.0             0.0
+1             773              2026  OM05487-000/002       Micro Intel i9-13900E 5.2Ghz, socket 1700                 1.0             0.0
+2             773              2026  OM05487-000/002                         SODIMM 16GB DDR5 PC4800                 2.0             0.0
+3             773              2026  OM05487-000/002  Mini PCIe 802.11ac/a/b/g/n, 2T2R WiFi + BT4.2                  1.0             0.0
+4             773              2026  OM05487-000/002                       Antenna kit Wifi for NUVO                 1.0             0.0
+5             773              2026  OM05487-000/002                              SSD 480GB SATA 2,5                 1.0             0.0
+6             773              2026  OM05487-000/002                              SSD 240GB SATA 2,5                 1.0             0.0
+7             773              2026  OM05487-000/002             WINDOWS 10 IOT ENTERPRISE HIGH 2021                 1.0             0.0
+8             773              2026  OM05487-000/002                  NVIDIA RTX 3050 8GB ZOTAC SOLO                 1.0             0.0
+9             773              2026  OM05487-000/002       Soporte Extensor Half to Full size MPCIe                  1.0             0.0
+10            774              2026  OM05487-000/002      PC Fanless Intel 12ºGen/NVIDIA RTX Support                 1.0             0.0
+11            774              2026  OM05487-000/002       Micro Intel i9-13900E 5.2Ghz, socket 1700                 1.0             0.0
+12            774              2026  OM05487-000/002                         SODIMM 16GB DDR5 PC4800                 2.0             0.0
+13            774              2026  OM05487-000/002  Mini PCIe 802.11ac/a/b/g/n, 2T2R WiFi + BT4.2                  1.0             0.0
+14            774              2026  OM05487-000/002                       Antenna kit Wifi for NUVO                 1.0             0.0
+15            774              2026  OM05487-000/002                              SSD 480GB SATA 2,5                 1.0             0.0
+16            774              2026  OM05487-000/002                              SSD 240GB SATA 2,5                 1.0             0.0
+17            774              2026  OM05487-000/002             WINDOWS 10 IOT ENTERPRISE HIGH 2021                 1.0             0.0
+18            774              2026  OM05487-000/002                  NVIDIA RTX 3050 8GB ZOTAC SOLO                 1.0             0.0
+19            774              2026  OM05487-000/002       Soporte Extensor Half to Full size MPCIe                  1.0             0.0
+
+--- CONSUMOS OT (FILTERED BY ARTICLE OM05544-000/000) ---
+Empty DataFrame
+Columns: [NumeroTrabajo, EjercicioTrabajo, CodigoArticulo, DescripcionArticulo, UnidadesNecesarias, UnidadesUsadas]
+Index: []

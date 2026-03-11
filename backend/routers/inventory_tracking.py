@@ -51,6 +51,75 @@ def search_articles(q: str, db: Session = Depends(get_db), current_user: models.
         print(f"Error in search_articles: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/frequent-articles")
+def get_frequent_articles(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        query = """
+            SELECT TOP 10 
+                m.CodigoArticulo as code, 
+                a.DescripcionArticulo as description,
+                COUNT(*) as movement_count
+            FROM MovimientoStock m
+            JOIN Articulos a ON m.CodigoEmpresa = a.CodigoEmpresa AND m.CodigoArticulo = a.CodigoArticulo
+            WHERE m.CodigoEmpresa = :comp 
+              AND m.Fecha >= DATEADD(day, -30, GETDATE())
+            GROUP BY m.CodigoArticulo, a.DescripcionArticulo
+            ORDER BY movement_count DESC
+        """
+        df = pd.read_sql(text(query), db.bind, params={"comp": TARGET_COMPANY})
+        return clean_nan(df.to_dict(orient='records'))
+    except Exception as e:
+        print(f"Error in get_frequent_articles: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/articles-in-fabrication")
+def get_articles_in_fabrication(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        # Query 1: Final products
+        q_of = f"""
+            SELECT 
+                CodigoArticulo as code, 
+                MAX(DescripcionArticulo) as description, 
+                COUNT(*) as ot_count
+            FROM OrdenesTrabajo
+            WHERE CodigoEmpresa = {TARGET_COMPANY} 
+              AND (EstadoOT < 2 OR (UnidadesAFabricar - UnidadesFabricadas) > 0)
+            GROUP BY CodigoArticulo
+        """
+        df_of = pd.read_sql(text(q_of), db.bind)
+
+        # Query 2: Components
+        q_comp = f"""
+            SELECT 
+                m.ArticuloComponente as code, 
+                MAX(m.DescripcionLinea) as description, 
+                COUNT(DISTINCT m.NumeroTrabajo) as ot_count
+            FROM ConsumosOT m
+            JOIN OrdenesTrabajo ot ON m.CodigoEmpresa = ot.CodigoEmpresa AND m.EjercicioTrabajo = ot.EjercicioTrabajo AND m.NumeroTrabajo = ot.NumeroTrabajo
+            WHERE ot.CodigoEmpresa = {TARGET_COMPANY} 
+              AND (ot.EstadoOT < 2 OR (m.UnidadesNecesarias - m.UnidadesUsadas) > 0)
+            GROUP BY m.ArticuloComponente
+        """
+        try:
+            df_comp = pd.read_sql(text(q_comp), db.bind)
+        except Exception:
+            df_comp = pd.DataFrame(columns=['code', 'description', 'ot_count'])
+
+        # Combine in Python
+        df = pd.concat([df_of, df_comp])
+        df = df.groupby('code').agg({
+            'description': 'max',
+            'ot_count': 'sum'
+        }).reset_index()
+        
+        df = df.rename(columns={'ot_count': 'total_ots'})
+        df = df.sort_values(by='total_ots', ascending=False)
+        
+        return clean_nan(df.to_dict(orient='records'))
+    except Exception as e:
+        print(f"Error in get_articles_in_fabrication: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/article-info")
 def get_article_info(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
@@ -65,7 +134,15 @@ def get_article_info(code: str, db: Session = Depends(get_db), current_user: mod
                 StockMinimo as min_stock,
                 StockMaximo as max_stock,
                 FechaAlta as date_created,
-                CodigoEmpresa as company
+                CodigoEmpresa as company,
+                -- New technical fields
+                PesoBrutoUnitario_ as weight_gross,
+                PesoNetoUnitario_ as weight_net,
+                VolumenUnitario_ as volume,
+                MarcaProducto as brand,
+                CodigoNacionOrigen as origin_country,
+                CE_Ubicacion as warehouse_location,
+                CodigoArancelario as tariff_code
             FROM Articulos
             WHERE CodigoArticulo = :code AND CodigoEmpresa = :comp
         """
@@ -76,6 +153,8 @@ def get_article_info(code: str, db: Session = Depends(get_db), current_user: mod
         
         # Clean before sending
         res = clean_nan(df.to_dict(orient='records'))[0]
+        
+        # Format dates and ensure all numeric/text fields are handled
         for k, v in res.items():
             if hasattr(v, 'isoformat') and v is not None:
                 res[k] = v.isoformat()
@@ -197,7 +276,7 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
             FROM OrdenesTrabajo
             WHERE CodigoEmpresa = :comp 
               AND CodigoArticulo = :code
-              AND EstadoOT IN (0, 1)
+              AND (EstadoOT < 2 OR (UnidadesAFabricar - UnidadesFabricadas) > 0)
         """
         df_of = pd.read_sql(text(query_of), db.bind, params={"code": code, "comp": TARGET_COMPANY})
         
@@ -205,18 +284,18 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
             SELECT 
                 mat.EjercicioTrabajo as exercise,
                 mat.NumeroTrabajo as work_num,
-                SUM(mat.UnidadesPrevistas - mat.UnidadesReales) as qty_to_make,
+                SUM(mat.UnidadesNecesarias - mat.UnidadesUsadas) as qty_to_make,
                 0 as qty_made,
                 ot.EstadoOT as status,
                 ot.FechaFinalPrevista as date_expected,
                 'COMPONENTE' as role
-            FROM pwb_MaterialesOrdenTrabajo mat
-            JOIN OrdenesTrabajo ot ON mat.EjercicioTrabajo = ot.EjercicioTrabajo 
+            FROM ConsumosOT mat
+            JOIN OrdenesTrabajo ot ON mat.CodigoEmpresa = ot.CodigoEmpresa
+                                AND mat.EjercicioTrabajo = ot.EjercicioTrabajo 
                                 AND mat.NumeroTrabajo = ot.NumeroTrabajo
                                 AND ot.CodigoEmpresa = :comp
-            WHERE mat.CodigoArticulo = :code
-              AND ot.EstadoOT IN (0, 1)
-              AND (mat.UnidadesPrevistas - mat.UnidadesReales) > 0
+            WHERE mat.ArticuloComponente = :code
+              AND (ot.EstadoOT < 2 OR (mat.UnidadesNecesarias - mat.UnidadesUsadas) > 0)
             GROUP BY mat.EjercicioTrabajo, mat.NumeroTrabajo, ot.EstadoOT, ot.FechaFinalPrevista
         """
         try:
@@ -240,6 +319,8 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
             if r['date_expected'] == 'NaT': r['date_expected'] = None
             if r['status'] == 0: r['status_desc'] = 'Preparada'
             elif r['status'] == 1: r['status_desc'] = 'En Curso'
+            elif r['status'] == 2: r['status_desc'] = 'Finalizada'
+            elif r['status'] == 3: r['status_desc'] = 'Retenida'
         return res
     except Exception as e:
         print(f"Error in get_article_production: {e}")
