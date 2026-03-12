@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { fetchAprovisionamientoForecast } from '../services/api';
 import { PageHeader } from '../components/common/PageHeader';
 import { Link } from 'react-router-dom';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 export default function Aprovisionamiento() {
     const [loading, setLoading] = useState(false);
@@ -127,6 +129,63 @@ export default function Aprovisionamiento() {
         return `${val > 0 ? '+' : ''}${val.toFixed(1)}%`;
     };
 
+    const exportToExcel = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Aprovisionamiento');
+
+        // Styles
+        const headerStyle = {
+            font: { bold: true, color: { argb: 'FFFFFF' } },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: '4F46E5' } },
+            alignment: { horizontal: 'center' }
+        };
+
+        if (viewMode === 'articulos') {
+            worksheet.columns = [
+                { header: 'Cód. Artículo', key: 'CodigoArticulo', width: 20 },
+                { header: 'Descripción', key: 'DescripcionArticulo', width: 40 },
+                { header: 'Proveedor', key: 'NombreProveedor', width: 30 },
+                { header: 'Stock Actual', key: 'StockActual', width: 12 },
+                { header: `Uds ${year1}`, key: 'UnidadesYear1', width: 12 },
+                { header: `Alb ${year1}`, key: 'AlbaranesYear1', width: 12 },
+                { header: `Uds ${year2}`, key: 'UnidadesYear2', width: 12 },
+                { header: `Alb ${year2}`, key: 'AlbaranesYear2', width: 12 },
+                { header: 'Crecimiento (%)', key: 'Crecimiento', width: 15 },
+                { header: 'Previsión Compra', key: 'Prevision2026', width: 18 }
+            ];
+
+            filteredAndSortedData.forEach(row => {
+                worksheet.addRow({
+                    ...row,
+                    Crecimiento: row.Crecimiento ? `${row.Crecimiento.toFixed(1)}%` : '0%'
+                });
+            });
+        } else {
+            worksheet.columns = [
+                { header: 'Cód. Proveedor', key: 'codigo', width: 20 },
+                { header: 'Nombre Proveedor', key: 'nombre', width: 40 },
+                { header: 'Crecimiento Medio (%)', key: 'crecimientoMedio', width: 25 }
+            ];
+
+            proveedoresData.forEach(row => {
+                worksheet.addRow({
+                    ...row,
+                    crecimientoMedio: row.crecimientoMedio ? `${row.crecimientoMedio.toFixed(1)}%` : '0%'
+                });
+            });
+        }
+
+        // Apply header styling
+        worksheet.getRow(1).eachCell((cell) => {
+            cell.style = headerStyle;
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const fileName = `Prevision_Aprovisionamiento_${familia}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        saveAs(blob, fileName);
+    };
+
     const Th = ({ label, sortKey, align = 'left' }) => (
         <th 
             className={`px-3 py-3 text-${align} text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors`}
@@ -145,6 +204,16 @@ export default function Aprovisionamiento() {
         <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-4 text-gray-800 dark:text-slate-200 font-sans pb-16 transition-colors">
             <PageHeader moduleName="Previsión de Aprovisionamiento" onRefresh={loadData}>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={exportToExcel}
+                        className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-3 py-1.5 rounded shadow-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition font-bold text-xs flex items-center gap-2 h-[34px]"
+                        title="Exportar a Excel"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Excel
+                    </button>
                     <button
                         onClick={() => setViewMode(prev => prev === 'articulos' ? 'proveedores' : 'articulos')}
                         className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded shadow-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition font-bold text-xs flex items-center h-[34px]"

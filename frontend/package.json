@@ -18,6 +18,8 @@
     "clsx": "^2.1.1",
     "d3-scale": "^4.0.2",
     "docx": "^9.6.0",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.574.0",
     "prop-types": "^15.8.1",
