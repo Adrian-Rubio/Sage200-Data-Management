@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 .bg-home-industrial {
   background-image: url('/bg-industrial.png');
   background-size: cover;
@@ -14,7 +16,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: #dcfce7;
+  @apply bg-[#dcfce7] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200;
 }
 
 @keyframes fadeIn {

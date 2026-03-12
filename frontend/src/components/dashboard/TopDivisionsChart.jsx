@@ -5,7 +5,7 @@ const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899']; // Emera
 
 const TopDivisionsChart = ({ data }) => {
     if (!data || data.length === 0) {
-        return <div className="h-full flex items-center justify-center text-slate-500 font-medium">No hay datos por división</div>;
+        return <div className="h-full flex items-center justify-center text-slate-500 dark:text-slate-400 font-medium">No hay datos por división</div>;
     }
 
     return (
@@ -16,11 +16,12 @@ const TopDivisionsChart = ({ data }) => {
                     layout="vertical"
                     margin={{ top: 10, right: 40, left: 100, bottom: 20 }}
                 >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="currentColor" className="text-slate-100 dark:text-slate-800" />
                     <XAxis
                         type="number"
                         tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
-                        stroke="#94a3b8"
+                        tick={{ fill: 'currentColor' }}
+                        className="text-slate-400 dark:text-slate-500"
                         fontSize={12}
                         tickLine={false}
                         axisLine={false}
@@ -28,7 +29,8 @@ const TopDivisionsChart = ({ data }) => {
                     <YAxis
                         type="category"
                         dataKey="name"
-                        stroke="#334155"
+                        tick={{ fill: 'currentColor' }}
+                        className="text-slate-700 dark:text-slate-300"
                         fontSize={13}
                         fontWeight={600}
                         tickLine={false}
@@ -36,16 +38,28 @@ const TopDivisionsChart = ({ data }) => {
                         width={100}
                     />
                     <Tooltip
-                        cursor={{ fill: '#f8fafc' }}
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value) => [`€${value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Importe Comprado']}
+                        cursor={{ fill: 'currentColor', opacity: 0.1 }}
+                        content={({ active, payload, label }) => {
+                            if (active && payload && payload.length) {
+                                return (
+                                    <div className="bg-white dark:bg-slate-900 p-3 shadow-lg border border-gray-100 dark:border-slate-800 rounded-lg transition-colors">
+                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mb-1">{label}</p>
+                                        <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                                            €{payload[0].value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </p>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        }}
                     />
                     <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={32}>
                         <LabelList
                             dataKey="value"
                             position="right"
                             formatter={(value) => `€${(value / 1000).toFixed(1)}k`}
-                            fill="#64748b"
+                            fill="currentColor"
+                            className="text-slate-500 dark:text-slate-400"
                             fontSize={12}
                             fontWeight={600}
                         />

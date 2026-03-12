@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import useThemeStore from './store/themeStore';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Comparison from './pages/Comparison';
@@ -8,6 +10,7 @@ import ComingSoon from './pages/ComingSoon';
 import Login from './pages/Login';
 import Compras from './pages/Compras';
 import PedidosCompra from './pages/PedidosCompra';
+import Aprovisionamiento from './pages/Aprovisionamiento';
 import Usuarios from './pages/Usuarios';
 import Produccion from './pages/Produccion';
 import Almacen from './pages/Almacen';
@@ -20,6 +23,16 @@ import PrivateRoute from './components/PrivateRoute';
 import RmaDashboard from './pages/RmaDashboard';
 
 function App() {
+  const { theme } = useThemeStore();
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -34,6 +47,7 @@ function App() {
           <Route path="/pedidos-pendientes-pbix" element={<PedidosPendientesPBIX />} />
           <Route path="/compras" element={<Compras />} />
           <Route path="/compras/pedidos-pendientes" element={<PedidosCompra />} />
+          <Route path="/compras/prevision-aprovisionamiento" element={<Aprovisionamiento />} />
           <Route path="/usuarios" element={<Usuarios />} />
           <Route path="/produccion" element={<Produccion />} />
           <Route path="/produccion/rma" element={<RmaDashboard />} />

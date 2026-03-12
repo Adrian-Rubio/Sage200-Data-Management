@@ -137,7 +137,7 @@ export default function CierreMes() {
 
 
     return (
-        <div className="p-6 max-w-[1720px] mx-auto min-h-screen bg-[#f8fafc] text-gray-800 font-sans">
+        <div className="p-6 max-w-[1720px] mx-auto min-h-screen bg-[#f8fafc] dark:bg-slate-950 text-gray-800 dark:text-slate-200 font-sans transition-colors">
 
             <PageHeader moduleName="Cierre de Mes" showRefresh={false}>
                 <button
@@ -150,12 +150,12 @@ export default function CierreMes() {
             </PageHeader>
 
             {/* Filters */}
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-8 items-end mb-10 animate-fadeIn">
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-wrap gap-8 items-end mb-10 animate-fadeIn transition-colors">
 
                 <div className="flex flex-col">
-                    <label className="text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Ejercicio</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 tracking-wider">Ejercicio</label>
                     <select
-                        className="block w-32 rounded-xl border-slate-200 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-2.5 bg-slate-50 font-semibold"
+                        className="block w-32 rounded-xl border-slate-200 dark:border-slate-700 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-2.5 bg-slate-50 dark:bg-slate-800 dark:text-slate-100 font-semibold transition-colors"
                         value={filters.exercise}
                         onChange={(e) => setFilters(prev => ({ ...prev, exercise: parseInt(e.target.value) }))}
                     >
@@ -163,9 +163,9 @@ export default function CierreMes() {
                     </select>
                 </div>
                 <div className="flex flex-col">
-                    <label className="text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Mes de Cierre</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 tracking-wider">Mes de Cierre</label>
                     <select
-                        className="block w-48 rounded-xl border-slate-200 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-2.5 bg-slate-50 font-semibold"
+                        className="block w-48 rounded-xl border-slate-200 dark:border-slate-700 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-2.5 bg-slate-50 dark:bg-slate-800 dark:text-slate-100 font-semibold transition-colors"
                         value={filters.period}
                         onChange={(e) => setFilters(prev => ({ ...prev, period: parseInt(e.target.value) }))}
                     >
@@ -176,12 +176,12 @@ export default function CierreMes() {
                 </div>
                 <div className="flex-grow flex justify-end gap-10">
                     <div className="text-right">
-                        <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Catuluña Mensual</div>
-                        <div className="text-lg font-black text-slate-800">{formatCurrency(data?.ventas?.catalunya)}</div>
+                        <div className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Catuluña Mensual</div>
+                        <div className="text-lg font-black text-slate-800 dark:text-slate-100">{formatCurrency(data?.ventas?.catalunya)}</div>
                     </div>
                     <div className="text-right">
-                        <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Ventas CYME</div>
-                        <div className="text-lg font-black text-slate-800">{formatCurrency(data?.ventas?.cyme)}</div>
+                        <div className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Ventas CYME</div>
+                        <div className="text-lg font-black text-slate-800 dark:text-slate-100">{formatCurrency(data?.ventas?.cyme)}</div>
                     </div>
 
                 </div>
@@ -205,8 +205,8 @@ export default function CierreMes() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                         {/* Inventario Breakdown */}
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center justify-between">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
+                            <h3 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
                                     Inventario
@@ -216,12 +216,12 @@ export default function CierreMes() {
                             <div className="space-y-4">
                                 {invData.sort((a, b) => b.value - a.value).map((item, i) => (
                                     <div key={item.name} className="flex flex-col gap-2">
-                                        <div className="flex justify-between text-[13px] font-bold text-slate-600">
+                                        <div className="flex justify-between text-[13px] font-bold text-slate-600 dark:text-slate-400">
                                             <span className="truncate pr-2">{item.name}</span>
-                                            <span className="text-slate-900">{formatCurrency(item.value)}</span>
+                                            <span className="text-slate-900 dark:text-slate-100">{formatCurrency(item.value)}</span>
                                         </div>
 
-                                        <div className="w-full bg-slate-50 h-2 rounded-full overflow-hidden border border-slate-100/50">
+                                        <div className="w-full bg-slate-50 dark:bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-100/50 dark:border-slate-700/50">
                                             <div
                                                 className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-full rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(0,0,0,0.1)]"
                                                 style={{ width: `${(item.value / (data?.inventario?.total || 1)) * 100}%` }}
@@ -233,8 +233,8 @@ export default function CierreMes() {
                         </div>
 
                         {/* Facturación Breakdown */}
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center justify-between">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
+                            <h3 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"></span>
                                     Facturado (Div)
@@ -244,12 +244,12 @@ export default function CierreMes() {
                             <div className="space-y-4">
                                 {factDivData.sort((a, b) => b.value - a.value).map((item, i) => (
                                     <div key={item.name} className="flex flex-col gap-2">
-                                        <div className="flex justify-between text-[13px] font-bold text-slate-600">
+                                        <div className="flex justify-between text-[13px] font-bold text-slate-600 dark:text-slate-400">
                                             <span className="truncate pr-2">{item.name}</span>
-                                            <span className="text-slate-900">{formatCurrency(item.value)}</span>
+                                            <span className="text-slate-900 dark:text-slate-100">{formatCurrency(item.value)}</span>
                                         </div>
 
-                                        <div className="w-full bg-slate-50 h-2 rounded-full overflow-hidden border border-slate-100/50">
+                                        <div className="w-full bg-slate-50 dark:bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-100/50 dark:border-slate-700/50">
                                             <div
                                                 className="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(0,0,0,0.1)]"
                                                 style={{ width: `${(item.value / (data?.facturación?.total || 1)) * 100}%` }}
@@ -261,8 +261,8 @@ export default function CierreMes() {
                         </div>
 
                         {/* Cartera Breakdown */}
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center justify-between">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
+                            <h3 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span>
                                     Cartera Pendiente
@@ -272,12 +272,12 @@ export default function CierreMes() {
                             <div className="space-y-4">
                                 {Object.entries(data?.cartera?.por_division || {}).sort((a, b) => b[1] - a[1]).map(([name, value], i) => (
                                     <div key={name} className="flex flex-col gap-2">
-                                        <div className="flex justify-between text-[13px] font-bold text-slate-600">
+                                        <div className="flex justify-between text-[13px] font-bold text-slate-600 dark:text-slate-400">
                                             <span className="truncate pr-2">{name}</span>
-                                            <span className="text-slate-900">{formatCurrency(value)}</span>
+                                            <span className="text-slate-900 dark:text-slate-100">{formatCurrency(value)}</span>
                                         </div>
 
-                                        <div className="w-full bg-slate-50 h-2 rounded-full overflow-hidden border border-slate-100/50">
+                                        <div className="w-full bg-slate-50 dark:bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-100/50 dark:border-slate-700/50">
                                             <div
                                                 className="bg-gradient-to-r from-amber-400 to-amber-600 h-full rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(0,0,0,0.1)]"
                                                 style={{ width: `${(value / (data?.cartera?.total || 1)) * 100}%` }}
@@ -289,8 +289,8 @@ export default function CierreMes() {
                         </div>
 
                         {/* Ranking Facturación */}
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center justify-between">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
+                            <h3 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 bg-violet-500 rounded-full shadow-[0_0_8px_rgba(139,92,246,0.5)]"></span>
                                     Ranking Facturado
@@ -299,20 +299,20 @@ export default function CierreMes() {
 
                             <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                 <table className="w-full text-xs">
-                                    <thead className="sticky top-0 bg-white z-10">
-                                        <tr className="text-slate-400">
+                                    <thead className="sticky top-0 bg-white dark:bg-slate-900 z-10 transition-colors">
+                                        <tr className="text-slate-400 dark:text-slate-500">
                                             <th className="text-left py-3 font-black uppercase tracking-tighter w-8">Pos</th>
                                             <th className="text-left py-3 font-black uppercase tracking-tighter">Nombre</th>
                                             <th className="text-right py-3 font-black uppercase tracking-tighter">Neto</th>
                                         </tr>
                                     </thead>
 
-                                    <tbody className="divide-y divide-slate-50">
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
                                         {factRepData.map((rep, idx) => (
-                                            <tr key={rep.name} className="hover:bg-slate-50/80 transition-colors group">
-                                                <td className="py-3 font-bold text-slate-300 group-hover:text-violet-400 transition-colors">{idx + 1}</td>
-                                                <td className="py-3 font-bold text-slate-700 truncate max-w-[120px]">{rep.name}</td>
-                                                <td className="py-3 text-right font-black text-slate-900">{formatCurrency(rep.value)}</td>
+                                            <tr key={rep.name} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <td className="py-3 font-bold text-slate-300 dark:text-slate-600 group-hover:text-violet-400 dark:group-hover:text-violet-400 transition-colors">{idx + 1}</td>
+                                                <td className="py-3 font-bold text-slate-700 dark:text-slate-300 truncate max-w-[120px]">{rep.name}</td>
+                                                <td className="py-3 text-right font-black text-slate-900 dark:text-slate-100">{formatCurrency(rep.value)}</td>
                                             </tr>
                                         ))}
 
@@ -329,10 +329,10 @@ export default function CierreMes() {
 
 function KPIBlock({ title, value, icon, color }) {
     const colorClasses = {
-        emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
-        blue: "bg-blue-50 text-blue-600 border-blue-100",
-        amber: "bg-amber-50 text-amber-600 border-amber-100",
-        slate: "bg-slate-50 text-slate-600 border-slate-100"
+        emerald: "bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/50",
+        blue: "bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800/50",
+        amber: "bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50",
+        slate: "bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-700"
     };
 
     return (
@@ -341,7 +341,7 @@ function KPIBlock({ title, value, icon, color }) {
                 <span className="text-3xl group-hover:scale-125 transition-transform duration-500">{icon}</span>
                 <span className="text-xs font-black uppercase tracking-widest opacity-60">{title}</span>
             </div>
-            <div className="text-3xl font-black text-slate-800 tracking-tight">{value}</div>
+            <div className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight transition-colors">{value}</div>
         </div>
     );
 
@@ -349,8 +349,8 @@ function KPIBlock({ title, value, icon, color }) {
 
 function ChartCard({ title, children }) {
     return (
-        <div className="bg-white p-8 rounded-[40px] shadow-sm border border-slate-100 relative overflow-hidden group">
-            <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden group transition-colors">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2">
                 <span className="w-1.5 h-6 bg-emerald-500 rounded-full" />
                 {title}
             </h3>

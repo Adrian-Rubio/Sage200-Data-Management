@@ -326,6 +326,16 @@ export const fetchPendingPurchases = async (filters) => {
     }
 };
 
+export const fetchAprovisionamientoForecast = async (params) => {
+    try {
+        const response = await api.get('/aprovisionamiento/forecast', { params });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching aprovisionamiento forecast:", error);
+        throw error;
+    }
+};
+
 // --- Inventory ---
 export const fetchInventoryDashboard = async (filters) => {
     try {

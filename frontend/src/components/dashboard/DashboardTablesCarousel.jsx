@@ -6,14 +6,14 @@ export function DashboardTablesCarousel({ filters, topClientsData, invoicesListD
     const [activeTab, setActiveTab] = useState('invoices'); // 'invoices' is principal
 
     return (
-        <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
             {/* Tabs Header */}
-            <div className="flex border-b border-slate-100 bg-slate-50/50">
+            <div className="flex border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
                 <button
                     onClick={() => setActiveTab('invoices')}
                     className={`flex-1 py-4 text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'invoices'
-                        ? 'bg-white text-blue-600 border-b-2 border-blue-600 shadow-[0_2px_0_0_rgba(37,99,235,1)]'
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'
+                        ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-500 shadow-[0_2px_0_0_rgba(37,99,235,1)] dark:shadow-[0_2px_0_0_rgba(59,130,246,1)]'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
                         }`}
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,8 +24,8 @@ export function DashboardTablesCarousel({ filters, topClientsData, invoicesListD
                 <button
                     onClick={() => setActiveTab('clients')}
                     className={`flex-1 py-4 text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'clients'
-                        ? 'bg-white text-emerald-600 border-b-2 border-emerald-600 shadow-[0_2px_0_0_rgba(5,150,105,1)]'
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'
+                        ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-600 dark:border-emerald-500 shadow-[0_2px_0_0_rgba(5,150,105,1)] dark:shadow-[0_2px_0_0_rgba(16,185,129,1)]'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
                         }`}
                 >
                     TOP 15 CLIENTES (FACTURACIÓN)

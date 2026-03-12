@@ -213,11 +213,11 @@ export default function Usuarios() {
     };
 
     return (
-        <div className="w-full min-h-screen bg-[#f8fafc] p-6 text-gray-800 font-sans">
+        <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-6 text-gray-800 dark:text-slate-200 font-sans transition-colors">
             <PageHeader moduleName="Usuarios y Permisos" showRefresh={false}>
                 <button
                     onClick={() => { cerrarModal(); activeTab === 'usuarios' ? setIsUserModalOpen(true) : setIsRoleModalOpen(true); }}
-                    className="bg-indigo-600 text-white px-3 py-1.5 rounded shadow-sm hover:bg-indigo-700 transition font-bold text-xs h-[34px] flex items-center gap-2 whitespace-nowrap"
+                    className="bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1.5 rounded shadow-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition font-bold text-xs h-[34px] flex items-center gap-2 whitespace-nowrap"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
                     {activeTab === 'usuarios' ? 'Nuevo Usuario' : 'Nuevo Rol'}
@@ -225,16 +225,16 @@ export default function Usuarios() {
             </PageHeader>
 
             {/* Tab Navigation */}
-            <div className="flex gap-2 mb-6 bg-slate-200/50 p-1 w-fit rounded-xl">
+            <div className="flex gap-2 mb-6 bg-slate-200/50 dark:bg-slate-800/50 p-1 w-fit rounded-xl transition-colors">
                 <button
                     onClick={() => setActiveTab('usuarios')}
-                    className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'usuarios' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'usuarios' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                 >
                     Usuarios
                 </button>
                 <button
                     onClick={() => setActiveTab('roles')}
-                    className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'roles' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'roles' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                 >
                     Roles y Permisos
                 </button>
@@ -260,8 +260,8 @@ export default function Usuarios() {
 
             {/* Content Area */}
             {loading ? (
-                <div className="bg-white rounded-2xl p-20 text-center border border-slate-200">
-                    <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-indigo-600 mb-4"></div>
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-20 text-center border border-slate-200 dark:border-slate-800 transition-colors">
+                    <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-slate-200 dark:border-slate-700 border-t-indigo-600 dark:border-indigo-500 mb-4"></div>
                 </div>
             ) : activeTab === 'usuarios' ? (
                 <UsersTable users={users} roles={roles} formatDate={formatDate} onEdit={handleEditUser} onDelete={handleDeleteUser} />
@@ -280,23 +280,23 @@ export default function Usuarios() {
                         <InputField required type="email" label="Email" name="email" value={userFormData.email} onChange={handleUserInputChange} />
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 px-1">Asignar Rol</label>
-                                <select required name="role_id" value={userFormData.role_id} onChange={handleUserInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
+                                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 px-1 transition-colors">Asignar Rol</label>
+                                <select required name="role_id" value={userFormData.role_id} onChange={handleUserInputChange} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:ring-indigo-500/40 outline-none transition-colors">
                                     <option value="">Selecciona un rol...</option>
                                     {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 px-1">ID Sage Resp. (Comercial)</label>
-                                <select name="sales_rep_id" value={userFormData.sales_rep_id} onChange={handleUserInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
+                                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 px-1 transition-colors">ID Sage Resp. (Comercial)</label>
+                                <select name="sales_rep_id" value={userFormData.sales_rep_id} onChange={handleUserInputChange} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:ring-indigo-500/40 outline-none transition-colors">
                                     <option value="">NINGUNO</option>
                                     {filterOptions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                 </select>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <input type="checkbox" name="is_active" checked={userFormData.is_active} onChange={handleUserInputChange} className="w-4 h-4 rounded" />
-                            <span className="text-sm font-bold text-slate-700">Usuario Activo</span>
+                            <input type="checkbox" name="is_active" checked={userFormData.is_active} onChange={handleUserInputChange} className="w-4 h-4 rounded text-indigo-600 dark:text-indigo-500 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900" />
+                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors">Usuario Activo</span>
                         </div>
                         <div className="pt-4 flex gap-3">
                             <button type="submit" disabled={formLoading} className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold shadow-lg">
@@ -313,11 +313,11 @@ export default function Usuarios() {
                     <form onSubmit={handleCreateRole} className="space-y-4">
                         <InputField required label="Nombre del Rol" name="name" value={roleFormData.name} onChange={handleRoleInputChange} placeholder="ej: Logística, Director..." />
                         <div>
-                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 px-1">Descripción</label>
-                            <textarea name="description" value={roleFormData.description} onChange={handleRoleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm min-h-[80px]" />
+                            <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 px-1 transition-colors">Descripción</label>
+                            <textarea name="description" value={roleFormData.description} onChange={handleRoleInputChange} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl px-4 py-3 text-sm min-h-[80px] focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:ring-indigo-500/40 outline-none transition-colors" />
                         </div>
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Permisos Granulares</h4>
+                        <div className="bg-slate-50 dark:bg-slate-800/20 p-4 rounded-xl border border-slate-200 dark:border-slate-800 transition-colors">
+                            <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 transition-colors">Permisos Granulares</h4>
                             <div className="grid grid-cols-2 gap-y-3">
                                 <PermissionCheck label="Panel Ventas" name="can_view_ventas" checked={roleFormData.can_view_ventas} onChange={handleRoleInputChange} />
                                 <PermissionCheck label="Módulo Compras" name="can_view_compras" checked={roleFormData.can_view_compras} onChange={handleRoleInputChange} />
@@ -341,37 +341,37 @@ export default function Usuarios() {
 
 function UsersTable({ users, roles, formatDate, onEdit, onDelete }) {
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-[#444b41] text-white">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 transition-colors">
+                <thead className="bg-[#444b41] dark:bg-slate-950 text-white transition-colors">
                     <tr>
-                        <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest">Usuario</th>
-                        <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest">Email</th>
-                        <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest">Rol Asignado</th>
-                        <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest">Estado</th>
-                        <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest">Fecha Alta</th>
-                        <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest">Acciones</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest border-b border-transparent dark:border-slate-800">Usuario</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest border-b border-transparent dark:border-slate-800">Email</th>
+                        <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest border-b border-transparent dark:border-slate-800">Rol Asignado</th>
+                        <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest border-b border-transparent dark:border-slate-800">Estado</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest border-b border-transparent dark:border-slate-800">Fecha Alta</th>
+                        <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest border-b border-transparent dark:border-slate-800">Acciones</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 italic">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 italic transition-colors">
                     {users.map(user => (
-                        <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4 font-bold text-slate-900">{user.username}</td>
-                            <td className="px-6 py-4 text-slate-500">{user.email}</td>
+                        <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-200 transition-colors">{user.username}</td>
+                            <td className="px-6 py-4 text-slate-500 dark:text-slate-400 transition-colors">{user.email}</td>
                             <td className="px-6 py-4 text-center">
-                                <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-xs font-bold border border-indigo-100">
+                                <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-3 py-1 rounded-lg text-xs font-bold border border-indigo-100 dark:border-indigo-800/50 transition-colors">
                                     {user.role_obj?.name || user.role || 'Sin Rol'}
                                 </span>
                             </td>
                             <td className="px-6 py-4 text-center">
-                                <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase border ${user.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
+                                <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase border transition-colors ${user.is_active ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50'}`}>
                                     {user.is_active ? 'Activo' : 'Baja'}
                                 </span>
                             </td>
-                            <td className="px-6 py-4 text-slate-400 text-xs">{formatDate(user.created_at)}</td>
+                            <td className="px-6 py-4 text-slate-400 dark:text-slate-500 text-xs transition-colors">{formatDate(user.created_at)}</td>
                             <td className="px-6 py-4 text-right space-x-2">
-                                <button onClick={() => onEdit(user)} className="text-indigo-600 hover:text-indigo-900 font-bold p-1">Editar</button>
-                                <button onClick={() => onDelete(user)} className="text-red-600 hover:text-red-900 font-bold p-1">Borrar</button>
+                                <button onClick={() => onEdit(user)} className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-bold p-1 transition-colors">Editar</button>
+                                <button onClick={() => onDelete(user)} className="text-red-600 dark:text-red-500 hover:text-red-900 dark:hover:text-red-400 font-bold p-1 transition-colors">Borrar</button>
                             </td>
                         </tr>
                     ))}
@@ -385,20 +385,20 @@ function RolesTable({ roles, onEdit, onDelete }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {roles.map(role => (
-                <div key={role.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative group">
+                <div key={role.id} className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 hover:shadow-md transition-all relative group">
                     <div className="absolute top-4 right-4 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => onEdit(role)} className="bg-indigo-50 text-indigo-600 p-1.5 rounded hover:bg-indigo-100 shadow-sm" title="Editar Rol">
+                        <button onClick={() => onEdit(role)} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 p-1.5 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 shadow-sm transition-colors" title="Editar Rol">
                             ✏️
                         </button>
-                        <button onClick={() => onDelete(role)} className="bg-red-50 text-red-600 p-1.5 rounded hover:bg-red-100 shadow-sm" title="Borrar Rol">
+                        <button onClick={() => onDelete(role)} className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/50 shadow-sm transition-colors" title="Borrar Rol">
                             🗑️
                         </button>
                     </div>
                     <div className="flex justify-between items-start mb-4 pr-16">
-                        <h3 className="text-xl font-bold text-slate-800">{role.name}</h3>
-                        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs">{role.id}</div>
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 transition-colors">{role.name}</h3>
+                        <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs transition-colors">{role.id}</div>
                     </div>
-                    <p className="text-sm text-slate-500 mb-6 min-h-[40px] leading-relaxed">{role.description || 'Sin descripción.'}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 min-h-[40px] leading-relaxed transition-colors">{role.description || 'Sin descripción.'}</p>
                     <div className="space-y-2 border-t border-slate-100 pt-4">
                         <StaticPermission label="Ventas" active={role.can_view_ventas} />
                         <StaticPermission label="Compras" active={role.can_view_compras} />
@@ -417,8 +417,8 @@ function RolesTable({ roles, onEdit, onDelete }) {
 function Modal({ title, onClose, children }) {
     return (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up">
-                <div className="bg-slate-800 p-6 text-white flex justify-between items-center">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up transition-colors">
+                <div className="bg-slate-800 dark:bg-slate-950 p-6 text-white flex justify-between items-center transition-colors">
                     <h2 className="text-xl font-bold">{title}</h2>
                     <button onClick={onClose} className="hover:text-slate-300 transition">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -433,8 +433,8 @@ function Modal({ title, onClose, children }) {
 function InputField({ label, ...props }) {
     return (
         <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 px-1">{label}</label>
-            <input {...props} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition" />
+            <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 px-1 transition-colors">{label}</label>
+            <input {...props} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:ring-indigo-500/40 outline-none transition" />
         </div>
     );
 }
@@ -442,8 +442,8 @@ function InputField({ label, ...props }) {
 function PermissionCheck({ label, checked, onChange, name }) {
     return (
         <label className="flex items-center gap-2 cursor-pointer group">
-            <input type="checkbox" name={name} checked={checked} onChange={onChange} className="w-4 h-4 rounded text-indigo-600 border-slate-300" />
-            <span className={`text-xs font-bold ${checked ? 'text-slate-800' : 'text-slate-400 group-hover:text-slate-500'}`}>{label}</span>
+            <input type="checkbox" name={name} checked={checked} onChange={onChange} className="w-4 h-4 rounded text-indigo-600 dark:text-indigo-500 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800" />
+            <span className={`text-xs font-bold transition-colors ${checked ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-500 dark:group-hover:text-slate-400'}`}>{label}</span>
         </label>
     );
 }
@@ -451,11 +451,11 @@ function PermissionCheck({ label, checked, onChange, name }) {
 function StaticPermission({ label, active }) {
     return (
         <div className="flex justify-between items-center px-2">
-            <span className="text-xs font-medium text-slate-600">{label}</span>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 transition-colors">{label}</span>
             {active ? (
-                <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded uppercase">Si</span>
+                <span className="text-[10px] font-black text-emerald-500 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded uppercase transition-colors">Si</span>
             ) : (
-                <span className="text-[10px] font-black text-slate-300 px-2 py-0.5 rounded uppercase">No</span>
+                <span className="text-[10px] font-black text-slate-300 dark:text-slate-600 px-2 py-0.5 rounded uppercase transition-colors">No</span>
             )}
         </div>
     );

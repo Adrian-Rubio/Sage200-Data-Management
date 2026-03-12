@@ -1,0 +1,67 @@
+[
+    {
+        "CodigoArticulo": "00090445",
+        "DescripcionArticulo": "CABLE FAKRA C A UFL 1,13 MM 230 MM",
+        "CodigoProveedor": "11227",
+        "NombreProveedor": "POWIN TECHNOLOGIES CO,LTD.",
+        "UnidadesYear1": 0,
+        "AlbaranesYear1": 0,
+        "UnidadesYear2": 5,
+        "AlbaranesYear2": 1,
+        "StockActual": 14,
+        "Crecimiento": 100.0,
+        "Prevision2026": 6
+    },
+    {
+        "CodigoArticulo": "00090481",
+        "DescripcionArticulo": "88003424-1",
+        "CodigoProveedor": "10206",
+        "NombreProveedor": "FONITECH IND. CO. LTD.",
+        "UnidadesYear1": 0,
+        "AlbaranesYear1": 0,
+        "UnidadesYear2": 1000,
+        "AlbaranesYear2": 1,
+        "StockActual": 2550,
+        "Crecimiento": 100.0,
+        "Prevision2026": 1300
+    },
+    {
+        "CodigoArticulo": "00090580",
+        "DescripcionArticulo": "CABLE SIEMENS 70/100 MM CON ETIQUETAS",
+        "CodigoProveedor": "11435",
+        "NombreProveedor": "EDOM ELECTRONICS CO. LTD.",
+        "UnidadesYear1": 0,
+        "AlbaranesYear1": 0,
+        "UnidadesYear2": 25,
+        "AlbaranesYear2": 1,
+        "StockActual": 178,
+        "Crecimiento": 100.0,
+        "Prevision2026": 32
+    },
+    {
+        "CodigoArticulo": "00090658",
+        "DescripcionArticulo": "CABLE SATA 300 MM",
+        "CodigoProveedor": "11435",
+        "NombreProveedor": "EDOM ELECTRONICS CO. LTD.",
+        "UnidadesYear1": 0,
+        "AlbaranesYear1": 0,
+        "UnidadesYear2": 96,
+        "AlbaranesYear2": 1,
+        "StockActual": 907,
+        "Crecimiento": 100.0,
+        "Prevision2026": 125
+    },
+    {
+        "CodigoArticulo": "00090703",
+        "DescripcionArticulo": "Cable USB B 1200 mm",
+        "CodigoProveedor": "11435",
+        "NombreProveedor": "EDOM ELECTRONICS CO. LTD.",
+        "UnidadesYear1": 0,
+        "AlbaranesYear1": 0,
+        "UnidadesYear2": 300,
+        "AlbaranesYear2": 3,
+        "StockActual": 618,
+        "Crecimiento": 100.0,
+        "Prevision2026": 390
+    }
+]

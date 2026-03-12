@@ -13,9 +13,9 @@ export function PurchasesEvolutionChart({ data, isEmbed = false }) {
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-white p-3 shadow-lg border border-gray-100 rounded-lg">
-                    <p className="text-[10px] font-bold text-gray-400 mb-1">{label}</p>
-                    <p className="text-sm font-black text-indigo-600">
+                <div className="bg-white dark:bg-slate-900 p-3 shadow-lg border border-gray-100 dark:border-slate-800 rounded-lg transition-colors">
+                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mb-1">{label}</p>
+                    <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
                         {formatCurrency(payload[0].value)}
                     </p>
                 </div>
@@ -25,9 +25,9 @@ export function PurchasesEvolutionChart({ data, isEmbed = false }) {
     };
 
     return (
-        <div className={`w-full ${isEmbed ? 'h-full' : 'h-[350px] bg-white p-6 rounded-2xl shadow-sm border border-slate-100'}`}>
+        <div className={`w-full ${isEmbed ? 'h-full' : 'h-[350px] bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 transition-colors'}`}>
             {!isEmbed && (
-                <h3 className="text-sm font-black text-slate-700 uppercase tracking-wider mb-6 flex items-center gap-2">
+                <h3 className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-6 flex items-center gap-2">
                     <div className="w-2 h-4 bg-indigo-500 rounded-full"></div>
                     Evolución de Compras por Mes
                 </h3>
@@ -41,9 +41,9 @@ export function PurchasesEvolutionChart({ data, isEmbed = false }) {
                                 <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-100 dark:text-slate-800" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: 'currentColor' }} className="text-slate-400 dark:text-slate-500" />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: 'currentColor' }} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} className="text-slate-400 dark:text-slate-500" />
                         <Tooltip content={<CustomTooltip />} />
                         <Area type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
                     </AreaChart>

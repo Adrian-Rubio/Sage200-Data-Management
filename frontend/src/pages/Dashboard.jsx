@@ -133,11 +133,11 @@ export default function Dashboard() {
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
     return (
-        <div className="w-full min-h-screen bg-slate-50 p-4 md:p-6 text-slate-900 font-sans scale-[0.98] origin-top transition-all duration-500">
+        <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 text-slate-900 dark:text-slate-100 font-sans scale-[0.98] origin-top transition-all duration-500">
             <PageHeader moduleName="Ventas" />
 
             {/* Filters */}
-            <div className="bg-white p-3 rounded-lg shadow-sm mb-4 flex flex-wrap gap-3 items-end w-full border border-slate-100">
+            <div className="bg-white dark:bg-slate-900 p-3 rounded-lg shadow-sm mb-4 flex flex-wrap gap-3 items-end w-full border border-slate-100 dark:border-slate-800 transition-colors">
                 <div className="flex flex-col">
                     <label className="text-xs font-bold text-slate-500 mb-1 uppercase tracking-tighter">Inicio</label>
                     <input type="date" name="start_date" value={filters.start_date || ''} onChange={handleFilterChange} className="block w-32 rounded border border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs p-1.5 text-slate-700 bg-white" />
@@ -205,7 +205,6 @@ export default function Dashboard() {
 
 
 
-            {/* Top Row: KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
                 <KpiCard
                     title="Facturación"
@@ -213,10 +212,10 @@ export default function Dashboard() {
                     tooltip={`Facturación total en el periodo: ${filters.start_date || 'inicio'} hasta ${filters.end_date || 'fin'}`}
                     subtext={
                         <div className="flex flex-col items-center gap-0.5">
-                            <span className="scale-90 tracking-tighter">Ventas Brutas</span>
+                            <span className="scale-90 tracking-tighter dark:text-slate-400">Ventas Brutas</span>
                             <div className="flex gap-1.5 text-[9px] font-bold">
-                                <span className="text-red-500">Abonos: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.returns || 0)}</span>
-                                <span className="text-slate-500">Neto: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.revenue || 0)}</span>
+                                <span className="text-red-500 dark:text-red-400">Abonos: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.returns || 0)}</span>
+                                <span className="text-slate-500 dark:text-slate-400">Neto: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.revenue || 0)}</span>
                             </div>
                         </div>
                     }
@@ -254,9 +253,9 @@ export default function Dashboard() {
             </div>
 
             {/* Main Content Area: Alternates between Charts and Tables */}
-            <div className="bg-white p-4 rounded-xl shadow border border-slate-100 mb-6 relative overflow-hidden min-h-[500px]">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow border border-slate-100 dark:border-slate-800 mb-6 relative overflow-hidden min-h-[500px] transition-colors">
                 {/* Decorative background element */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-12 -mt-12 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 dark:bg-slate-800/50 rounded-full -mr-12 -mt-12 pointer-events-none" />
 
                 {!showTables ? (
                     <div className="h-[460px] animate-fadeIn">

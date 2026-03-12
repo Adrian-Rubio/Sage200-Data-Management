@@ -127,44 +127,44 @@ export default function Comparison() {
     const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
     return (
-        <div className="w-full min-h-screen bg-[#f8fafc] p-6 text-gray-800">
+        <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-6 text-gray-800 dark:text-slate-200 transition-colors">
             <PageHeader moduleName="Comparativa Anual" onRefresh={loadComparison}>
-                <Link to="/ventas" className="bg-white text-slate-600 border border-slate-200 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 transition font-bold text-xs h-[34px] flex items-center justify-center whitespace-nowrap">
+                <Link to="/ventas" className="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition font-bold text-xs h-[34px] flex items-center justify-center whitespace-nowrap">
                     Ventas
                 </Link>
-                <Link to="/pending-orders" className="bg-white text-slate-600 border border-slate-200 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 transition font-bold text-xs h-[34px] flex items-center justify-center whitespace-nowrap">
+                <Link to="/pending-orders" className="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition font-bold text-xs h-[34px] flex items-center justify-center whitespace-nowrap">
                     Pendientes
                 </Link>
             </PageHeader>
 
             {/* Filters */}
-            <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end w-full">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end w-full border border-transparent dark:border-slate-800 transition-colors">
                 <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Año Inicio</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Año Inicio</label>
                     <input
                         type="number"
                         name="start_year"
                         value={filters.start_year}
                         onChange={handleFilterChange}
-                        className="block w-24 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white"
+                        className="block w-24 rounded-md border border-gray-300 dark:border-slate-700 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 dark:text-slate-200 bg-white dark:bg-slate-800 transition-colors"
                         min="2020" max="2030"
                     />
                 </div>
                 <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Año Fin</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Año Fin</label>
                     <input
                         type="number"
                         name="end_year"
                         value={filters.end_year}
                         onChange={handleFilterChange}
-                        className="block w-24 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white"
+                        className="block w-24 rounded-md border border-gray-300 dark:border-slate-700 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 dark:text-slate-200 bg-white dark:bg-slate-800 transition-colors"
                         min="2020" max="2030"
                     />
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">División</label>
-                    <select name="division" value={filters.division || ''} onChange={handleFilterChange} className="block w-48 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 bg-white">
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">División</label>
+                    <select name="division" value={filters.division || ''} onChange={handleFilterChange} className="block w-48 rounded-md border border-gray-300 dark:border-slate-700 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 text-gray-900 dark:text-slate-200 bg-white dark:bg-slate-800 transition-colors">
                         <option value="">Todas</option>
                         <option value="Conectrónica">Conectrónica</option>
                         <option value="Sismecánica">Sismecánica</option>
@@ -173,13 +173,13 @@ export default function Comparison() {
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Comercial</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Comercial</label>
                     <select
                         name="sales_rep_id"
                         value={filters.sales_rep_id || ''}
                         onChange={handleFilterChange}
                         disabled={isRestrictedToRep}
-                        className={`block w-48 rounded-md border border-gray-300 shadow-sm sm:text-sm p-2 ${isRestrictedToRep ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'focus:border-green-500 focus:ring-green-500 text-gray-900 bg-white'}`}
+                        className={`block w-48 rounded-md border border-gray-300 dark:border-slate-700 shadow-sm sm:text-sm p-2 transition-colors ${isRestrictedToRep ? 'bg-gray-100 dark:bg-slate-800/50 text-gray-500 dark:text-slate-500 cursor-not-allowed border-gray-200 dark:border-slate-700/50' : 'focus:border-green-500 focus:ring-green-500 text-gray-900 dark:text-slate-200 bg-white dark:bg-slate-800'}`}
                     >
                         {!isRestrictedToRep && <option value="">Todos</option>}
                         {options.reps
@@ -195,25 +195,31 @@ export default function Comparison() {
             </div>
 
             {/* Monthly Trend Chart */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-[500px] flex flex-col mb-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">Evolución Mensual ({filters.start_year}-{filters.end_year})</h3>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800 h-[500px] flex flex-col mb-6 transition-colors">
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-slate-200 mb-4 text-center">Evolución Mensual ({filters.start_year}-{filters.end_year})</h3>
 
                 {loading ? (
-                    <div className="flex-grow flex items-center justify-center text-gray-500">Cargando datos...</div>
+                    <div className="flex-grow flex items-center justify-center text-gray-500 dark:text-slate-400">Cargando datos...</div>
                 ) : error ? (
-                    <div className="flex-grow flex items-center justify-center text-red-500">{error}</div>
+                    <div className="flex-grow flex items-center justify-center text-red-500 dark:text-red-400">{error}</div>
                 ) : (
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={dataByMonth} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.3} />
                             <XAxis
                                 dataKey="month"
                                 tickFormatter={(val) => monthNames[val - 1]}
+                                stroke="#64748b" tick={{fill: '#64748b'}}
                             />
-                            <YAxis tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M€` : `${(val / 1000).toFixed(0)}k€`} />
+                            <YAxis 
+                                tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M€` : `${(val / 1000).toFixed(0)}k€`} 
+                                stroke="#64748b" tick={{fill: '#64748b'}}
+                            />
                             <Tooltip
                                 formatter={(val) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(val)}
                                 labelFormatter={(val) => monthNames[val - 1]}
+                                contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '0.5rem', color: '#f1f5f9' }}
+                                itemStyle={{ color: '#e2e8f0' }}
                             />
                             <Legend />
                             {years.map((year, index) => (
@@ -234,26 +240,35 @@ export default function Comparison() {
             </div>
 
             {/* Yearly Total Chart */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-[600px] flex flex-col">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">Total Anual por Comercial ({filters.start_year}-{filters.end_year})</h3>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800 h-[600px] flex flex-col transition-colors">
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-slate-200 mb-4 text-center">Total Anual por Comercial ({filters.start_year}-{filters.end_year})</h3>
 
                 {loading ? (
-                    <div className="flex-grow flex items-center justify-center text-gray-500">Cargando datos...</div>
+                    <div className="flex-grow flex items-center justify-center text-gray-500 dark:text-slate-400">Cargando datos...</div>
                 ) : error ? (
-                    <div className="flex-grow flex items-center justify-center text-red-500">{error}</div>
+                    <div className="flex-grow flex items-center justify-center text-red-500 dark:text-red-400">{error}</div>
                 ) : (
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={dataByRep} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.3} />
                             <XAxis
                                 dataKey="name"
-                                tick={{ fontSize: 13, fontWeight: 600, fill: '#1f2937' }}
+                                tick={{ fontSize: 13, fontWeight: 600, fill: 'currentColor' }}
+                                stroke="#64748b"
+                                className="dark:text-slate-300"
                                 interval={0}
                                 height={60}
                                 tickFormatter={formatName}
                             />
-                            <YAxis tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M€` : `${(val / 1000).toFixed(0)}k€`} />
-                            <Tooltip formatter={(val) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(val)} />
+                            <YAxis 
+                                tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M€` : `${(val / 1000).toFixed(0)}k€`} 
+                                stroke="#64748b" tick={{fill: '#64748b'}}
+                            />
+                            <Tooltip 
+                                formatter={(val) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(val)} 
+                                contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '0.5rem', color: '#f1f5f9' }}
+                                itemStyle={{ color: '#e2e8f0' }}
+                            />
                             <Legend wrapperStyle={{ paddingTop: '20px' }} />
 
                             {years.map((year, index) => (
@@ -270,7 +285,7 @@ export default function Comparison() {
                     </ResponsiveContainer>
                 )}
             </div>
-            <div className="mt-4 text-sm text-gray-500 italic text-center">
+            <div className="mt-4 text-sm text-gray-500 dark:text-slate-500 italic text-center transition-colors">
                 Nota: Los datos previos a 2025 provienen de CENVAL (Empresa 100), los posteriores de CENVALSA INDUSTRIAL (Empresa 2).
             </div>
         </div>

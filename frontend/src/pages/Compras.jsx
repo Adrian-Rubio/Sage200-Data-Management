@@ -64,14 +64,14 @@ export default function ComprasDashboard() {
     };
 
     return (
-        <div className="w-full min-h-screen bg-[#f8fafc] p-6 text-gray-800 font-sans flex flex-col">
+        <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-6 text-gray-800 dark:text-slate-100 font-sans flex flex-col transition-colors">
             <PageHeader moduleName="Compras" onRefresh={loadDashboard} />
 
             {/* Filters Bar - Balanced */}
-            <div className="bg-white px-6 py-4 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-wrap gap-6 items-end">
+            <div className="bg-white dark:bg-slate-900 px-6 py-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 mb-6 flex flex-wrap gap-6 items-end transition-colors">
                 <div className="flex flex-col">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Ejercicio</label>
-                    <select name="exercise" value={filters.exercise} onChange={handleFilterChange} className="block w-28 rounded-xl border-gray-200 bg-gray-50/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700">
+                    <select name="exercise" value={filters.exercise} onChange={handleFilterChange} className="block w-28 rounded-xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700 dark:text-slate-200">
                         {[currentYear, currentYear - 1, currentYear - 2].map(y => (
                             <option key={y} value={y}>{y}</option>
                         ))}
@@ -79,7 +79,7 @@ export default function ComprasDashboard() {
                 </div>
                 <div className="flex flex-col">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Empresa</label>
-                    <select name="company_id" value={filters.company_id} onChange={handleFilterChange} className="block w-40 rounded-xl border-gray-200 bg-gray-50/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700">
+                    <select name="company_id" value={filters.company_id} onChange={handleFilterChange} className="block w-40 rounded-xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700 dark:text-slate-200">
                         <option value="">Todas</option>
                         {options.companies?.map(c => (
                             <option key={c.id} value={c.id}>{c.name}</option>
@@ -94,7 +94,7 @@ export default function ComprasDashboard() {
                         placeholder="Nombre o ID..."
                         value={filters.provider_id}
                         onChange={handleFilterChange}
-                        className="block w-48 rounded-xl border-gray-200 bg-gray-50/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700"
+                        className="block w-48 rounded-xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500"
                     />
                 </div>
                 <div className="flex flex-col">
@@ -104,7 +104,7 @@ export default function ComprasDashboard() {
                         name="start_date"
                         value={filters.start_date}
                         onChange={handleFilterChange}
-                        className="block w-36 rounded-xl border-gray-200 bg-gray-50/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700"
+                        className="block w-36 rounded-xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700 dark:text-slate-200"
                     />
                 </div>
                 <div className="flex flex-col">
@@ -114,7 +114,7 @@ export default function ComprasDashboard() {
                         name="end_date"
                         value={filters.end_date}
                         onChange={handleFilterChange}
-                        className="block w-36 rounded-xl border-gray-200 bg-gray-50/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700"
+                        className="block w-36 rounded-xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-xs p-2.5 font-bold text-slate-700 dark:text-slate-200"
                     />
                 </div>
                 <div className="ml-auto flex items-center gap-2 mb-2">
@@ -133,22 +133,22 @@ export default function ComprasDashboard() {
                     </div>
                 </div>
             ) : error ? (
-                <div className="bg-red-50 text-red-600 p-8 rounded-2xl border border-red-100 text-center font-bold shadow-sm">
+                <div className="bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 p-8 rounded-2xl border border-red-100 dark:border-red-900/50 text-center font-bold shadow-sm">
                     {error}
                 </div>
             ) : (
                 <div className="flex flex-col">
                     {/* KPI Cards - Prominent but efficient */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center items-center text-center hover:shadow-md transition-shadow">
-                            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-center w-full">Total Compras</h3>
-                            <p className="text-3xl font-black text-slate-800">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-center items-center text-center hover:shadow-md transition-all">
+                            <h3 className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-center w-full">Total Compras</h3>
+                            <p className="text-3xl font-black text-slate-800 dark:text-slate-100">
                                 {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(data?.kpis?.total_purchases || 0)}
                             </p>
                         </div>
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center items-center text-center hover:shadow-md transition-shadow">
-                            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-center w-full">Proveedor Principal</h3>
-                            <p className="text-xl font-black text-slate-800 truncate w-full px-4" title={data?.kpis?.top_provider}>
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-center items-center text-center hover:shadow-md transition-all">
+                            <h3 className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-center w-full">Proveedor Principal</h3>
+                            <p className="text-xl font-black text-slate-800 dark:text-slate-100 truncate w-full px-4" title={data?.kpis?.top_provider}>
                                 {data?.kpis?.top_provider || 'N/A'}
                             </p>
                         </div>
@@ -164,11 +164,23 @@ export default function ComprasDashboard() {
                                 Gestionar →
                             </Link>
                         </div>
+                        <div className="bg-emerald-600 rounded-2xl px-6 py-5 shadow-lg flex justify-between items-center text-white relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-7 9h-2V7h-2v5H6v2h2v5h2v-5h2v-2z" /></svg>
+                            </div>
+                            <div className="z-10">
+                                <h3 className="text-emerald-100 text-[10px] font-black uppercase tracking-widest leading-none mb-2">Previsión</h3>
+                                <p className="text-lg font-black tracking-tight">Aprovisionamiento</p>
+                            </div>
+                            <Link to="/compras/prevision-aprovisionamiento" className="z-10 bg-white text-emerald-600 hover:bg-emerald-50 transition-colors py-2 px-6 rounded-xl text-xs font-bold shadow-sm">
+                                Previsión →
+                            </Link>
+                        </div>
                     </div>
 
                     {/* Main Visualization Area - Balanced height */}
-                    <div className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden mb-6">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-100 dark:border-slate-800 relative overflow-hidden mb-6 transition-colors">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
 
                         <div className="h-[480px]">
                             <PurchasesCarousel

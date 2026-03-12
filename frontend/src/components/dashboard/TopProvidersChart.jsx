@@ -16,9 +16,9 @@ export function TopProvidersChart({ data, isEmbed = false }) {
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-white p-3 shadow-lg border border-gray-100 rounded-lg">
-                    <p className="text-[10px] font-bold text-gray-400 mb-1">{label}</p>
-                    <p className="text-sm font-black text-indigo-600">
+                <div className="bg-white dark:bg-slate-900 p-3 shadow-lg border border-gray-100 dark:border-slate-800 rounded-lg transition-colors">
+                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mb-1">{label}</p>
+                    <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
                         {formatCurrency(payload[0].value)}
                     </p>
                 </div>
@@ -28,9 +28,9 @@ export function TopProvidersChart({ data, isEmbed = false }) {
     };
 
     return (
-        <div className={`w-full ${isEmbed ? 'h-full' : 'h-[350px] bg-white p-6 rounded-2xl shadow-sm border border-slate-100'}`}>
+        <div className={`w-full ${isEmbed ? 'h-full' : 'h-[350px] bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 transition-colors'}`}>
             {!isEmbed && (
-                <h3 className="text-sm font-black text-slate-700 uppercase tracking-wider mb-6 flex items-center gap-2">
+                <h3 className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-6 flex items-center gap-2">
                     <div className="w-2 h-4 bg-emerald-500 rounded-full"></div>
                     Top 5 Proveedores por Volumen
                 </h3>
@@ -38,15 +38,16 @@ export function TopProvidersChart({ data, isEmbed = false }) {
             <div className={isEmbed ? "h-full" : "h-[300px]"}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data || []} layout="vertical" margin={{ left: 140, right: 80, top: 20, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" className="text-slate-100 dark:text-slate-800" />
                         <XAxis type="number" hide />
                         <YAxis
                             dataKey="name"
                             type="category"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 9, fontWeight: 'black', fill: '#475569' }}
+                            tick={{ fontSize: 9, fontWeight: 'black', fill: 'currentColor' }}
                             width={130}
+                            className="text-slate-600 dark:text-slate-400"
                         />
                         <Tooltip content={<CustomTooltip />} />
                         <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={24} label={{ position: 'right', fill: '#6366f1', fontSize: 10, fontWeight: 'bold', formatter: (val) => formatCurrency(val) }}>

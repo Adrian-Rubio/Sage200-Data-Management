@@ -12,29 +12,29 @@ const CustomTooltip = ({ active, payload, label }) => {
         const formatCurrency = (val) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
         return (
-            <div className="bg-white p-4 border border-gray-200 shadow-2xl rounded-lg text-sm z-50 min-w-[320px]">
-                <h4 className="font-bold text-gray-900 mb-3 border-b border-gray-100 pb-2 text-base">{label}</h4>
+            <div className="bg-white dark:bg-slate-800 p-4 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-lg text-sm z-50 min-w-[320px] transition-colors">
+                <h4 className="font-bold text-gray-900 dark:text-slate-100 mb-3 border-b border-gray-100 dark:border-slate-700 pb-2 text-base">{label}</h4>
 
                 <div className="flex justify-between items-center mb-4 text-base">
-                    <span className="text-gray-500 font-medium">Facturado</span>
-                    <span className="font-bold text-green-600 text-lg">
+                    <span className="text-gray-500 dark:text-slate-400 font-medium">Facturado</span>
+                    <span className="font-bold text-green-600 dark:text-green-400 text-lg">
                         {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(payload[0].value)}
                     </span>
                 </div>
 
                 {pending && pending.length > 0 && (
-                    <div className="mt-2 bg-orange-50 rounded-md border border-orange-100 overflow-hidden">
-                        <div className="bg-orange-100 px-3 py-2 flex justify-between items-center border-b border-orange-200">
-                            <span className="text-xs font-bold text-orange-800 uppercase tracking-wider">Pendiente Facturar</span>
-                            <span className="font-bold text-orange-900">{formatCurrency(totalPending)}</span>
+                    <div className="mt-2 bg-orange-50 dark:bg-orange-950/30 rounded-md border border-orange-100 dark:border-orange-900/50 overflow-hidden">
+                        <div className="bg-orange-100 dark:bg-orange-900/40 px-3 py-2 flex justify-between items-center border-b border-orange-200 dark:border-orange-900/50">
+                            <span className="text-xs font-bold text-orange-800 dark:text-orange-400 uppercase tracking-wider">Pendiente Facturar</span>
+                            <span className="font-bold text-orange-900 dark:text-orange-300">{formatCurrency(totalPending)}</span>
                         </div>
                         <ul className="p-2 space-y-2">
                             {pending.map((item, idx) => (
                                 <li key={idx} className="text-xs flex justify-between gap-4 items-center">
-                                    <span className="text-gray-700 truncate flex-1" title={item.RazonSocial}>
+                                    <span className="text-gray-700 dark:text-slate-300 truncate flex-1" title={item.RazonSocial}>
                                         {item.RazonSocial}
                                     </span>
-                                    <span className="font-mono font-medium text-gray-900 whitespace-nowrap bg-white px-1.5 py-0.5 rounded border border-orange-100 shadow-sm">
+                                    <span className="font-mono font-medium text-gray-900 dark:text-slate-100 whitespace-nowrap bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-orange-100 dark:border-orange-900/50 shadow-sm">
                                         {formatCurrency(item.ImporteLiquido)}
                                     </span>
                                 </li>
@@ -51,7 +51,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 export function SalesByRepChart({ data, isEmbed }) {
     const containerClass = isEmbed
         ? "w-full h-full flex flex-col"
-        : "bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col";
+        : "bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800 h-full flex flex-col transition-colors";
 
     const getDivisionColor = (division) => {
         switch (division) {
@@ -65,7 +65,7 @@ export function SalesByRepChart({ data, isEmbed }) {
     return (
         <div className={containerClass}>
             <div className="flex justify-between items-center mb-2 px-2">
-                <h3 className="text-slate-700 font-bold text-xs uppercase tracking-tight">Ventas por Comercial</h3>
+                <h3 className="text-slate-700 dark:text-slate-300 font-bold text-xs uppercase tracking-tight">Ventas por Comercial</h3>
                 <div className="flex gap-3 text-[9px] font-bold uppercase tracking-tighter">
                     <div className="flex items-center gap-1">
                         <div className="w-2 h-2 rounded-sm bg-[#10b981]"></div>
@@ -84,7 +84,7 @@ export function SalesByRepChart({ data, isEmbed }) {
             <div style={{ width: '100%', height: '100%', minHeight: 0, flexGrow: 1 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-700" />
                         <XAxis
                             dataKey="Comisionista"
                             tick={{ fontSize: 13, fontWeight: 600, fill: '#1f2937' }}
