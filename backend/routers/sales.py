@@ -91,7 +91,7 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
         common_rev_where = "" # Specially for revenue if needed
         common_params = {}
 
-        # 2025+ is Company 2 only as per user request
+        # FORCED: Always filter by Company 2 for Sales Dashboard as requested
         company_filter = "CodigoEmpresa = '2'"
         
         if current_allowed_reps:
@@ -165,7 +165,7 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
                 SELECT k.ImporteLiquido, c.RazonSocial, com.Comisionista 
                 FROM CabeceraAlbaranCliente k 
                 JOIN Clientes c ON k.CodigoCliente = c.CodigoCliente AND k.CodigoEmpresa = c.CodigoEmpresa 
-                JOIN Comisionistas com ON k.CodigoComisionista = com.CodigoComisionista 
+                JOIN Comisionistas com ON k.CodigoComisionista = com.CodigoComisionista AND k.CodigoEmpresa = com.CodigoEmpresa
                 {p_where}
             """
             
