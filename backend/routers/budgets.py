@@ -137,16 +137,16 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
             
         year = filters.year or date.today().year
         
-        # Query with extra safety
+        # Updated query to include month for breakdown
         query = """
             SELECT 
                 CAST(CodigoCliente AS VARCHAR) as CodigoCliente, 
                 UPPER(RTRIM(LTRIM(Comisionista))) as Comisionista, 
-                CASE WHEN MesFactura IS NULL THEN 0 ELSE CAST(MesFactura AS INT) END as MesFactura,
+                MONTH(FechaFactura) as MesFactura,
                 SUM(CAST(ISNULL(BaseImponible, 0) AS FLOAT)) as ActualSales 
             FROM Vis_AEL_DiarioFactxComercial 
             WHERE CodigoEmpresa = :empresa AND EjercicioFactura = :year 
-            GROUP BY CodigoCliente, Comisionista, MesFactura
+            GROUP BY CodigoCliente, Comisionista, MONTH(FechaFactura)
         """
         
         try:
