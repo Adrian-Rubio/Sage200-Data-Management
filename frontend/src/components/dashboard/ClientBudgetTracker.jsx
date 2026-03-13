@@ -38,10 +38,8 @@ export const ClientBudgetTracker = ({ filters }) => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [status, setStatus] = useState({ has_data: false, clients_count: 0 });
-    const [uploading, setUploading] = useState(false);
+    const [sortBy, setSortBy] = useState('budget'); // 'budget', 'actual', 'progress', 'code'
     
-    // Expanded clients explicitly, default empty so it only tracks what's open
     const [expandedClients, setExpandedClients] = useState(new Set());
 
     const toggleExpand = (code) => {
@@ -57,7 +55,6 @@ export const ClientBudgetTracker = ({ filters }) => {
         setLoading(true);
         setError(null);
         try {
-            // Pass current filters from dashboard context
             const year = filters.start_date ? new Date(filters.start_date).getFullYear() : new Date().getFullYear();
             const res = await fetchClientBudgets({ 
                 company_id: filters.company_id || '2',
@@ -83,14 +80,13 @@ export const ClientBudgetTracker = ({ filters }) => {
                     'informática industrial': 'informatica'
                 };
                 const search_div = div_map[norm_div] || norm_div;
-                
                 clients = clients.filter(c => c.divisions.some(d => d.name.toLowerCase() === search_div));
             }
 
             setData(clients);
         } catch (err) {
             console.error("Error fetching budgets:", err);
-            setError("Error al cargar los presupuestos o archivo Excel no encontrado.");
+            setError("Error al cargar los presupuestos.");
         } finally {
             setLoading(false);
         }
@@ -100,6 +96,15 @@ export const ClientBudgetTracker = ({ filters }) => {
         fetchData();
         // eslint-disable-next-line
     }, [filters.start_date, filters.company_id, filters.client_id, filters.division]);
+
+    // Sorting logic
+    const sortedData = [...data].sort((a, b) => {
+        if (sortBy === 'budget') return b.total_budget - a.total_budget;
+        if (sortBy === 'actual') return b.total_actual - a.total_actual;
+        if (sortBy === 'progress') return b.total_progress - a.total_progress;
+        if (sortBy === 'code') return a.client_code.localeCompare(b.client_code);
+        return 0;
+    });
 
     if (loading && !data.length) {
         return (
@@ -117,9 +122,7 @@ export const ClientBudgetTracker = ({ filters }) => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <h3 className="text-lg font-bold text-red-700 dark:text-red-400 mb-2">Error de Datos</h3>
-                <p className="text-sm text-red-600 dark:text-red-400 text-center max-w-sm">
-                    {error}
-                </p>
+                <p className="text-sm text-red-600 dark:text-red-400 text-center max-w-sm">{error}</p>
             </div>
         );
     }
@@ -127,51 +130,72 @@ export const ClientBudgetTracker = ({ filters }) => {
     return (
         <div className="flex flex-col h-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-fadeIn">
             {/* Header / Actions */}
-            <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
+            <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/50 dark:bg-slate-800/20">
                 <div>
                     <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
-                        Seguimiento de Presupuestos ({filters.start_date ? new Date(filters.start_date).getFullYear() : new Date().getFullYear()})
+                        Seguimiento ({filters.start_date ? new Date(filters.start_date).getFullYear() : new Date().getFullYear()})
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1">Comparativa de ventas reales vs objetivo anual (Fuente: Presupuestos por cliente.xlsx)</p>
                 </div>
                 
-                <button 
-                    onClick={fetchData}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded transition font-semibold flex items-center gap-1.5 border border-blue-100 dark:border-blue-800/50"
-                >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                    Refrescar Datos
-                </button>
+                {/* Sorting Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 mr-1">Ordenar por:</span>
+                    <button 
+                        onClick={() => setSortBy('progress')}
+                        className={`text-[10px] px-2.5 py-1.5 rounded-md font-bold transition-all border ${sortBy === 'progress' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
+                    >
+                        Cumplimiento
+                    </button>
+                    <button 
+                        onClick={() => setSortBy('actual')}
+                        className={`text-[10px] px-2.5 py-1.5 rounded-md font-bold transition-all border ${sortBy === 'actual' ? 'bg-blue-100 text-blue-700 border-blue-200 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
+                    >
+                        Facturación
+                    </button>
+                    <button 
+                        onClick={() => setSortBy('budget')}
+                        className={`text-[10px] px-2.5 py-1.5 rounded-md font-bold transition-all border ${sortBy === 'budget' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
+                    >
+                        Presupuesto
+                    </button>
+                    <button 
+                        onClick={() => setSortBy('code')}
+                        className={`text-[10px] px-2.5 py-1.5 rounded-md font-bold transition-all border ${sortBy === 'code' ? 'bg-slate-200 text-slate-800 border-slate-300 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
+                    >
+                        Nº Cliente
+                    </button>
+                    <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                    <button onClick={fetchData} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors" title="Actualizar">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                </div>
             </div>
 
             {/* List */}
-            <div className="overflow-y-auto flex-1 p-2 bg-slate-50 dark:bg-slate-900/50" style={{ maxHeight: '600px' }}>
-                {data.length === 0 ? (
-                    <div className="p-8 text-center text-slate-500">
-                        No hay datos de presupuesto para los filtros seleccionados.
+            <div className="overflow-y-auto flex-1 p-2 bg-slate-50 dark:bg-slate-900/50" style={{ maxHeight: 'calc(100vh - 400px)', minHeight: '500px' }}>
+                {sortedData.length === 0 ? (
+                    <div className="p-12 text-center text-slate-500">
+                        No hay datos que coincidan con los filtros.
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-3">
-                        {data.map(client => (
-                            <div key={client.client_code} className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700/50 transition-colors">
-                                <div 
-                                    className="flex justify-between items-center cursor-pointer group"
-                                    onClick={() => toggleExpand(client.client_code)}
-                                >
+                        {sortedData.map(client => (
+                            <div key={client.client_code} className="bg-white dark:bg-slate-800 rounded-lg p-3 shadow-sm border border-slate-200 dark:border-slate-700 hover:border-blue-300 transition-all">
+                                <div className="flex justify-between items-center cursor-pointer group" onClick={() => toggleExpand(client.client_code)}>
                                     <div className="flex-1 pr-6">
                                         <div className="flex items-center gap-2 mb-2 w-full justify-between">
-                                            <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate flex-1" title={client.client_name}>
-                                                {client.client_code} - {client.client_name}
+                                            <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate flex-1">
+                                                <span className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] mr-2 text-slate-600 dark:text-slate-400 font-mono">{client.client_code}</span>
+                                                {client.client_name}
                                             </h4>
-                                            
                                         </div>
                                         <ProgressBar 
                                             actual={client.total_actual} 
                                             budget={client.total_budget} 
-                                            label="Presupuesto Anual Total" 
+                                            label="General" 
                                             showWarning={true}
                                         />
                                     </div>
@@ -184,19 +208,46 @@ export const ClientBudgetTracker = ({ filters }) => {
                                     </div>
                                 </div>
                                 
-                                {/* Expanded Details: Divisions */}
-                                {expandedClients.has(client.client_code) && client.divisions.length > 0 && (
-                                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50 animate-fadeIn space-y-3">
-                                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-1">Desglose por División</h5>
-                                        {client.divisions.map((div, idx) => (
-                                            <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 rounded-md p-3 border border-slate-100 dark:border-slate-800">
-                                                <ProgressBar 
-                                                    actual={div.actual} 
-                                                    budget={div.budget} 
-                                                    label={`División: ${div.name}`} 
-                                                />
-                                            </div>
-                                        ))}
+                                {expandedClients.has(client.client_code) && (
+                                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50 animate-fadeIn overflow-hidden">
+                                        <div className="space-y-6">
+                                            {client.divisions.map((div, idx) => (
+                                                <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 border border-slate-100 dark:border-slate-800/50">
+                                                    <div className="mb-4">
+                                                        <ProgressBar actual={div.actual} budget={div.budget} label={`DIVISIÓN: ${div.name}`} />
+                                                    </div>
+                                                    
+                                                    {/* Monthly Table */}
+                                                    <div className="overflow-x-auto mt-4">
+                                                        <table className="w-full text-[10px]">
+                                                            <thead>
+                                                                <tr className="text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                                                                    <th className="text-left pb-2 font-bold uppercase tracking-tighter">Mes</th>
+                                                                    <th className="text-right pb-2 font-bold uppercase tracking-tighter">Presup.</th>
+                                                                    <th className="text-right pb-2 font-bold uppercase tracking-tighter">Real</th>
+                                                                    <th className="text-right pb-2 font-bold uppercase tracking-tighter">%</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                                                {div.monthly.map((m, midx) => {
+                                                                    const mProgress = m.budget > 0 ? (m.actual / m.budget * 100) : 0;
+                                                                    return (
+                                                                        <tr key={midx} className="hover:bg-white dark:hover:bg-slate-800 transition-colors">
+                                                                            <td className="py-2 font-bold uppercase text-slate-600 dark:text-slate-400">{m.month}</td>
+                                                                            <td className="py-2 text-right font-mono text-slate-500">{formatCurrency(m.budget)}</td>
+                                                                            <td className="py-2 text-right font-mono font-bold text-slate-700 dark:text-slate-300">{formatCurrency(m.actual)}</td>
+                                                                            <td className={`py-2 text-right font-bold ${mProgress >= 100 ? 'text-emerald-500' : mProgress > 0 ? 'text-blue-500' : 'text-slate-400'}`}>
+                                                                                {mProgress.toFixed(0)}%
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
