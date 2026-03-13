@@ -190,8 +190,14 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
                 df_grouped = df_pending_raw.groupby(['Comisionista', 'RazonSocial'], as_index=False)['ImporteLiquido'].sum()
                 
                 pending_map = {}
+                # Calculate total per rep for tooltips
+                rep_totals = df_pending_raw.groupby('Comisionista')['ImporteLiquido'].sum().to_dict()
+                
                 for rep, group in df_grouped.groupby('Comisionista'):
-                    pending_map[rep] = group.nlargest(5, 'ImporteLiquido')[['RazonSocial', 'ImporteLiquido']].to_dict('records')
+                    pending_map[rep] = {
+                        "total": float(rep_totals.get(rep, 0)),
+                        "top_clients": group.nlargest(10, 'ImporteLiquido')[['RazonSocial', 'ImporteLiquido']].to_dict('records')
+                    }
         except Exception as e:
             with open("dashboard_debug.log", "a") as f:
                 f.write(f"DEBUG: Pending query error: {e}\n")
@@ -217,7 +223,9 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
             s_rep.columns = ['Comisionista', 'BaseImponible']
             sales_by_rep_data = s_rep.to_dict(orient='records')
             for item in sales_by_rep_data:
-                item['pending_invoices'] = pending_map.get(item['Comisionista'].strip().upper(), [])
+                rep_data = pending_map.get(item['Comisionista'].strip().upper(), {"total": 0, "top_clients": []})
+                item['pending_total'] = rep_data["total"]
+                item['pending_invoices'] = rep_data["top_clients"]
                 # Add division information for coloring
                 rep_name = item['Comisionista'].strip().upper()
                 item['division'] = next((k for k, v in divisions.items() if rep_name in (r.upper() for r in v)), 'Otros')

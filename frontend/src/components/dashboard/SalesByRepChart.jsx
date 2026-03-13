@@ -4,10 +4,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
-        const pending = data.pending_invoices;
-
-        // Calculate Total Pending for this Rep
-        const totalPending = pending ? pending.reduce((sum, item) => sum + item.ImporteLiquido, 0) : 0;
+        const pendingDocs = data.pending_invoices;
+        const totalPending = data.pending_total || 0;
 
         const formatCurrency = (val) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
@@ -22,14 +20,14 @@ const CustomTooltip = ({ active, payload, label }) => {
                     </span>
                 </div>
 
-                {pending && pending.length > 0 && (
+                {pendingDocs && pendingDocs.length > 0 && (
                     <div className="mt-2 bg-orange-50 dark:bg-orange-950/30 rounded-md border border-orange-100 dark:border-orange-900/50 overflow-hidden">
                         <div className="bg-orange-100 dark:bg-orange-900/40 px-3 py-2 flex justify-between items-center border-b border-orange-200 dark:border-orange-900/50">
                             <span className="text-xs font-bold text-orange-800 dark:text-orange-400 uppercase tracking-wider">Pendiente Facturar</span>
                             <span className="font-bold text-orange-900 dark:text-orange-300">{formatCurrency(totalPending)}</span>
                         </div>
                         <ul className="p-2 space-y-2">
-                            {pending.map((item, idx) => (
+                            {pendingDocs.map((item, idx) => (
                                 <li key={idx} className="text-xs flex justify-between gap-4 items-center">
                                     <span className="text-gray-700 dark:text-slate-300 truncate flex-1" title={item.RazonSocial}>
                                         {item.RazonSocial}
