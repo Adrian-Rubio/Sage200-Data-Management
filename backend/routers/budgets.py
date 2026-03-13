@@ -134,8 +134,21 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
             return {"error": "No se encontraron datos en el Excel o error al leerlo. Verifica los logs del servidor.", "data": []}
             
         year = filters.year or date.today().year
-        query = "SELECT CodigoCliente, UPPER(RTRIM(LTRIM(Comisionista))) as Comisionista, SUM(CAST(BaseImponible AS FLOAT)) as ActualSales FROM Vis_AEL_DiarioFactxComercial WHERE CodigoEmpresa = :empresa AND EjercicioFactura = :year GROUP BY CodigoCliente, UPPER(RTRIM(LTRIM(Comisionista)))"
+        print(f"DEBUG: Cargando ventas reales para el año {year}")
+        
+        # Updated query to include month for breakdown
+        query = """
+            SELECT 
+                CodigoCliente, 
+                UPPER(RTRIM(LTRIM(Comisionista))) as Comisionista, 
+                MesFactura,
+                SUM(CAST(BaseImponible AS FLOAT)) as ActualSales 
+            FROM Vis_AEL_DiarioFactxComercial 
+            WHERE CodigoEmpresa = :empresa AND EjercicioFactura = :year 
+            GROUP BY CodigoCliente, UPPER(RTRIM(LTRIM(Comisionista))), MesFactura
+        """
         df_actual = pd.read_sql(text(query), db.bind, params={"empresa": filters.company_id, "year": str(year)})
+        print(f"DEBUG: SQL devolvió {len(df_actual)} filas de ventas.")
         
         divisions_map = {
             'conectores': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
@@ -144,32 +157,81 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
         }
         rep_to_div = {rep.upper(): div for div, reps in divisions_map.items() for rep in reps}
         
-        actual_sales_dict = {}
+        # Month mapping for conversion
+        month_names_map = {
+            1: 'ene', 2: 'feb', 3: 'mar', 4: 'abr', 5: 'may', 6: 'jun',
+            7: 'jul', 8: 'ago', 9: 'sep', 10: 'oct', 11: 'nov', 12: 'dic'
+        }
+        
+        # Structure: client_id -> { total: X, divisions: { div -> { total: Y, months: { 'ene' -> Z } } } }
+        actual_data = {}
+        
         for _, row in df_actual.iterrows():
-            client_id = str(int(row['CodigoCliente'])) if isinstance(row['CodigoCliente'], float) and row['CodigoCliente'].is_integer() else str(row['CodigoCliente'])
-            div = rep_to_div.get(str(row['Comisionista']), 'otros')
-            if client_id not in actual_sales_dict: actual_sales_dict[client_id] = {"total": 0}
-            if div not in actual_sales_dict[client_id]: actual_sales_dict[client_id][div] = 0
-            actual_sales_dict[client_id][div] += float(row['ActualSales'] or 0)
-            actual_sales_dict[client_id]["total"] += float(row['ActualSales'] or 0)
+            try:
+                raw_code = row['CodigoCliente']
+                if pd.isna(raw_code): continue
+                
+                client_id = str(int(raw_code)) if isinstance(raw_code, (float, int)) and float(raw_code).is_integer() else str(raw_code).strip()
+                div = rep_to_div.get(str(row['Comisionista']), 'otros')
+                
+                # Robust month handling
+                raw_month = row['MesFactura']
+                if pd.isna(raw_month): continue
+                
+                month_idx = int(float(raw_month))
+                month_name = month_names_map.get(month_idx)
+                amount = float(row['ActualSales'] or 0)
+                
+                if client_id not in actual_data:
+                    actual_data[client_id] = {"total": 0, "divisions": {}}
+                
+                if div not in actual_data[client_id]["divisions"]:
+                    actual_data[client_id]["divisions"][div] = {"total": 0, "months": {}}
+                
+                actual_data[client_id]["total"] += amount
+                actual_data[client_id]["divisions"][div]["total"] += amount
+                
+                if month_name:
+                    actual_data[client_id]["divisions"][div]["months"][month_name] = actual_data[client_id]["divisions"][div]["months"].get(month_name, 0) + amount
+            except Exception as e:
+                print(f"DEBUG Error procesando fila de ventas: {e}")
+                continue
 
         results = []
         for client_code, budget_info in budgets_data.items():
-            client_actuals = actual_sales_dict.get(client_code, {})
+            client_actuals = actual_data.get(client_code, {"total": 0, "divisions": {}})
             merged_divisions = []
             total_budget = 0
-            total_actual = client_actuals.get("total", 0)
+            total_actual = client_actuals["total"]
             
             for div_name, div_budget_data in budget_info.get("divisions", {}).items():
                 if div_name == "total": continue
+                
                 div_total_budget = div_budget_data.get("total", 0)
                 total_budget += div_total_budget
-                div_actual = client_actuals.get(div_name.lower().strip(), 0)
+                
+                norm_div = div_name.lower().strip()
+                div_actual_info = client_actuals["divisions"].get(norm_div, {"total": 0, "months": {}})
+                div_actual_total = div_actual_info["total"]
+                
+                # Create monthly breakdown list
+                monthly_details = []
+                for m_idx in range(1, 13):
+                    m_name = month_names_map[m_idx]
+                    m_budget = div_budget_data.get(m_name, 0)
+                    m_actual = div_actual_info["months"].get(m_name, 0)
+                    monthly_details.append({
+                        "month": m_name,
+                        "budget": m_budget,
+                        "actual": m_actual
+                    })
+                
                 merged_divisions.append({
                     "name": div_name.upper(),
                     "budget": div_total_budget,
-                    "actual": div_actual,
-                    "progress": (div_actual / div_total_budget * 100) if div_total_budget > 0 else 0
+                    "actual": div_actual_total,
+                    "progress": (div_actual_total / div_total_budget * 100) if div_total_budget > 0 else 0,
+                    "monthly": monthly_details
                 })
                 
             results.append({
@@ -182,6 +244,7 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
             })
             
         results.sort(key=lambda x: x["total_budget"], reverse=True)
+        print(f"DEBUG: Devolviendo {len(results)} clientes con desglose mensual.")
         return {"data": results}
     except Exception as e:
         print(f"ERROR en endpoint client-budgets: {e}")
