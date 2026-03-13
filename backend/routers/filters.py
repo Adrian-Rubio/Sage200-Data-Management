@@ -98,21 +98,27 @@ def get_filter_options(db: Session = Depends(get_db), current_user: models.User 
         return {"companies": [], "reps": [], "clients": []}
 
 @router.get("/clients/search")
-def search_clients(q: str, db: Session = Depends(get_db)):
+def search_clients(q: str = "", db: Session = Depends(get_db)):
     try:
-        if not q or len(q) < 2:
-            return []
-            
         # Search in Clientes table
         # We assume CodigoEmpresa '2' is the main one for 2025 as per previous context
-        query = """
-            SELECT TOP 50 CodigoCliente as id, RazonSocial as name
-            FROM Clientes
-            WHERE CodigoEmpresa = '2'
-            AND (CodigoCliente LIKE :q OR RazonSocial LIKE :q)
-            ORDER BY RazonSocial
-        """
-        params = {"q": f"%{q}%"}
+        if not q or len(q) < 2:
+            query = """
+                SELECT TOP 100 CodigoCliente as id, RazonSocial as name
+                FROM Clientes
+                WHERE CodigoEmpresa = '2'
+                ORDER BY RazonSocial
+            """
+            params = {}
+        else:
+            query = """
+                SELECT TOP 50 CodigoCliente as id, RazonSocial as name
+                FROM Clientes
+                WHERE CodigoEmpresa = '2'
+                AND (CodigoCliente LIKE :q OR RazonSocial LIKE :q)
+                ORDER BY RazonSocial
+            """
+            params = {"q": f"%{q}%"}
         df = pd.read_sql(text(query), db.bind, params=params)
         return df.to_dict(orient='records')
     except Exception as e:

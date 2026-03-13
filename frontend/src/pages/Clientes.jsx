@@ -9,12 +9,34 @@ export default function Clientes() {
     const [clients, setClients] = useState([]);
     const [error, setError] = useState(null);
 
+    useEffect(() => {
+        fetchInitialClients();
+    }, []);
+
+    const fetchInitialClients = async () => {
+        setLoading(true);
+        try {
+            const data = await searchClients('');
+            setClients(data);
+        } catch (err) {
+            console.error("Initial load failed", err);
+            setError("Error al cargar clientes.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSearch = async (e) => {
         const val = e.target.value;
         setSearchTerm(val);
         
-        if (val.length < 2) {
-            setClients([]);
+        if (val.length > 0 && val.length < 2) {
+            // Wait for more characters or show initial list if empty
+            return;
+        }
+
+        if (val.length === 0) {
+            fetchInitialClients();
             return;
         }
 
@@ -39,10 +61,10 @@ export default function Clientes() {
                     <div className="relative flex-1">
                         <input
                             type="text"
-                            placeholder="Escribe código o nombre del cliente (mínimo 2 letras)..."
+                            placeholder="Escribe código o nombre del cliente..."
                             value={searchTerm}
                             onChange={handleSearch}
-                            className="w-full rounded-xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-sm p-3 pl-10 font-medium text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 transition-colors"
+                            className="w-full rounded-xl border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 shadow-sm focus:border-indigo-500 focus:ring-0 text-sm p-3 pl-10 font-medium text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 transition-colors"
                         />
                         <svg className="w-5 h-5 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
