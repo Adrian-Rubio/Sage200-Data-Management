@@ -21,6 +21,7 @@ import Inventario from './pages/Inventario';
 import CierreMes from './pages/CierreMes';
 import PrivateRoute from './components/PrivateRoute';
 import RmaDashboard from './pages/RmaDashboard';
+import Clientes from './pages/Clientes';
 
 function App() {
   const { theme } = useThemeStore();
@@ -57,6 +58,7 @@ function App() {
           <Route path="/contabilidad" element={<Contabilidad />} />
           <Route path="/finanzas/tesoreria" element={<CobrosPagos />} />
           <Route path="/finanzas/explotacion" element={<CuentaExplotacion />} />
+          <Route path="/clientes" element={<Clientes />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

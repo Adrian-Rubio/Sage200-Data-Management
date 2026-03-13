@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fetchSalesDashboard, fetchFilterOptions } from '../services/api';
 import { Link } from 'react-router-dom';
 import { KpiCard } from '../components/dashboard/KpiCard';
@@ -11,6 +12,7 @@ import useAuthStore from '../store/authStore';
 import useDataStore from '../store/dataStore';
 import { PageHeader } from '../components/common/PageHeader';
 import GeographyMapModal from '../components/dashboard/GeographyMapModal';
+import ClientSearchSelect from '../components/common/ClientSearchSelect';
 
 const DIVISIONS_MAP = {
     'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
@@ -27,6 +29,7 @@ export default function Dashboard() {
     const [options, setOptions] = useState({ companies: [], reps: [], clients: [], series: [] });
     const [showTables, setShowTables] = useState(false);
     const [showGeoMap, setShowGeoMap] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || user?.role_obj?.name === 'admin' || user?.role_obj?.can_manage_users;
 
@@ -45,7 +48,7 @@ export default function Dashboard() {
             end_date: lastDay.toISOString().split('T')[0],
             company_id: null,
             sales_rep_id: initialSalesRepId,
-            client_id: null,
+            client_id: searchParams.get('client_id') || null,
             series_id: null,
             division: null
         };
@@ -134,7 +137,15 @@ export default function Dashboard() {
 
     return (
         <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 text-slate-900 dark:text-slate-100 font-sans scale-[0.98] origin-top transition-all duration-500">
-            <PageHeader moduleName="Ventas" />
+            <PageHeader moduleName="Ventas">
+                <Link 
+                    to="/clientes" 
+                    className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded shadow-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition font-bold text-xs flex items-center h-[34px] gap-2"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    Índice Clientes
+                </Link>
+            </PageHeader>
 
             {/* Filters */}
             <div className="bg-white dark:bg-slate-900 p-3 rounded-lg shadow-sm mb-4 flex flex-wrap gap-3 items-end w-full border border-slate-100 dark:border-slate-800 transition-colors">
@@ -180,17 +191,13 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-xs font-bold text-slate-500 mb-1 uppercase tracking-tighter">Cliente (Cód)</label>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Ej: 430001"
-                            value={filters.client_id || ''}
-                            onChange={(e) => setFilters(prev => ({ ...prev, client_id: e.target.value }))}
-                            className="block w-32 rounded border border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs p-1.5 pl-7 text-slate-700 bg-white"
-                        />
-                        <svg className="w-3.5 h-3.5 absolute left-2 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                    </div>
+                    <label className="text-xs font-bold text-slate-500 mb-1 uppercase tracking-tighter">Cliente (Nombre o Cód)</label>
+                    <ClientSearchSelect 
+                        value={filters.client_id} 
+                        onChange={handleFilterChange} 
+                        name="client_id"
+                        placeholder="Buscar por nombre o ID..."
+                    />
                 </div>
 
                 <div className="flex gap-2 ml-auto">

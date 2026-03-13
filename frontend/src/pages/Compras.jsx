@@ -170,7 +170,7 @@ export default function ComprasDashboard() {
                             </div>
                             <div className="z-10">
                                 <h3 className="text-emerald-100 text-[10px] font-black uppercase tracking-widest leading-none mb-2">Previsión</h3>
-                                <p className="text-lg font-black tracking-tight">Aprovisionamiento</p>
+                                <p className="text-lg font-black tracking-tight text-white">Aprovisionamiento</p>
                             </div>
                             <Link to="/compras/prevision-aprovisionamiento" className="z-10 bg-white text-emerald-600 hover:bg-emerald-50 transition-colors py-2 px-6 rounded-xl text-xs font-bold shadow-sm">
                                 Previsión →

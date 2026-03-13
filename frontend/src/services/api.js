@@ -151,6 +151,16 @@ export const fetchFilterOptions = async () => {
     }
 };
 
+export const searchClients = async (query) => {
+    try {
+        const response = await api.get(`/filters/clients/search?q=${encodeURIComponent(query)}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error searching clients:", error);
+        throw error;
+    }
+};
+
 // --- Sales ---
 export const fetchSalesDashboard = async (filters) => {
     try {
