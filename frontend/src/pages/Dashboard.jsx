@@ -13,6 +13,7 @@ import useDataStore from '../store/dataStore';
 import { PageHeader } from '../components/common/PageHeader';
 import GeographyMapModal from '../components/dashboard/GeographyMapModal';
 import ClientSearchSelect from '../components/common/ClientSearchSelect';
+import { ClientBudgetTracker } from '../components/dashboard/ClientBudgetTracker';
 
 const DIVISIONS_MAP = {
     'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
@@ -27,7 +28,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [options, setOptions] = useState({ companies: [], reps: [], clients: [], series: [] });
-    const [showTables, setShowTables] = useState(false);
+    const [viewMode, setViewMode] = useState('charts'); // 'charts', 'tables', 'budgets'
     const [showGeoMap, setShowGeoMap] = useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -249,13 +250,40 @@ export default function Dashboard() {
                         tooltip="Haz clic para ver la distribución geográfica (Mapa de Calor)"
                     />
                 </div>
-                <div onClick={() => setShowTables(!showTables)} className="h-full cursor-pointer transform hover:scale-[1.02] transition-transform active:scale-95">
+                <div onClick={() => setViewMode(viewMode === 'tables' ? 'charts' : 'tables')} className="h-full cursor-pointer transform hover:scale-[1.02] transition-transform active:scale-95">
                     <KpiCard
                         title="Facturas"
                         value={data?.kpis?.invoices || 0}
-                        subtext={showTables ? "Ocultar detalles" : "Ver detalles"}
+                        subtext={viewMode === 'tables' ? "Ocultar detalles" : "Ver detalles"}
                         tooltip="Haz clic para alternar con la lista detallada"
                     />
+                </div>
+            </div>
+
+            {/* View Mode Togglers */}
+            <div className="flex justify-center mb-4">
+                <div className="inline-flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 shadow-inner border border-slate-200 dark:border-slate-700">
+                    <button
+                        onClick={() => setViewMode('charts')}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-2 ${viewMode === 'charts' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
+                        Gráficos
+                    </button>
+                    <button
+                        onClick={() => setViewMode('tables')}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-2 ${viewMode === 'tables' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        Tablas
+                    </button>
+                    <button
+                        onClick={() => setViewMode('budgets')}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-2 ${viewMode === 'budgets' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                        Presupuestos
+                    </button>
                 </div>
             </div>
 
@@ -264,7 +292,7 @@ export default function Dashboard() {
                 {/* Decorative background element */}
                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 dark:bg-slate-800/50 rounded-full -mr-12 -mt-12 pointer-events-none" />
 
-                {!showTables ? (
+                {viewMode === 'charts' && (
                     <div className="h-[460px] animate-fadeIn">
                         <DashboardCarousel
                             salesByRepData={data?.charts?.sales_by_rep || []}
@@ -272,13 +300,21 @@ export default function Dashboard() {
                             marginEvolutionData={data?.charts?.sales_margin_evolution || []}
                         />
                     </div>
-                ) : (
+                )}
+                
+                {viewMode === 'tables' && (
                     <div className="animate-fadeIn">
                         <DashboardTablesCarousel
                             filters={filters}
                             topClientsData={data?.charts?.top_clients || []}
                             invoicesListData={data?.charts?.invoices_list || []}
                         />
+                    </div>
+                )}
+                
+                {viewMode === 'budgets' && (
+                    <div className="h-full animate-fadeIn min-h-[500px]">
+                        <ClientBudgetTracker filters={filters} />
                     </div>
                 )}
             </div>

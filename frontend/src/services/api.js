@@ -212,7 +212,17 @@ export const fetchRegionDetail = async (filters, scope, region) => {
     }
 };
 
-// --- Orders ---
+// --- Budgets ---
+export const fetchClientBudgets = async (filters) => {
+    try {
+        const response = await api.post('/budgets/client-budgets', filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching client budgets:", error);
+        throw error;
+    }
+};
+
 export const fetchOrders = async (filters) => {
     try {
         const response = await api.post('/orders/list', filters);

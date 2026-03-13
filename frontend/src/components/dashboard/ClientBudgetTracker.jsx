@@ -1,0 +1,209 @@
+import React, { useState, useEffect } from 'react';
+import { fetchClientBudgets } from '../../services/api';
+
+const formatCurrency = (val) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
+
+const ProgressBar = ({ actual, budget, label, showWarning }) => {
+    const progress = budget > 0 ? (actual / budget) * 100 : 0;
+    const isOver = progress > 100;
+    const boundedProgress = Math.min(progress, 100);
+    
+    // Choose color scheme based on progress and warning state
+    let barColor = 'bg-blue-500';
+    if (isOver) barColor = 'bg-emerald-500';
+    else if (showWarning && progress < 50) barColor = 'bg-amber-500';
+    
+    return (
+        <div className="w-full flex flex-col gap-1 mb-3">
+            <div className="flex justify-between items-end text-xs">
+                <span className="font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-tight">{label}</span>
+                <div className="flex items-center gap-2">
+                    <span className="font-mono">{formatCurrency(actual)} / {formatCurrency(budget)}</span>
+                    <span className={`font-bold ${isOver ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {progress.toFixed(1)}% {isOver && '🚀'}
+                    </span>
+                </div>
+            </div>
+            <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex border border-slate-200 dark:border-slate-700">
+                <div 
+                    className={`h-full ${barColor} transition-all duration-1000 ease-out`} 
+                    style={{ width: `${boundedProgress}%` }}
+                />
+            </div>
+        </div>
+    );
+};
+
+export const ClientBudgetTracker = ({ filters }) => {
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [status, setStatus] = useState({ has_data: false, clients_count: 0 });
+    const [uploading, setUploading] = useState(false);
+    
+    // Expanded clients explicitly, default empty so it only tracks what's open
+    const [expandedClients, setExpandedClients] = useState(new Set());
+
+    const toggleExpand = (code) => {
+        setExpandedClients(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(code)) newSet.delete(code);
+            else newSet.add(code);
+            return newSet;
+        });
+    };
+
+    const fetchData = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Pass current filters from dashboard context
+            const year = filters.start_date ? new Date(filters.start_date).getFullYear() : new Date().getFullYear();
+            const res = await fetchClientBudgets({ 
+                company_id: filters.company_id || '2',
+                year: year
+            });
+            
+            if (res.error) {
+                setError(res.error);
+                return;
+            }
+
+            let clients = res.data || [];
+            
+            if (filters.client_id) {
+                clients = clients.filter(c => c.client_code === filters.client_id);
+            }
+            
+            if (filters.division) {
+                const norm_div = filters.division.toLowerCase();
+                const div_map = {
+                    'conectrónica': 'conectores',
+                    'sismecánica': 'sismecanic',
+                    'informática industrial': 'informatica'
+                };
+                const search_div = div_map[norm_div] || norm_div;
+                
+                clients = clients.filter(c => c.divisions.some(d => d.name.toLowerCase() === search_div));
+            }
+
+            setData(clients);
+        } catch (err) {
+            console.error("Error fetching budgets:", err);
+            setError("Error al cargar los presupuestos o archivo Excel no encontrado.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+        // eslint-disable-next-line
+    }, [filters.start_date, filters.company_id, filters.client_id, filters.division]);
+
+    if (loading && !data.length) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-3 text-slate-500">Cargando presupuestos...</span>
+            </div>
+        );
+    }
+
+    if (error && !data.length && !loading) {
+        return (
+            <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-red-200 dark:border-red-900/30 rounded-xl bg-red-50 dark:bg-red-900/10">
+                <svg className="w-12 h-12 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h3 className="text-lg font-bold text-red-700 dark:text-red-400 mb-2">Error de Datos</h3>
+                <p className="text-sm text-red-600 dark:text-red-400 text-center max-w-sm">
+                    {error}
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col h-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-fadeIn">
+            {/* Header / Actions */}
+            <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
+                <div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Seguimiento de Presupuestos ({filters.start_date ? new Date(filters.start_date).getFullYear() : new Date().getFullYear()})
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">Comparativa de ventas reales vs objetivo anual (Fuente: Presupuestos por cliente.xlsx)</p>
+                </div>
+                
+                <button 
+                    onClick={fetchData}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded transition font-semibold flex items-center gap-1.5 border border-blue-100 dark:border-blue-800/50"
+                >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    Refrescar Datos
+                </button>
+            </div>
+
+            {/* List */}
+            <div className="overflow-y-auto flex-1 p-2 bg-slate-50 dark:bg-slate-900/50" style={{ maxHeight: '600px' }}>
+                {data.length === 0 ? (
+                    <div className="p-8 text-center text-slate-500">
+                        No hay datos de presupuesto para los filtros seleccionados.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-3">
+                        {data.map(client => (
+                            <div key={client.client_code} className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700/50 transition-colors">
+                                <div 
+                                    className="flex justify-between items-center cursor-pointer group"
+                                    onClick={() => toggleExpand(client.client_code)}
+                                >
+                                    <div className="flex-1 pr-6">
+                                        <div className="flex items-center gap-2 mb-2 w-full justify-between">
+                                            <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate flex-1" title={client.client_name}>
+                                                {client.client_code} - {client.client_name}
+                                            </h4>
+                                            
+                                        </div>
+                                        <ProgressBar 
+                                            actual={client.total_actual} 
+                                            budget={client.total_budget} 
+                                            label="Presupuesto Anual Total" 
+                                            showWarning={true}
+                                        />
+                                    </div>
+                                    <div className="w-8 flex justify-end">
+                                        <div className="bg-slate-100 dark:bg-slate-700 p-1.5 rounded-full text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600 transition">
+                                            <svg className={`w-4 h-4 transform transition-transform ${expandedClients.has(client.client_code) ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Expanded Details: Divisions */}
+                                {expandedClients.has(client.client_code) && client.divisions.length > 0 && (
+                                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50 animate-fadeIn space-y-3">
+                                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-1">Desglose por División</h5>
+                                        {client.divisions.map((div, idx) => (
+                                            <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 rounded-md p-3 border border-slate-100 dark:border-slate-800">
+                                                <ProgressBar 
+                                                    actual={div.actual} 
+                                                    budget={div.budget} 
+                                                    label={`División: ${div.name}`} 
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
