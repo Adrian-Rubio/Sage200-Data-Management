@@ -212,32 +212,54 @@ export const ClientBudgetTracker = ({ filters }) => {
                                     <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50 animate-fadeIn overflow-hidden">
                                         <div className="space-y-6">
                                             {client.divisions.map((div, idx) => (
-                                                <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 border border-slate-100 dark:border-slate-800/50">
-                                                    <div className="mb-4">
-                                                        <ProgressBar actual={div.actual} budget={div.budget} label={`DIVISIÓN: ${div.name}`} />
+                                                <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-5 border border-slate-200 dark:border-slate-800 shadow-inner">
+                                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-4">
+                                                        <div className="flex-1 w-full">
+                                                            <ProgressBar actual={div.actual} budget={div.budget} label={`DIVISIÓN: ${div.name}`} />
+                                                        </div>
+                                                        <div className="bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-800 flex flex-col">
+                                                            <span className="text-[9px] uppercase font-bold text-indigo-400 dark:text-indigo-500 leading-none mb-1">Comercial asignado</span>
+                                                            <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">{div.comercial}</span>
+                                                        </div>
                                                     </div>
                                                     
                                                     {/* Monthly Table */}
-                                                    <div className="overflow-x-auto mt-4">
-                                                        <table className="w-full text-[10px]">
+                                                    <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/50">
+                                                        <table className="w-full text-[11px] border-collapse">
                                                             <thead>
-                                                                <tr className="text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                                                                    <th className="text-left pb-2 font-bold uppercase tracking-tighter">Mes</th>
-                                                                    <th className="text-right pb-2 font-bold uppercase tracking-tighter">Presup.</th>
-                                                                    <th className="text-right pb-2 font-bold uppercase tracking-tighter">Real</th>
-                                                                    <th className="text-right pb-2 font-bold uppercase tracking-tighter">%</th>
+                                                                <tr className="bg-slate-100 dark:bg-slate-800 text-slate-500 border-b border-slate-200 dark:border-slate-700">
+                                                                    <th className="text-left py-2.5 px-4 font-bold uppercase tracking-wider w-1/4">Mes</th>
+                                                                    <th className="text-right py-2.5 px-4 font-bold uppercase tracking-wider">Presupuesto</th>
+                                                                    <th className="text-right py-2.5 px-4 font-bold uppercase tracking-wider">Ventas Reales</th>
+                                                                    <th className="text-right py-2.5 px-4 font-bold uppercase tracking-wider">Cumplimiento</th>
                                                                 </tr>
                                                             </thead>
-                                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                                                 {div.monthly.map((m, midx) => {
                                                                     const mProgress = m.budget > 0 ? (m.actual / m.budget * 100) : 0;
                                                                     return (
-                                                                        <tr key={midx} className="hover:bg-white dark:hover:bg-slate-800 transition-colors">
-                                                                            <td className="py-2 font-bold uppercase text-slate-600 dark:text-slate-400">{m.month}</td>
-                                                                            <td className="py-2 text-right font-mono text-slate-500">{formatCurrency(m.budget)}</td>
-                                                                            <td className="py-2 text-right font-mono font-bold text-slate-700 dark:text-slate-300">{formatCurrency(m.actual)}</td>
-                                                                            <td className={`py-2 text-right font-bold ${mProgress >= 100 ? 'text-emerald-500' : mProgress > 0 ? 'text-blue-500' : 'text-slate-400'}`}>
-                                                                                {mProgress.toFixed(0)}%
+                                                                        <tr key={midx} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors even:bg-slate-50/30 dark:even:bg-slate-800/20">
+                                                                            <td className="py-2.5 px-4 font-semibold text-slate-700 dark:text-slate-300">{m.month}</td>
+                                                                            <td className="py-2.5 px-4 text-right font-mono text-slate-500">{formatCurrency(m.budget)}</td>
+                                                                            <td className="py-2.5 px-4 text-right font-mono font-bold text-slate-800 dark:text-slate-200">{formatCurrency(m.actual)}</td>
+                                                                            <td className="py-2.5 px-4 text-right">
+                                                                                <div className="flex items-center justify-end gap-2">
+                                                                                    {m.budget > 0 ? (
+                                                                                        <>
+                                                                                            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden hidden sm:block">
+                                                                                                <div 
+                                                                                                    className={`h-full rounded-full ${mProgress >= 100 ? 'bg-emerald-500' : mProgress > 0 ? 'bg-blue-500' : 'bg-slate-300'}`}
+                                                                                                    style={{ width: `${Math.min(mProgress, 100)}%` }}
+                                                                                                ></div>
+                                                                                            </div>
+                                                                                            <span className={`font-bold min-w-[35px] ${mProgress >= 100 ? 'text-emerald-600' : mProgress > 0 ? 'text-blue-600' : 'text-slate-400'}`}>
+                                                                                                {mProgress.toFixed(0)}%
+                                                                                            </span>
+                                                                                        </>
+                                                                                    ) : (
+                                                                                        <span className="text-slate-300 italic">--</span>
+                                                                                    )}
+                                                                                </div>
                                                                             </td>
                                                                         </tr>
                                                                     );
