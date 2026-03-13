@@ -74,15 +74,22 @@ def parse_excel_file():
             if pd.isna(client_code) or pd.isna(client_name):
                 continue
             
+            # Robust client code normalization (no decimals)
             try:
                 if isinstance(client_code, (float, int)):
-                    code_str = str(int(client_code))
+                    code_str = str(int(float(client_code)))
                 else:
                     code_str = str(client_code).strip()
+                    if '.' in code_str:
+                        code_str = code_str.split('.')[0]
             except:
-                code_str = str(client_code).strip()
+                code_str = str(client_code).strip().split('.')[0]
                 
-            client_budget = {"client_code": code_str, "client_name": str(client_name), "divisions": {}}
+            if code_str not in parsed_data:
+                parsed_data[code_str] = {"client_code": code_str, "client_name": str(client_name), "divisions": {}}
+            
+            client_budget = parsed_data[code_str]
+            
             for i in range(2, len(main_headers)):
                 division = str(main_headers[i])
                 sub_header = str(sub_headers[i]).strip().lower()
@@ -97,15 +104,14 @@ def parse_excel_file():
                 if not pd.isna(val) and str(val).strip() != '':
                     try: num_val = float(val)
                     except: pass
-                        
+                
+                # AGGREGATE instead of OVERWRITE
                 if division not in client_budget["divisions"]:
                     client_budget["divisions"][division] = {}
-                if final_sub_header == "total" and "total" in client_budget["divisions"][division]:
-                    continue
-                client_budget["divisions"][division][final_sub_header] = num_val
                 
-            parsed_data[code_str] = client_budget
-            
+                current_prev = client_budget["divisions"][division].get(final_sub_header, 0.0)
+                client_budget["divisions"][division][final_sub_header] = current_prev + num_val
+                
         print(f"DEBUG: Proceso finalizado. Clientes parseados: {len(parsed_data)}")
         return parsed_data
     except Exception as e:
@@ -161,22 +167,23 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
             'informatica': ['JUAN CARLOS VALDES ANTON']
         }
         rep_to_div = {rep.upper(): div for div, reps in divisions_map.items() for rep in reps}
-        
         month_names_map = {
-            1: 'ene', 2: 'feb', 3: 'mar', 4: 'abr', 5: 'may', 6: 'jun',
-            7: 'jul', 8: 'ago', 9: 'sep', 10: 'oct', 11: 'nov', 12: 'dic'
+            1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+            7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
         }
         
+        # Structure: client_id -> { total: X, divisions: { div -> { total: Y, rep_name: '...', months: { 'Enero' -> Z } } } }
         actual_data = {}
         for _, row in df_actual.iterrows():
             try:
                 raw_code = str(row['CodigoCliente']).strip()
                 if not raw_code or raw_code == 'None': continue
                 
-                # Normalize client id (remove .0 if it's a float string)
                 client_id = raw_code.split('.')[0] if '.' in raw_code else raw_code
                 
-                div = rep_to_div.get(str(row['Comisionista']), 'otros')
+                rep_raw = str(row['Comisionista']).strip()
+                div = rep_to_div.get(rep_raw, 'otros')
+                
                 month_idx = int(row['MesFactura'])
                 month_name = month_names_map.get(month_idx)
                 amount = float(row['ActualSales'] or 0)
@@ -185,7 +192,7 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                     actual_data[client_id] = {"total": 0, "divisions": {}}
                 
                 if div not in actual_data[client_id]["divisions"]:
-                    actual_data[client_id]["divisions"][div] = {"total": 0, "months": {}}
+                    actual_data[client_id]["divisions"][div] = {"total": 0, "rep_name": rep_raw, "months": {}}
                 
                 actual_data[client_id]["total"] += amount
                 actual_data[client_id]["divisions"][div]["total"] += amount
@@ -206,16 +213,30 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                     if div_name == "total": continue
                     
                     div_total_budget = float(div_budget_data.get("total", 0))
-                    total_budget += div_total_budget
                     
                     norm_div = div_name.lower().strip()
-                    div_actual_info = client_actuals["divisions"].get(norm_div, {"total": 0, "months": {}})
+                    div_actual_info = client_actuals["divisions"].get(norm_div, {"total": 0, "rep_name": None, "months": {}})
                     div_actual_total = div_actual_info["total"]
+                    
+                    # HIDE divisions with NO budget AND NO sales
+                    if div_total_budget == 0 and div_actual_total == 0:
+                        continue
+                        
+                    total_budget += div_total_budget
                     
                     monthly_details = []
                     for m_idx in range(1, 13):
                         m_name = month_names_map[m_idx]
-                        m_budget = float(div_budget_data.get(m_name, 0))
+                        # Use lowercase for budget lookup as they come from Excel parser (ene, feb...)
+                        # Need to update parser or handle mapping here. 
+                        # Let's use a small helper for Excel keys.
+                        excel_key = {
+                            'Enero': 'ene', 'Febrero': 'feb', 'Marzo': 'mar', 'Abril': 'abr', 
+                            'Mayo': 'may', 'Junio': 'jun', 'Julio': 'jul', 'Agosto': 'ago', 
+                            'Septiembre': 'sep', 'Octubre': 'oct', 'Noviembre': 'nov', 'Diciembre': 'dic'
+                        }[m_name]
+                        
+                        m_budget = float(div_budget_data.get(excel_key, 0))
                         m_actual = float(div_actual_info["months"].get(m_name, 0))
                         monthly_details.append({
                             "month": m_name,
@@ -225,18 +246,22 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                     
                     merged_divisions.append({
                         "name": div_name.upper(),
+                        "comercial": div_actual_info.get("rep_name") or "NO ASIGNADO",
                         "budget": div_total_budget,
                         "actual": div_actual_total,
                         "progress": (div_actual_total / div_total_budget * 100) if div_total_budget > 0 else 0,
                         "monthly": monthly_details
                     })
                     
+                if not merged_divisions and total_actual == 0:
+                    continue # Skip clients with NO data at all to clean up
+                    
                 results.append({
                     "client_code": client_code,
                     "client_name": budget_info["client_name"],
                     "total_budget": total_budget,
                     "total_actual": total_actual,
-                    "total_progress": (total_actual / total_budget * 100) if total_budget > 0 else 0,
+                    "total_progress": (total_actual / total_budget * 100) if total_budget > 0 else 100 if total_actual > 0 else 0,
                     "divisions": merged_divisions
                 })
             except: continue
