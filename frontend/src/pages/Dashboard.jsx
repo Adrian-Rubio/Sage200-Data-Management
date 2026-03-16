@@ -30,6 +30,7 @@ export default function Dashboard() {
     const [options, setOptions] = useState({ companies: [], reps: [], clients: [], series: [] });
     const [viewMode, setViewMode] = useState('charts'); // 'charts', 'tables', 'budgets'
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
     const [showGeoMap, setShowGeoMap] = useState(false);
 
     const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || user?.role_obj?.name === 'admin' || user?.role_obj?.can_manage_users;
