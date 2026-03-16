@@ -137,13 +137,9 @@ class BudgetFilters(BaseModel):
 @router.post("/client-budgets")
 def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
-        print(f"DEBUG: [Budgets] Iniciando carga para año {filters.year or 'actual'} y empresa {filters.company_id}")
-        budgets_data = parse_excel_file()
-        if not budgets_data:
-            print("DEBUG: [Budgets] No se obtuvieron datos del Excel.")
-            return {"error": "No se encontraron datos en el Excel.", "data": []}
-            
-        # Determine the date range for actual sales and budget proration
+        print(f"DEBUG: [Budgets] Iniciando carga desde SQL para año {filters.year or 'actual'}")
+        
+        # Determine the date range
         try:
             if filters.start_date:
                 period_start = datetime.strptime(filters.start_date, "%Y-%m-%d").date()
@@ -156,12 +152,47 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                 period_end = date(filters.year or date.today().year, 12, 31)
                 
             year = period_start.year
-            print(f"DEBUG: [Budgets] Periodo: {period_start} a {period_end}")
-        except Exception as date_e:
-            print(f"ERROR: [Budgets] Error parseando fechas: {date_e}")
+        except:
             period_start = date(filters.year or date.today().year, 1, 1)
             period_end = date(filters.year or date.today().year, 12, 31)
             year = period_start.year
+
+        # Load Budgets from SQL instead of Excel
+        b_query = "SELECT * FROM Presupuestos_AEL WHERE Año = :year"
+        df_budgets_raw = pd.read_sql(text(b_query), db.bind, params={"year": year})
+        
+        if df_budgets_raw.empty:
+            return {"error": "No se encontraron presupuestos en la base de datos.", "data": []}
+
+        # Restructure SQL data to match old budgets_data nested format
+        # { client_code -> { client_name: X, divisions: { div -> { total: Y, ene: Z, ... } } } }
+        # Note: We don't have client_name in the new table yet, but we can get it from Sage if needed.
+        # However, for now, let's just use the code as name if missing, or we can quickly join.
+        
+        budgets_data = {}
+        # We need client names for the UI. Let's fetch them from Sage Clientes table.
+        with db.bind.connect() as conn:
+            df_names = pd.read_sql(text("SELECT CodigoCliente, RazonSocial FROM Clientes WHERE CodigoEmpresa = '2'"), conn)
+            name_map = dict(zip(df_names['CodigoCliente'].astype(str), df_names['RazonSocial']))
+
+        for _, row in df_budgets_raw.iterrows():
+            c_code = str(row['CodigoCliente'])
+            div = str(row['Division'])
+            c_name = name_map.get(c_code, f"Cliente {c_code}")
+            
+            if c_code not in budgets_data:
+                budgets_data[c_code] = {"client_name": c_name, "divisions": {}}
+            
+            if div not in budgets_data[c_code]["divisions"]:
+                budgets_data[c_code]["divisions"][div] = {"total": 0, "comercial_estatico": row['Comercial']}
+            
+            # Map month index to excel key (ene, feb...)
+            months_excel_map = {1:'ene', 2:'feb', 3:'mar', 4:'abr', 5:'may', 6:'jun', 7:'jul', 8:'ago', 9:'sep', 10:'oct', 11:'nov', 12:'dic'}
+            m_key = months_excel_map[int(row['Mes'])]
+            val = float(row['Presupuesto'] or 0)
+            
+            budgets_data[c_code]["divisions"][div][m_key] = val
+            budgets_data[c_code]["divisions"][div]["total"] += val
 
         # Modified query to filter by exact dates
         query = """
@@ -295,7 +326,7 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                     
                     merged_divisions.append({
                         "name": div_name.upper(),
-                        "comercial": div_actual_info.get("rep_name") or "NO ASIGNADO",
+                        "comercial": div_actual_info.get("rep_name") or div_budget_data.get("comercial_estatico") or "NO ASIGNADO",
                         "budget": div_total_budget,
                         "period_budget": div_period_budget,
                         "actual": div_actual_total,
