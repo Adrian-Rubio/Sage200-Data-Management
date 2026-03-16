@@ -222,9 +222,9 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
             return {"error": "Error al consultar las ventas en la base de datos.", "data": []}
 
         divisions_map = {
-            'conectores': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
-            'sismecanic': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
-            'informatica': ['JUAN CARLOS VALDES ANTON']
+            'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
+            'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
+            'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
         }
         rep_to_div = {rep.upper(): div for div, reps in divisions_map.items() for rep in reps}
         month_names_map = {
@@ -275,8 +275,7 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                     
                     div_total_budget = float(div_budget_data.get("total", 0))
                     
-                    norm_div = div_name.lower().strip()
-                    div_actual_info = client_actuals["divisions"].get(norm_div, {"total": 0, "rep_name": None, "months": {}})
+                    div_actual_info = client_actuals["divisions"].get(div_name, {"total": 0, "rep_name": None, "months": {}})
                     div_actual_total = div_actual_info["total"]
                     
                     # Compute prorated budget for this division
