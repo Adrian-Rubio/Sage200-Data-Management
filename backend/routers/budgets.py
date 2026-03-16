@@ -131,6 +131,8 @@ async def get_budget_status():
 class BudgetFilters(BaseModel):
     year: Optional[int] = None
     company_id: Optional[str] = '2'
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
 
 @router.post("/client-budgets")
 def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
@@ -141,9 +143,27 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
             print("DEBUG: [Budgets] No se obtuvieron datos del Excel.")
             return {"error": "No se encontraron datos en el Excel.", "data": []}
             
-        year = filters.year or date.today().year
-        
-        # Updated query to include month for breakdown
+        # Determine the date range for actual sales and budget proration
+        try:
+            if filters.start_date:
+                period_start = datetime.strptime(filters.start_date, "%Y-%m-%d").date()
+            else:
+                period_start = date(filters.year or date.today().year, 1, 1)
+                
+            if filters.end_date:
+                period_end = datetime.strptime(filters.end_date, "%Y-%m-%d").date()
+            else:
+                period_end = date(filters.year or date.today().year, 12, 31)
+                
+            year = period_start.year
+            print(f"DEBUG: [Budgets] Periodo: {period_start} a {period_end}")
+        except Exception as date_e:
+            print(f"ERROR: [Budgets] Error parseando fechas: {date_e}")
+            period_start = date(filters.year or date.today().year, 1, 1)
+            period_end = date(filters.year or date.today().year, 12, 31)
+            year = period_start.year
+
+        # Modified query to filter by exact dates
         query = """
             SELECT 
                 CAST(CodigoCliente AS VARCHAR) as CodigoCliente, 
@@ -151,12 +171,21 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                 MONTH(FechaFactura) as MesFactura,
                 SUM(CAST(ISNULL(BaseImponible, 0) AS FLOAT)) as ActualSales 
             FROM Vis_AEL_DiarioFactxComercial 
-            WHERE CodigoEmpresa = :empresa AND EjercicioFactura = :year 
+            WHERE CodigoEmpresa = :empresa 
+              AND FechaFactura BETWEEN :start AND :end
             GROUP BY CodigoCliente, Comisionista, MONTH(FechaFactura)
         """
         
         try:
-            df_actual = pd.read_sql(text(query), db.bind, params={"empresa": filters.company_id, "year": int(year)})
+            df_actual = pd.read_sql(
+                text(query), 
+                db.bind, 
+                params={
+                    "empresa": filters.company_id, 
+                    "start": period_start, 
+                    "end": period_end
+                }
+            )
         except Exception as sql_e:
             print(f"ERROR: [Budgets] Fallo en la consulta SQL: {sql_e}")
             return {"error": "Error al consultar las ventas en la base de datos.", "data": []}
@@ -207,6 +236,7 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                 client_actuals = actual_data.get(client_code, {"total": 0, "divisions": {}})
                 merged_divisions = []
                 total_budget = 0
+                total_period_budget = 0
                 total_actual = client_actuals["total"]
                 
                 for div_name, div_budget_data in budget_info.get("divisions", {}).items():
@@ -218,18 +248,13 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                     div_actual_info = client_actuals["divisions"].get(norm_div, {"total": 0, "rep_name": None, "months": {}})
                     div_actual_total = div_actual_info["total"]
                     
-                    # HIDE divisions with NO budget AND NO sales
-                    if div_total_budget == 0 and div_actual_total == 0:
-                        continue
-                        
-                    total_budget += div_total_budget
+                    # Compute prorated budget for this division
+                    div_period_budget = 0.0
+                    import calendar
                     
                     monthly_details = []
                     for m_idx in range(1, 13):
                         m_name = month_names_map[m_idx]
-                        # Use lowercase for budget lookup as they come from Excel parser (ene, feb...)
-                        # Need to update parser or handle mapping here. 
-                        # Let's use a small helper for Excel keys.
                         excel_key = {
                             'Enero': 'ene', 'Febrero': 'feb', 'Marzo': 'mar', 'Abril': 'abr', 
                             'Mayo': 'may', 'Junio': 'jun', 'Julio': 'jul', 'Agosto': 'ago', 
@@ -237,6 +262,23 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                         }[m_name]
                         
                         m_budget = float(div_budget_data.get(excel_key, 0))
+                        
+                        # Proration calculation
+                        m_first = date(year, m_idx, 1)
+                        m_last_day = calendar.monthrange(year, m_idx)[1]
+                        m_last = date(year, m_idx, m_last_day)
+                        
+                        # Intersection of month [m_first, m_last] and period [period_start, period_end]
+                        inter_start = max(m_first, period_start)
+                        inter_end = min(m_last, period_end)
+                        
+                        overlap_days = (inter_end - inter_start).days + 1
+                        if inter_start > inter_end:
+                            overlap_days = 0
+                            
+                        ratio = overlap_days / m_last_day
+                        div_period_budget += m_budget * ratio
+                        
                         m_actual = float(div_actual_info["months"].get(m_name, 0))
                         monthly_details.append({
                             "month": m_name,
@@ -244,24 +286,34 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                             "actual": m_actual
                         })
                     
+                    # HIDE divisions with NO budget AND NO sales in the period
+                    if div_total_budget == 0 and div_actual_total == 0:
+                        continue
+                        
+                    total_budget += div_total_budget
+                    total_period_budget += div_period_budget
+                    
                     merged_divisions.append({
                         "name": div_name.upper(),
                         "comercial": div_actual_info.get("rep_name") or "NO ASIGNADO",
                         "budget": div_total_budget,
+                        "period_budget": div_period_budget,
                         "actual": div_actual_total,
-                        "progress": (div_actual_total / div_total_budget * 100) if div_total_budget > 0 else 0,
+                        "progress": (div_actual_total / div_period_budget * 100) if div_period_budget > 0 else 100 if div_actual_total > 0 else 0,
+                        "annual_progress": (div_actual_total / div_total_budget * 100) if div_total_budget > 0 else 0,
                         "monthly": monthly_details
                     })
                     
                 if not merged_divisions and total_actual == 0:
-                    continue # Skip clients with NO data at all to clean up
+                    continue 
                     
                 results.append({
                     "client_code": client_code,
                     "client_name": budget_info["client_name"],
                     "total_budget": total_budget,
+                    "total_period_budget": total_period_budget,
                     "total_actual": total_actual,
-                    "total_progress": (total_actual / total_budget * 100) if total_budget > 0 else 100 if total_actual > 0 else 0,
+                    "total_progress": (total_actual / total_period_budget * 100) if total_period_budget > 0 else 100 if total_actual > 0 else 0,
                     "divisions": merged_divisions
                 })
             except: continue

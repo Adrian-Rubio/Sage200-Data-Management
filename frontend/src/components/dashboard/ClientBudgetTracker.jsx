@@ -58,7 +58,9 @@ export const ClientBudgetTracker = ({ filters }) => {
             const year = filters.start_date ? new Date(filters.start_date).getFullYear() : new Date().getFullYear();
             const res = await fetchClientBudgets({ 
                 company_id: filters.company_id || '2',
-                year: year
+                year: year,
+                start_date: filters.start_date,
+                end_date: filters.end_date
             });
             
             if (res.error) {
@@ -136,8 +138,9 @@ export const ClientBudgetTracker = ({ filters }) => {
                         <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
-                        Seguimiento ({filters.start_date ? new Date(filters.start_date).getFullYear() : new Date().getFullYear()})
+                        Seguimiento Presupuestario
                     </h3>
+                    <p className="text-[10px] text-slate-500 font-medium">Comparativa de ventas reales vs presupuesto prorrateado por fechas</p>
                 </div>
                 
                 {/* Sorting Buttons */}
@@ -194,10 +197,14 @@ export const ClientBudgetTracker = ({ filters }) => {
                                         </div>
                                         <ProgressBar 
                                             actual={client.total_actual} 
-                                            budget={client.total_budget} 
-                                            label="General" 
+                                            budget={client.total_period_budget} 
+                                            label="CUMPLIMIENTO PERIODO" 
                                             showWarning={true}
                                         />
+                                        <div className="flex justify-between text-[9px] text-slate-400 font-medium px-1">
+                                            <span>Obj. Anual: {formatCurrency(client.total_budget)}</span>
+                                            <span>Real: {formatCurrency(client.total_actual)}</span>
+                                        </div>
                                     </div>
                                     <div className="w-8 flex justify-end">
                                         <div className="bg-slate-100 dark:bg-slate-700 p-1.5 rounded-full text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600 transition">
@@ -215,7 +222,12 @@ export const ClientBudgetTracker = ({ filters }) => {
                                                 <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-5 border border-slate-200 dark:border-slate-800 shadow-inner">
                                                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-4">
                                                         <div className="flex-1 w-full">
-                                                            <ProgressBar actual={div.actual} budget={div.budget} label={`DIVISIÓN: ${div.name}`} />
+                                                            <ProgressBar 
+                                                                actual={div.actual} 
+                                                                budget={div.period_budget} 
+                                                                label={`DIVISIÓN: ${div.name} (PERIODO)`} 
+                                                            />
+                                                            <div className="text-[9px] text-slate-400 mb-2">Presupuesto Anual: {formatCurrency(div.budget)}</div>
                                                         </div>
                                                         <div className="bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-800 flex flex-col">
                                                             <span className="text-[9px] uppercase font-bold text-indigo-400 dark:text-indigo-500 leading-none mb-1">Comercial asignado</span>
