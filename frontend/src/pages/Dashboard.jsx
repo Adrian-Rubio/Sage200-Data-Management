@@ -29,8 +29,8 @@ export default function Dashboard() {
     const [error, setError] = useState(null);
     const [options, setOptions] = useState({ companies: [], reps: [], clients: [], series: [] });
     const [viewMode, setViewMode] = useState('charts'); // 'charts', 'tables', 'budgets'
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const [showGeoMap, setShowGeoMap] = useState(false);
-    const [searchParams, setSearchParams] = useSearchParams();
 
     const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || user?.role_obj?.name === 'admin' || user?.role_obj?.can_manage_users;
 
@@ -63,6 +63,14 @@ export default function Dashboard() {
     useEffect(() => {
         loadDashboard();
     }, [filters]);
+
+    useEffect(() => {
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') setIsFullscreen(false);
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, []);
 
     const loadFilters = async () => {
         if (filterOptions) {
@@ -201,6 +209,46 @@ export default function Dashboard() {
                     />
                 </div>
 
+                {/* View Mode Togglers - Moved here */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 shadow-inner border border-slate-200 dark:border-slate-700 h-[34px]">
+                    <button
+                        onClick={() => setViewMode('charts')}
+                        title="Gráficos"
+                        className={`px-2 py-1 text-[10px] font-bold rounded transition-all duration-200 flex items-center gap-1.5 ${viewMode === 'charts' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
+                        GRAF
+                    </button>
+                    <button
+                        onClick={() => setViewMode('tables')}
+                        title="Tablas"
+                        className={`px-2 py-1 text-[10px] font-bold rounded transition-all duration-200 flex items-center gap-1.5 ${viewMode === 'tables' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        TAB
+                    </button>
+                    <button
+                        onClick={() => setViewMode('budgets')}
+                        title="Presupuestos"
+                        className={`px-2 py-1 text-[10px] font-bold rounded transition-all duration-200 flex items-center gap-1.5 ${viewMode === 'budgets' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                        PTO
+                    </button>
+                    <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+                    <button
+                        onClick={() => setIsFullscreen(!isFullscreen)}
+                        title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+                        className={`px-1.5 py-1 rounded transition-all duration-200 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 ${isFullscreen ? 'bg-blue-50 text-blue-600' : ''}`}
+                    >
+                        {isFullscreen ? (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        ) : (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                        )}
+                    </button>
+                </div>
+
                 <div className="flex gap-2 ml-auto">
                     <Link to="/pedidos-pendientes-pbix" className="bg-slate-800 text-white px-3 py-1.5 rounded hover:bg-slate-900 transition font-bold text-xs h-8 flex items-center justify-center shadow-md">
                         Pendientes →
@@ -263,35 +311,19 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* View Mode Togglers */}
-            <div className="flex justify-center mb-4">
-                <div className="inline-flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 shadow-inner border border-slate-200 dark:border-slate-700">
-                    <button
-                        onClick={() => setViewMode('charts')}
-                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-2 ${viewMode === 'charts' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
-                    >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
-                        Gráficos
-                    </button>
-                    <button
-                        onClick={() => setViewMode('tables')}
-                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-2 ${viewMode === 'tables' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
-                    >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                        Tablas
-                    </button>
-                    <button
-                        onClick={() => setViewMode('budgets')}
-                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-2 ${viewMode === 'budgets' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
-                    >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                        Presupuestos
-                    </button>
-                </div>
-            </div>
-
             {/* Main Content Area: Alternates between Charts and Tables */}
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow border border-slate-100 dark:border-slate-800 mb-6 relative overflow-hidden min-h-[500px] transition-colors">
+            <div className={`
+                ${isFullscreen ? 'fixed inset-0 z-[100] bg-white dark:bg-slate-950 overflow-y-auto p-4' : 'bg-white dark:bg-slate-900 p-4 rounded-xl shadow border border-slate-100 dark:border-slate-800 mb-6'} 
+                relative overflow-hidden min-h-[500px] transition-all duration-300
+            `}>
+                {isFullscreen && (
+                    <button 
+                        onClick={() => setIsFullscreen(false)}
+                        className="absolute top-4 right-4 z-[110] bg-slate-100 dark:bg-slate-800 p-2 rounded-full shadow-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                    >
+                        <svg className="w-6 h-6 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                )}
                 {/* Decorative background element */}
                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 dark:bg-slate-800/50 rounded-full -mr-12 -mt-12 pointer-events-none" />
 
