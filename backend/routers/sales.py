@@ -10,6 +10,8 @@ from pydantic import BaseModel
 from cachetools import TTLCache
 import hashlib
 import json
+import calendar
+from .budgets import parse_excel_file
 
 # Cache dashboard results for 5 minutes (300 seconds)
 # Useful for fast tab-switching or repeated reloads
@@ -205,7 +207,73 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
         if df_rev.empty and df_marg.empty and df_pending_raw.empty:
             with open("dashboard_debug.log", "a") as f:
                 f.write("DEBUG: ALL DFS EMPTY\n")
-            return {"kpis": {"revenue": 0, "sales_margin": 0, "pending_invoice": 0, "clients": 0, "invoices": 0}, "charts": {"sales_by_rep": [], "sales_by_day": [], "sales_margin_evolution": [], "top_clients": [], "orders_list": []}}
+            return {"kpis": {"revenue": 0, "revenue_gross": 0, "returns": 0, "sales_margin": 0, "pending_invoice": 0, "clients": 0, "invoices": 0, "budget_total": 0}, "charts": {"sales_by_rep": [], "sales_by_day": [], "sales_margin_evolution": [], "top_clients": [], "orders_list": []}}
+
+        # --- BUDGET CALCULATIONS ---
+        total_period_budget = 0.0
+        try:
+            budgets_data = parse_excel_file()
+            if budgets_data:
+                # Helper for proration
+                p_start = filters.start_date or date(date.today().year, 1, 1)
+                p_end = filters.end_date or date(date.today().year, 12, 31)
+                year = p_start.year
+                
+                # Division mapping for budgets (normalized keys)
+                div_key_map = {
+                    'Conectrónica': ['conectores'],
+                    'Sismecánica': ['sismecanic'],
+                    'Informática Industrial': ['informatica']
+                }
+                
+                # If a specific rep is selected, we only want their division's budget for related clients
+                # But budgets are client-based. If we filter by rep, we should probably only sum budgets 
+                # for clients that HAVE sales from that rep in the period? 
+                # OR, simpler: if division is filtered, sum only that division. 
+                # if rep is filtered, we don't have a direct rep->budget mapping in Excel, 
+                # but we can filter by the division the rep belongs to.
+                
+                target_divisions = []
+                if filters.division:
+                    target_divisions = div_key_map.get(filters.division, [])
+                elif filters.sales_rep_id:
+                    # Find which division the rep belongs to
+                    rep_name = filters.sales_rep_id.upper()
+                    for div_name, reps in divisions.items():
+                        if rep_name in [r.upper() for r in reps]:
+                            target_divisions = div_key_map.get(div_name, [])
+                            break
+                
+                for client_code, b_info in budgets_data.items():
+                    # If specific client filtered
+                    if filters.client_id and client_code != filters.client_id:
+                        continue
+                        
+                    for div_name, div_b_data in b_info.get("divisions", {}).items():
+                        norm_div = div_name.lower().strip()
+                        
+                        # filter by division if needed
+                        if target_divisions and norm_div not in target_divisions:
+                            continue
+                            
+                        # Prorate monthly
+                        for m_idx in range(1, 13):
+                            excel_key = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][m_idx-1]
+                            m_budget = float(div_b_data.get(excel_key, 0))
+                            if m_budget == 0: continue
+                            
+                            m_first = date(year, m_idx, 1)
+                            m_last_day = calendar.monthrange(year, m_idx)[1]
+                            m_last = date(year, m_idx, m_last_day)
+                            
+                            inter_start = max(m_first, p_start)
+                            inter_end = min(m_last, p_end)
+                            
+                            if inter_start <= inter_end:
+                                overlap_days = (inter_end - inter_start).days + 1
+                                total_period_budget += m_budget * (overlap_days / m_last_day)
+        except Exception as b_e:
+            print(f"DEBUG: Error calculating global budget: {b_e}")
 
         # --- CALCULATIONS REVENUE ---
         total_revenue = float(df_rev['BaseImponible'].sum()) if not df_rev.empty else 0.0
@@ -342,7 +410,8 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
                 "sales_margin": global_margin_pct,
                 "pending_invoice": total_pending_amount,
                 "clients": unique_clients,
-                "invoices": unique_invoices
+                "invoices": unique_invoices,
+                "budget_total": total_period_budget
             },
             "charts": {
                 "sales_by_rep": sales_by_rep_data,

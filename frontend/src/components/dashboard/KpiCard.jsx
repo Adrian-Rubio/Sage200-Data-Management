@@ -1,5 +1,5 @@
 
-export function KpiCard({ title, value, subtext, isWarning, isPercentage, tooltip }) {
+export function KpiCard({ title, value, subtext, isWarning, isPercentage, tooltip, targetValue }) {
     const isMonetary = !isPercentage && (
         title.toLowerCase().includes('factura') ||
         title.toLowerCase().includes('comisión') ||
@@ -34,6 +34,9 @@ export function KpiCard({ title, value, subtext, isWarning, isPercentage, toolti
     const borderColor = isWarning ? "border-orange-200 dark:border-orange-900" : "border-gray-200 dark:border-slate-800";
     const bgColor = isWarning ? "bg-orange-50 dark:bg-orange-950/30" : "bg-white dark:bg-slate-900";
 
+    const progress = targetValue && targetValue > 0 ? (value / targetValue) * 100 : 0;
+    const isOverTarget = progress >= 100;
+
     return (
         <div className={`group relative ${bgColor} p-4 rounded-lg shadow-sm border ${borderColor} flex flex-col items-center justify-center text-center transition-all hover:shadow-md cursor-help h-full`}>
             {tooltip && (
@@ -45,6 +48,22 @@ export function KpiCard({ title, value, subtext, isWarning, isPercentage, toolti
             )}
             <h3 className={`${titleColor} font-bold text-[10px] uppercase tracking-tighter mb-1`}>{title}</h3>
             <div className={`text-2xl font-black ${valueColor}`}>{formattedValue}</div>
+            
+            {targetValue > 0 && (
+                <div className="w-full mt-2 px-2">
+                    <div className="flex justify-between items-center text-[8px] font-bold mb-1">
+                        <span className="text-slate-400">OBJ: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(targetValue)}</span>
+                        <span className={isOverTarget ? 'text-emerald-500' : 'text-blue-500'}>{progress.toFixed(0)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200/50 dark:border-slate-700/50">
+                        <div 
+                            className={`h-full transition-all duration-1000 ${isOverTarget ? 'bg-emerald-500' : 'bg-blue-500'}`} 
+                            style={{ width: `${Math.min(progress, 100)}%` }}
+                        />
+                    </div>
+                </div>
+            )}
+            
             {subtext && <div className="text-gray-400 dark:text-slate-500 text-[9px] mt-1 font-medium">{subtext}</div>}
         </div>
     );

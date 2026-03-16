@@ -214,20 +214,23 @@ export default function Dashboard() {
 
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
-                <KpiCard
-                    title="Facturación"
-                    value={data?.kpis?.revenue_gross || 0}
-                    tooltip={`Facturación total en el periodo: ${filters.start_date || 'inicio'} hasta ${filters.end_date || 'fin'}`}
-                    subtext={
-                        <div className="flex flex-col items-center gap-0.5">
-                            <span className="scale-90 tracking-tighter dark:text-slate-400">Ventas Brutas</span>
-                            <div className="flex gap-1.5 text-[9px] font-bold">
-                                <span className="text-red-500 dark:text-red-400">Abonos: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.returns || 0)}</span>
-                                <span className="text-slate-500 dark:text-slate-400">Neto: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.revenue || 0)}</span>
+                <div onClick={() => setViewMode('budgets')} className="h-full cursor-pointer transform hover:scale-[1.02] transition-transform active:scale-95">
+                    <KpiCard
+                        title="Facturación"
+                        value={data?.kpis?.revenue_gross || 0}
+                        targetValue={data?.kpis?.budget_total || 0}
+                        tooltip={`Comparativa Facturación vs Presupuesto en el periodo. Presupuesto Objetivo: ${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.budget_total || 0)}`}
+                        subtext={
+                            <div className="flex flex-col items-center gap-0.5">
+                                <span className="scale-90 tracking-tighter dark:text-slate-400">Ventas Brutas - Haz clic p/ ver presupuestos</span>
+                                <div className="flex gap-1.5 text-[9px] font-bold">
+                                    <span className="text-red-500 dark:text-red-400">Abonos: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.returns || 0)}</span>
+                                    <span className="text-slate-500 dark:text-slate-400">Neto: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data?.kpis?.revenue || 0)}</span>
+                                </div>
                             </div>
-                        </div>
-                    }
-                />
+                        }
+                    />
+                </div>
                 <KpiCard
                     title="Margen"
                     value={data?.kpis?.sales_margin || 0}
