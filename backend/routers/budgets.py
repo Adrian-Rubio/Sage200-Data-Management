@@ -194,17 +194,18 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
             budgets_data[c_code]["divisions"][div][m_key] = val
             budgets_data[c_code]["divisions"][div]["total"] += val
 
-        # Modified query to filter by exact dates
+        # Fetch sales for the entire year to show all months in the breakdown,
+        # but identify those within the requested period for progress calculation.
         query = """
             SELECT 
                 CAST(CodigoCliente AS VARCHAR) as CodigoCliente, 
                 UPPER(RTRIM(LTRIM(Comisionista))) as Comisionista, 
-                MONTH(FechaFactura) as MesFactura,
+                FechaFactura,
                 SUM(CAST(ISNULL(BaseImponible, 0) AS FLOAT)) as ActualSales 
             FROM Vis_AEL_DiarioFactxComercial 
             WHERE CodigoEmpresa = :empresa 
-              AND FechaFactura BETWEEN :start AND :end
-            GROUP BY CodigoCliente, Comisionista, MONTH(FechaFactura)
+              AND EjercicioFactura = :year
+            GROUP BY CodigoCliente, Comisionista, FechaFactura
         """
         
         try:
@@ -213,8 +214,7 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                 db.bind, 
                 params={
                     "empresa": filters.company_id, 
-                    "start": period_start, 
-                    "end": period_end
+                    "year": year
                 }
             )
         except Exception as sql_e:
@@ -232,7 +232,7 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
             7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
         }
         
-        # Structure: client_id -> { total: X, divisions: { div -> { total: Y, rep_name: '...', months: { 'Enero' -> Z } } } }
+        # Structure: client_id -> { total_year: X, total_period: Y, divisions: { div -> { total_year: Y, total_period: Z, rep_name: '...', months: { 'Enero' -> Z } } } }
         actual_data = {}
         for _, row in df_actual.iterrows():
             try:
@@ -244,18 +244,27 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
                 rep_raw = str(row['Comisionista']).strip()
                 div = rep_to_div.get(rep_raw, 'otros')
                 
-                month_idx = int(row['MesFactura'])
+                f_date = row['FechaFactura']
+                if isinstance(f_date, datetime):
+                    f_date = f_date.date()
+                
+                is_in_period = (period_start <= f_date <= period_end)
+                month_idx = f_date.month
                 month_name = month_names_map.get(month_idx)
                 amount = float(row['ActualSales'] or 0)
                 
                 if client_id not in actual_data:
-                    actual_data[client_id] = {"total": 0, "divisions": {}}
+                    actual_data[client_id] = {"total_year": 0, "total_period": 0, "divisions": {}}
                 
                 if div not in actual_data[client_id]["divisions"]:
-                    actual_data[client_id]["divisions"][div] = {"total": 0, "rep_name": rep_raw, "months": {}}
+                    actual_data[client_id]["divisions"][div] = {"total_year": 0, "total_period": 0, "rep_name": rep_raw, "months": {}}
                 
-                actual_data[client_id]["total"] += amount
-                actual_data[client_id]["divisions"][div]["total"] += amount
+                actual_data[client_id]["total_year"] += amount
+                actual_data[client_id]["divisions"][div]["total_year"] += amount
+                
+                if is_in_period:
+                    actual_data[client_id]["total_period"] += amount
+                    actual_data[client_id]["divisions"][div]["total_period"] += amount
                 
                 if month_name:
                     actual_data[client_id]["divisions"][div]["months"][month_name] = actual_data[client_id]["divisions"][div]["months"].get(month_name, 0) + amount
@@ -264,19 +273,19 @@ def get_client_budgets(filters: BudgetFilters, db: Session = Depends(get_db), cu
         results = []
         for client_code, budget_info in budgets_data.items():
             try:
-                client_actuals = actual_data.get(client_code, {"total": 0, "divisions": {}})
+                client_actuals = actual_data.get(client_code, {"total_year": 0, "total_period": 0, "divisions": {}})
                 merged_divisions = []
                 total_budget = 0
                 total_period_budget = 0
-                total_actual = client_actuals["total"]
+                total_actual = client_actuals["total_period"]
                 
                 for div_name, div_budget_data in budget_info.get("divisions", {}).items():
                     if div_name == "total": continue
                     
                     div_total_budget = float(div_budget_data.get("total", 0))
                     
-                    div_actual_info = client_actuals["divisions"].get(div_name, {"total": 0, "rep_name": None, "months": {}})
-                    div_actual_total = div_actual_info["total"]
+                    div_actual_info = client_actuals["divisions"].get(div_name, {"total_year": 0, "total_period": 0, "rep_name": None, "months": {}})
+                    div_actual_total = div_actual_info["total_period"]
                     
                     # Compute prorated budget for this division
                     div_period_budget = 0.0
