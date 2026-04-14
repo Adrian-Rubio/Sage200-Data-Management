@@ -314,3 +314,162 @@ def get_item_rotation_report(db: Session = Depends(get_db), current_user: models
     except Exception as e:
         print(f"Error generating rotation report: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/abc-analysis")
+def get_abc_analysis(
+    page: int = 1,
+    page_size: int = 50,
+    search: Optional[str] = None,
+    division: Optional[str] = None,
+    tipo2025: Optional[str] = None,
+    tipo2026: Optional[str] = None,
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    def check_is_authorized(u):
+        r_name = str(u.role).lower()
+        ro_name = str(u.role_obj.name).lower() if u.role_obj else ""
+        return "admin" in r_name or "direcci" in r_name or "direccion" in r_name or "admin" in ro_name
+
+    if not check_is_authorized(current_user):
+        raise HTTPException(status_code=403, detail="Not authorized for this report")
+
+    try:
+        # 1. Query sales units for 2025 and 2026 (Company 2)
+        # Join with Articulos to get Division (CodigoFamilia)
+        query_sales = """
+            SELECT 
+                RTRIM(LTRIM(l.CodigoArticulo)) as CodigoArticulo,
+                MAX(l.DescripcionArticulo) as Descripcion,
+                MAX(a.CodigoFamilia) as CodigoFamilia,
+                SUM(CASE WHEN YEAR(l.FechaAlbaran) = 2025 THEN l.Unidades ELSE 0 END) as Venta2025,
+                SUM(CASE WHEN YEAR(l.FechaAlbaran) = 2026 THEN l.Unidades ELSE 0 END) as Venta2026
+            FROM LineasAlbaranCliente l WITH (NOLOCK)
+            LEFT JOIN Articulos a WITH (NOLOCK) ON l.CodigoArticulo = a.CodigoArticulo
+            WHERE YEAR(l.FechaAlbaran) IN (2025, 2026)
+              AND l.CodigoEmpresa = 2
+              AND RTRIM(LTRIM(l.CodigoArticulo)) NOT IN ('', '.')
+            GROUP BY RTRIM(LTRIM(l.CodigoArticulo))
+        """
+        df_sales = pd.read_sql(text(query_sales), db.bind)
+        
+        # 2. Get current stock
+        query_stock = """
+            SELECT RTRIM(LTRIM(CodigoArticulo)) as CodigoArticulo, MAX(UnidadSaldo) as StockActual 
+            FROM PowerBi_AcumuladoStock WITH (NOLOCK)
+            WHERE CodigoEmpresa = 2
+              AND Ejercicio = (SELECT MAX(Ejercicio) FROM PowerBi_AcumuladoStock WHERE CodigoEmpresa=2)
+              AND Periodo = (SELECT MAX(Periodo) FROM PowerBi_AcumuladoStock WHERE CodigoEmpresa=2 AND Ejercicio = (SELECT MAX(Ejercicio) FROM PowerBi_AcumuladoStock WHERE CodigoEmpresa=2))
+            GROUP BY CodigoArticulo
+        """
+        df_stock = pd.read_sql(text(query_stock), db.bind)
+        
+        # Merge
+        df = pd.merge(df_sales, df_stock, on='CodigoArticulo', how='left').fillna(0)
+        
+        # Map Division
+        df['Division'] = df['CodigoFamilia'].apply(map_division)
+        # We might want to keep all, or filter? User said "filters by division". 
+        # For now let's keep even those with unknown division but allow filtering.
+        df['Division'] = df['Division'].fillna('Otros')
+
+        def apply_abc(target_df, val_col, pct_col, type_col):
+            # Sort by value descending
+            working_df = target_df.sort_values(by=val_col, ascending=False).copy()
+            total = working_df[val_col].sum()
+            
+            if total > 0:
+                working_df[pct_col] = (working_df[val_col] / total) * 100
+                cumsum_pct = working_df[pct_col].cumsum()
+                
+                # A: 80%, B: next 80% of remaining (up to 96%), C: rest
+                # cumulative %: A <= 80, B <= 96, C > 96
+                def classify(cp):
+                    if cp <= 80.001: return 'A'
+                    elif cp <= 96.001: return 'B'
+                    else: return 'C'
+                
+                working_df[type_col] = cumsum_pct.apply(classify)
+            else:
+                working_df[pct_col] = 0.0
+                working_df[type_col] = 'C'
+            
+            return working_df
+
+        # Apply ABC for both years
+        # Note: We need to do this carefully because we want to return a single row per item
+        # so we calculate separately and merge or update.
+        
+        df_2025 = apply_abc(df, 'Venta2025', 'Porcentaje2025', 'Tipo2025')
+        df_2026 = apply_abc(df, 'Venta2026', 'Porcentaje2026', 'Tipo2026')
+        
+        # Join back
+        res = pd.merge(
+            df_2025[['CodigoArticulo', 'Descripcion', 'Division', 'Venta2025', 'Porcentaje2025', 'Tipo2025', 'StockActual']],
+            df_2026[['CodigoArticulo', 'Venta2026', 'Porcentaje2026', 'Tipo2026']],
+            on='CodigoArticulo'
+        )
+
+        # Final order: Articulo, Desc, Division, Venta25, %25, Tipo25, Venta26, %26, Tipo26, Stock
+        cols = ['CodigoArticulo', 'Descripcion', 'Division', 'Venta2025', 'Porcentaje2025', 'Tipo2025', 'Venta2026', 'Porcentaje2026', 'Tipo2026', 'StockActual']
+        res = res[cols]
+
+        # Apply Server-Side Filters
+        if search:
+            search = search.lower()
+            res = res[res['CodigoArticulo'].str.lower().str.contains(search) | res['Descripcion'].str.lower().str.contains(search)]
+        
+        if division:
+            res = res[res['Division'] == division]
+        
+        if tipo2025:
+            res = res[res['Tipo2025'] == tipo2025]
+            
+        if tipo2026:
+            res = res[res['Tipo2026'] == tipo2026]
+
+        total = len(res)
+        
+        # Paginate
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated_data = res.iloc[start:end]
+
+        return {
+            "data": paginated_data.to_dict(orient='records'),
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total + page_size - 1) // page_size
+        }
+
+    except Exception as e:
+        print(f"Error in ABC analysis: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/abc-analysis/download")
+def download_abc_analysis(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        # For download, we ignore pagination but we could keep filters if we wanted. 
+        # For simplicity, returning the FULL report as requested before.
+        result = get_abc_analysis(page=1, page_size=1000000, db=db, current_user=current_user)
+        df = pd.DataFrame(result['data'])
+        
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Análisis ABC')
+            
+            # Auto-adjust columns width
+            worksheet = writer.sheets['Análisis ABC']
+            for i, col in enumerate(df.columns):
+                max_len = max(df[col].astype(str).map(len).max(), len(str(col))) + 2
+                col_letter = chr(65 + i) if i < 26 else f"A{chr(65 + (i - 26))}" # Simple logic for up to 52 cols
+                worksheet.column_dimensions[col_letter].width = min(max_len, 60)
+
+        output.seek(0)
+        filename = f"Analisis_ABC_{datetime.now().strftime('%Y%m%d')}.xlsx"
+        headers = {'Content-Disposition': f'attachment; filename="{filename}"'}
+        return StreamingResponse(output, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers=headers)
+    except Exception as e:
+        print(f"Error downloading ABC: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -419,6 +419,28 @@ export const fetchMonthlyClose = async (filters) => {
     }
 };
 
+export const fetchAbcAnalysis = async (params) => {
+    try {
+        const response = await api.get('/reports/abc-analysis', { params });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching ABC analysis:", error);
+        throw error;
+    }
+};
+
+export const downloadAbcAnalysis = async () => {
+    try {
+        const response = await api.get('/reports/abc-analysis/download', {
+            responseType: 'blob'
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error downloading ABC analysis:", error);
+        throw error;
+    }
+};
+
 export const fetchItemRotationReport = async () => {
     try {
         const response = await api.get('/reports/item-rotation', {

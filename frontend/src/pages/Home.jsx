@@ -93,12 +93,20 @@ export default function Home() {
                     return role.includes('admin') || role.includes('direcci') || role.includes('direccion');
                 })() && (
 
-                        <Link
-                            to="/cierre-mes"
-                            className="text-gray-400 hover:text-emerald-400 transition-colors text-[11px] font-bold uppercase tracking-wider border-r border-white/10 pr-4"
-                        >
-                            Cierre de mes
-                        </Link>
+                        <>
+                            <Link
+                                to="/temporal"
+                                className="text-gray-400 hover:text-indigo-400 transition-colors text-[11px] font-bold uppercase tracking-wider border-r border-white/10 pr-4"
+                            >
+                                Temporal (ABC)
+                            </Link>
+                            <Link
+                                to="/cierre-mes"
+                                className="text-gray-400 hover:text-emerald-400 transition-colors text-[11px] font-bold uppercase tracking-wider border-r border-white/10 pr-4"
+                            >
+                                Cierre de mes
+                            </Link>
+                        </>
                     )}
                 <span className="text-gray-300 font-medium text-sm px-2">
                     Hola, <span className="text-white font-bold">{user?.username}</span> ({user?.role_obj?.name || user?.role})
