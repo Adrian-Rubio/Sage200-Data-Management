@@ -55,7 +55,7 @@ export function SalesMarginEvolutionChart({ data, isEmbed }) {
                                 const date = new Date(label + '-01');
                                 return date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
                             }}
-                            contentStyle={{ backgroundColor: 'var(--tw-colors-white)', borderColor: 'var(--tw-colors-slate-200)', borderRadius: '0.5rem', color: 'var(--tw-colors-slate-800)' }}
+                            contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '0.5rem', color: '#1e293b', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                             itemStyle={{ fontWeight: 'bold' }}
                         />
                         <Legend wrapperStyle={{ fontSize: '12px', color: 'currentColor' }} className="text-slate-600 dark:text-slate-300" />
@@ -68,12 +68,13 @@ export function SalesMarginEvolutionChart({ data, isEmbed }) {
                                 strokeWidth={3}
                                 dot={data.length > 31 ? false : { r: 3 }}
                                 activeDot={{ r: 6 }}
+                                connectNulls={true}
                                 name={div}
                                 label={data.length > 32 ? false : {
                                     position: 'top',
                                     fontSize: 10,
                                     fill: COLORS[div] || '#666',
-                                    formatter: (val) => `${val.toFixed(0)}%`
+                                    formatter: (val) => val != null ? `${val.toFixed(0)}%` : ''
                                 }}
                             />
                         ))}

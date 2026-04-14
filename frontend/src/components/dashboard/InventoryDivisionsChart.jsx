@@ -37,7 +37,7 @@ export function InventoryDivisionsChart({ data, isEmbed = false }) {
                     />
                     <Tooltip
                         cursor={{ fill: '#f8fafc' }}
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                        contentStyle={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', color: '#1e293b' }}
                         formatter={(value) => [`€${value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Valor en Stock']}
                     />
                     <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={36}>

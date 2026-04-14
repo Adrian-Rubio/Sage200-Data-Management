@@ -419,6 +419,18 @@ export const fetchMonthlyClose = async (filters) => {
     }
 };
 
+export const fetchItemRotationReport = async () => {
+    try {
+        const response = await api.get('/reports/item-rotation', {
+            responseType: 'blob'
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching item rotation report:", error);
+        throw error;
+    }
+};
+
 // --- RMA ---
 export const fetchRmaData = async () => {
     try {
@@ -507,6 +519,16 @@ export const fetchArticleProduction = async (code) => {
         return response.data;
     } catch (error) {
         console.error("Error fetching article production:", error);
+        throw error;
+    }
+};
+
+export const fetchArticlePriceHistory = async (code) => {
+    try {
+        const response = await api.get(`/inventory-tracking/article-price-history?code=${encodeURIComponent(code)}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching article price history:", error);
         throw error;
     }
 };

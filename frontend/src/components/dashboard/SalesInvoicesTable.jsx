@@ -98,7 +98,7 @@ export function SalesInvoicesTable({ initialData, filters }) {
                                     </td>
                                     <td className="px-4 py-2.5 whitespace-nowrap text-xs text-slate-700 dark:text-slate-300">
                                         <div className="font-semibold max-w-[300px] truncate flex items-center gap-2" title={inv.Cliente}>
-                                            <span className="text-slate-300 dark:text-slate-600 font-black text-[10px]">{inv.CodigoCliente}</span>
+                                            <span className="text-slate-500 dark:text-slate-400 font-black text-[12px]">{inv.CodigoCliente}</span>
                                             {inv.Cliente}
                                         </div>
                                     </td>

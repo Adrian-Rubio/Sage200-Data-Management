@@ -1,0 +1,27 @@
+{
+  "tables": [
+    "CabeceraPedidoCliente",
+    "CabeceraPedidoCliente_",
+    "CabeceraPedidoCliente_091025",
+    "CabeceraPedidoCliente_Bak",
+    "CabeceraPedidoCliente_Sync",
+    "IvaPedidoCliente",
+    "LineasPedidoCliente",
+    "LineasPedidoCliente_",
+    "lineaspedidocliente_091025",
+    "LineasPedidocliente_21032024BAK",
+    "LineasPedidoCliente_260924",
+    "LineasPedidoCliente_Bak",
+    "LineasPedidoClienteTallas",
+    "LineasPedidoClienteTallas_",
+    "PedidoClienteLineasTallasXML",
+    "PedidoClienteLineasXml",
+    "PedidoClienteXml",
+    "Vis_LcVw_CabeceraPedidoCliente_CID",
+    "Vis_LcVw_LineasPedidoCliente_CID",
+    "Vis_LineasPedidoCliente_GestionPedidos",
+    "VIS_LineasPedidoClienteTallas_",
+    "Vis_RTDV_CabeceraPedidoCliente",
+    "Vis_RTDV_LineasPedidoCliente"
+  ]
+}

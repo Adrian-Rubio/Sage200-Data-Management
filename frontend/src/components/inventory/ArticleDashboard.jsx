@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import ArticlePriceEvolutionChart from './ArticlePriceEvolutionChart';
 import {
     fetchArticleInfo,
     fetchArticleStock,
     fetchArticleSales,
     fetchArticlePurchases,
-    fetchArticleProduction
+    fetchArticleProduction,
+    fetchArticlePriceHistory
 } from '../../services/api';
 
 export default function ArticleDashboard({ articleCode, onBack }) {
@@ -13,7 +16,9 @@ export default function ArticleDashboard({ articleCode, onBack }) {
     const [sales, setSales] = useState([]);
     const [purchases, setPurchases] = useState([]);
     const [production, setProduction] = useState([]);
+    const [priceHistory, setPriceHistory] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
 
     useEffect(() => {
         loadAllData();
@@ -23,12 +28,13 @@ export default function ArticleDashboard({ articleCode, onBack }) {
         setLoading(true);
         try {
             // Load in parallel for speed
-            const [infoRes, stockRes, salesRes, purchaseRes, prodRes] = await Promise.all([
+            const [infoRes, stockRes, salesRes, purchaseRes, prodRes, priceRes] = await Promise.all([
                 fetchArticleInfo(articleCode),
                 fetchArticleStock(articleCode),
                 fetchArticleSales(articleCode),
                 fetchArticlePurchases(articleCode),
-                fetchArticleProduction(articleCode)
+                fetchArticleProduction(articleCode),
+                fetchArticlePriceHistory(articleCode)
             ]);
 
             setInfo(infoRes);
@@ -36,6 +42,7 @@ export default function ArticleDashboard({ articleCode, onBack }) {
             setSales(salesRes);
             setPurchases(purchaseRes);
             setProduction(prodRes);
+            setPriceHistory(priceRes);
         } catch (error) {
             console.error("Error loading article dashboard:", error);
         } finally {
@@ -68,7 +75,19 @@ export default function ArticleDashboard({ articleCode, onBack }) {
                                 <span className="text-[9px] font-black text-blue-500 uppercase tracking-[0.2em] mb-1">
                                     Ficha Técnica · <span className="text-slate-400 dark:text-slate-500">{articleCode}</span>
                                 </span>
-                                <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight">{info?.description}</h2>
+                                <div className="flex items-center flex-wrap gap-3">
+                                    <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight">{info?.description}</h2>
+                                    {priceHistory && priceHistory.length > 0 && (
+                                        <button 
+                                            onClick={() => setIsPriceModalOpen(true)}
+                                            className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-500/20 rounded-xl font-black text-xs uppercase tracking-wider transition-all border border-purple-100 dark:border-purple-500/20"
+                                            title="Histórico de Precios"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                                            Histórico
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <button 
                                 onClick={onBack} 
@@ -303,6 +322,38 @@ export default function ArticleDashboard({ articleCode, onBack }) {
                 </div>
 
             </div>
+
+            {/* Price History Modal */}
+            {isPriceModalOpen && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative border border-slate-200 dark:border-slate-700 animate-slideUp">
+                        {/* Header Modal */}
+                        <div className="flex justify-between items-center p-6 sm:p-8 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter flex items-center gap-2">
+                                    <div className="w-1.5 h-6 bg-purple-500 rounded-full"></div>
+                                    Histórico de Precios
+                                </h3>
+                                <p className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
+                                    {articleCode} · {info?.description}
+                                </p>
+                            </div>
+                            <button 
+                                onClick={() => setIsPriceModalOpen(false)}
+                                className="w-10 h-10 flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                        
+                        {/* Content Modal */}
+                        <div className="p-6 sm:p-8 overflow-y-auto custom-scrollbar flex-1 bg-slate-50/50 dark:bg-slate-900/50 space-y-8 relative">
+                            <ArticlePriceEvolutionChart data={priceHistory} isModal={true} />
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }

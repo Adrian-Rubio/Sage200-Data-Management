@@ -325,3 +325,82 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
     except Exception as e:
         print(f"Error in get_article_production: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/article-price-history")
+def get_article_price_history(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        # Query purchases
+        q_purchases = """
+            SELECT 
+                FechaPedido as date, 
+                Precio as purchase_price
+            FROM LineasPedidoProveedor WITH (NOLOCK)
+            WHERE CodigoEmpresa = :comp 
+              AND CodigoArticulo = :code
+              AND Precio > 0
+        """
+        df_purchases = pd.read_sql(text(q_purchases), db.bind, params={"code": code, "comp": TARGET_COMPANY})
+        
+        # Query sales
+        q_sales = """
+            SELECT 
+                FechaPedido as date, 
+                Precio as sale_price
+            FROM LineasPedidoCliente WITH (NOLOCK)
+            WHERE CodigoEmpresa = :comp 
+              AND CodigoArticulo = :code
+              AND Precio > 0
+        """
+        df_sales = pd.read_sql(text(q_sales), db.bind, params={"code": code, "comp": TARGET_COMPANY})
+
+        # Process Purchases
+        if not df_purchases.empty:
+            df_purchases['date'] = pd.to_datetime(df_purchases['date'], errors='coerce')
+            df_purchases = df_purchases.dropna(subset=['date'])
+            df_purchases['month'] = df_purchases['date'].dt.strftime('%Y-%m')
+            df_purchases = df_purchases.groupby('month')['purchase_price'].mean().reset_index()
+        else:
+            df_purchases = pd.DataFrame(columns=['month', 'purchase_price'])
+
+        # Process Sales
+        if not df_sales.empty:
+            df_sales['date'] = pd.to_datetime(df_sales['date'], errors='coerce')
+            df_sales = df_sales.dropna(subset=['date'])
+            df_sales['month'] = df_sales['date'].dt.strftime('%Y-%m')
+            df_sales = df_sales.groupby('month')['sale_price'].mean().reset_index()
+        else:
+            df_sales = pd.DataFrame(columns=['month', 'sale_price'])
+
+        # Merge
+        if df_purchases.empty and df_sales.empty:
+            return []
+            
+        if df_purchases.empty:
+            df_merged = df_sales
+        elif df_sales.empty:
+            df_merged = df_purchases
+        else:
+            df_merged = pd.merge(df_purchases, df_sales, on='month', how='outer')
+
+        # Sort chronologically
+        df_merged = df_merged.sort_values(by='month')
+        
+        # Forward fill missing values so lines don't break if there was a month with no sales/purchases
+        df_merged['purchase_price'] = df_merged['purchase_price'].ffill()
+        df_merged['sale_price'] = df_merged['sale_price'].ffill()
+
+        # Build final formatted response
+        res = clean_nan(df_merged.to_dict(orient='records'))
+        
+        # Round prices
+        for r in res:
+            if r.get('purchase_price') is not None:
+                r['purchase_price'] = round(r['purchase_price'], 4)
+            if r.get('sale_price') is not None:
+                r['sale_price'] = round(r['sale_price'], 4)
+
+        return res
+    except Exception as e:
+        print(f"Error in get_article_price_history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+

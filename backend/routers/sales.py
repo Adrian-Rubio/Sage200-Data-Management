@@ -11,6 +11,7 @@ from cachetools import TTLCache
 import hashlib
 import json
 import calendar
+import numpy as np
 
 # Cache dashboard results for 5 minutes (300 seconds)
 # Useful for fast tab-switching or repeated reloads
@@ -317,26 +318,24 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
             df_marg['FechaFactura'] = pd.to_datetime(df_marg['FechaFactura'])
             df_marg['Division'] = df_marg['Comisionista'].apply(lambda x: next((k for k, v in divisions.items() if str(x).strip().upper() in (r.upper() for r in v)), 'Otros'))
             
-            # Grouping Granularity based on date range
-            days_diff = 0
-            if filters.start_date and filters.end_date:
-                days_diff = (filters.end_date - filters.start_date).days
-            
-            # If range is less than 90 days, show daily/weekly trend to get a "line"
-            # If more, show monthly
-            if days_diff <= 90:
-                df_marg['Periodo'] = df_marg['FechaFactura'].dt.strftime('%Y-%m-%d')
-            else:
-                df_marg['Periodo'] = df_marg['FechaFactura'].dt.strftime('%Y-%m')
+            # Force monthly granularity as requested by user to avoid noisy 0% daily drops
+            df_marg['Periodo'] = df_marg['FechaFactura'].dt.strftime('%Y-%m')
             
             m_evol = df_marg.groupby(['Periodo', 'Division']).agg(
                 ventas=('BaseImponible', 'sum'),
                 costes=('ImporteCoste', 'sum')
             ).reset_index()
-            m_evol['margin'] = ((m_evol['ventas'] - m_evol['costes']) / m_evol['ventas'] * 100).fillna(0)
+            
+            # Calculate margin, avoiding division by zero. Replace zeros with NaN so the chart doesn't drop to 0% artificially
+            m_evol['margin'] = np.where(m_evol['ventas'] != 0, 
+                                        (m_evol['ventas'] - m_evol['costes']) / m_evol['ventas'] * 100, 
+                                        np.nan)
             
             # Pivot for Recharts
-            pivot_evol = m_evol.pivot(index='Periodo', columns='Division', values='margin').fillna(0).reset_index()
+            pivot_evol = m_evol.pivot(index='Periodo', columns='Division', values='margin').reset_index()
+            # Replace numpy NaN with None to be parsed as JSON null, so Recharts leaves a gap instead of a 0% drop
+            pivot_evol = pivot_evol.replace({np.nan: None})
+            
             # Ensure chronological order
             pivot_evol = pivot_evol.sort_values('Periodo')
             margin_evolution_data = pivot_evol.to_dict(orient='records')

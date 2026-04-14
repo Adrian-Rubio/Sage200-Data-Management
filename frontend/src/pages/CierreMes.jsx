@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
 
 import { Link } from 'react-router-dom';
-import { fetchMonthlyClose } from '../services/api';
+import { fetchMonthlyClose, fetchItemRotationReport } from '../services/api';
 import useAuthStore from '../store/authStore';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
@@ -135,6 +135,22 @@ export default function CierreMes() {
         URL.revokeObjectURL(url);
     };
 
+    const handleRotationDownload = async () => {
+        try {
+            const blob = await fetchItemRotationReport();
+            const url = window.URL.createObjectURL(new Blob([blob]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Rotacion_Articulos_18_Meses_${new Date().toISOString().split('T')[0]}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+        } catch (error) {
+            console.error("Error downloading rotation report:", error);
+            alert("Error al descargar el informe de rotación");
+        }
+    };
+
 
     return (
         <div className="p-6 max-w-[1720px] mx-auto min-h-screen bg-[#f8fafc] dark:bg-slate-950 text-gray-800 dark:text-slate-200 font-sans transition-colors">
@@ -145,7 +161,14 @@ export default function CierreMes() {
                     className="bg-emerald-600 text-white px-3 py-1.5 rounded shadow-sm hover:bg-emerald-700 transition font-bold text-xs h-[34px] flex items-center gap-2 whitespace-nowrap"
                 >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                    Exportar
+                    Exportar Cierre
+                </button>
+                <button
+                    onClick={handleRotationDownload}
+                    className="bg-indigo-600 text-white px-3 py-1.5 rounded shadow-sm hover:bg-indigo-700 transition font-bold text-xs h-[34px] flex items-center gap-2 whitespace-nowrap"
+                >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 00-4-4H5m11 0h2a4 4 0 014 4v2m-6-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    Rotación 18 Meses (Excel)
                 </button>
             </PageHeader>
 

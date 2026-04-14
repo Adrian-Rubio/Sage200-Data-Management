@@ -4,8 +4,12 @@ from sqlalchemy import text
 from database import get_db
 import auth, models
 import pandas as pd
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel
+import io
+from fastapi.responses import StreamingResponse
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 router = APIRouter()
 
@@ -206,4 +210,107 @@ def get_monthly_close(filters: MonthlyCloseFilters, db: Session = Depends(get_db
 
     except Exception as e:
         print(f"Error in monthly close report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/item-rotation")
+def get_item_rotation_report(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        # 1. Define date range (last 18 months)
+        end_date = datetime.now()
+        start_date = (end_date - relativedelta(months=18)).replace(day=1)
+        
+        # 2. Query data
+        # We include Company 2 and 100 to cover the 18-month span (2025+ is Co 2, before was Co 100)
+        query = """
+            SELECT 
+                RTRIM(LTRIM(CodigoArticulo)) as CodigoArticulo, 
+                MAX(DescripcionArticulo) as Descripcion,
+                YEAR(FechaAlbaran) as Anio,
+                MONTH(FechaAlbaran) as Mes,
+                SUM(Unidades) as Unidades,
+                COUNT(DISTINCT CONCAT(SerieAlbaran, NumeroAlbaran, EjercicioAlbaran)) as Albaranes
+            FROM LineasAlbaranCliente WITH (NOLOCK)
+            WHERE FechaAlbaran >= :start_dt
+              AND CodigoEmpresa = 2
+              AND RTRIM(LTRIM(CodigoArticulo)) NOT IN ('', '.')
+            GROUP BY RTRIM(LTRIM(CodigoArticulo)), YEAR(FechaAlbaran), MONTH(FechaAlbaran)
+        """
+        
+        df = pd.read_sql(text(query), db.bind, params={"start_dt": start_date})
+        
+        if df.empty:
+            raise HTTPException(status_code=404, detail="No data found for the last 18 months")
+
+        # 3. Process months nomenclature
+        meses_es = {
+            1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+            5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+            9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
+        }
+        
+        df['MesNombre'] = df.apply(lambda r: f"{meses_es[r['Mes']]} {r['Anio']}", axis=1)
+        
+        # Create a sorting helper for months to ensure they go in chronological order in the pivot
+        df['SortKey'] = df['Anio'] * 100 + df['Mes']
+        month_order = df[['MesNombre', 'SortKey']].drop_duplicates().sort_values('SortKey')['MesNombre'].tolist()
+
+        # 4. Pivot data
+        # We want: Item | Desc | Jan 2024 (Uds) | Jan 2024 (Alb) | Feb 2024 (Uds) ...
+        pivot_uds = df.pivot(index=['CodigoArticulo', 'Descripcion'], columns='MesNombre', values='Unidades').fillna(0)
+        pivot_alb = df.pivot(index=['CodigoArticulo', 'Descripcion'], columns='MesNombre', values='Albaranes').fillna(0)
+        
+        # Rename columns to distinguish Uds vs Alb
+        pivot_uds.columns = [f"{col} (Uds)" for col in pivot_uds.columns]
+        pivot_alb.columns = [f"{col} (Alb)" for col in pivot_alb.columns]
+        
+        # Merge pivots
+        final_df = pd.concat([pivot_uds, pivot_alb], axis=1)
+        
+        # Calculate overall rotation (Total Units) to allow sorting
+        final_df['Total Rotación (Uds)'] = pivot_uds.sum(axis=1)
+        
+        # Reorder columns chronologically: [Jan (Uds), Jan (Alb), Feb (Uds), Feb (Alb)...]
+        ordered_cols = ['Total Rotación (Uds)']
+        for m in month_order:
+            if f"{m} (Uds)" in final_df.columns:
+                ordered_cols.append(f"{m} (Uds)")
+            if f"{m} (Alb)" in final_df.columns:
+                ordered_cols.append(f"{m} (Alb)")
+        
+        final_df = final_df[ordered_cols].reset_index()
+        
+        # Sort by total rotation descending
+        final_df = final_df.sort_values(by='Total Rotación (Uds)', ascending=False)
+
+        # 5. Generate Excel
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            final_df.to_excel(writer, index=False, sheet_name='Rotación 18 Meses')
+            
+            # Auto-adjust columns width
+            worksheet = writer.sheets['Rotación 18 Meses']
+            for i, col in enumerate(final_df.columns):
+                # find maximum length of text in column
+                max_len = max(
+                    final_df[col].astype(str).map(len).max(),
+                    len(str(col))
+                ) + 2
+                worksheet.column_dimensions[chr(65 + (i if i < 26 else i % 26))].width = min(max_len, 50) # Basic letter logic, but works for start
+
+        output.seek(0)
+        
+        filename = f"Rotacion_Articulos_{datetime.now().strftime('%Y%m%d')}.xlsx"
+        
+        headers = {
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+        
+        return StreamingResponse(
+            output,
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers=headers
+        )
+
+    except Exception as e:
+        print(f"Error generating rotation report: {e}")
         raise HTTPException(status_code=500, detail=str(e))

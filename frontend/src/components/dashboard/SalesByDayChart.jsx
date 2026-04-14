@@ -17,8 +17,8 @@ export function SalesByDayChart({ data, isEmbed }) {
                         <Tooltip
                             labelFormatter={(label) => new Date(label).toLocaleDateString('es-ES')}
                             formatter={(val) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(val)}
-                            contentStyle={{ backgroundColor: 'var(--tw-colors-white)', borderColor: 'var(--tw-colors-slate-200)', borderRadius: '0.5rem', color: 'var(--tw-colors-slate-800)' }}
-                            itemStyle={{ color: 'var(--tw-colors-blue-600)', fontWeight: 'bold' }}
+                            contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '0.5rem', color: '#1e293b', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                            itemStyle={{ color: '#2563eb', fontWeight: 'bold' }}
                         />
                         <Line
                             type="monotone"
