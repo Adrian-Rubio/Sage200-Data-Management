@@ -329,27 +329,27 @@ def get_article_production(code: str, db: Session = Depends(get_db), current_use
 @router.get("/article-price-history")
 def get_article_price_history(code: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     try:
-        # Query purchases
+        # Query purchases (from Real Deliveries/Albaranes)
         q_purchases = """
             SELECT 
-                FechaPedido as date, 
-                Precio as purchase_price
-            FROM LineasPedidoProveedor WITH (NOLOCK)
+                FechaAlbaran as date, 
+                CASE WHEN Unidades <> 0 THEN ImporteNeto / Unidades ELSE Precio END as purchase_price
+            FROM LineasAlbaranProveedor WITH (NOLOCK)
             WHERE CodigoEmpresa = :comp 
               AND CodigoArticulo = :code
-              AND Precio > 0
+              AND ImporteNeto > 0
         """
         df_purchases = pd.read_sql(text(q_purchases), db.bind, params={"code": code, "comp": TARGET_COMPANY})
         
-        # Query sales
+        # Query sales (from Real Deliveries/Albaranes)
         q_sales = """
             SELECT 
-                FechaPedido as date, 
-                Precio as sale_price
-            FROM LineasPedidoCliente WITH (NOLOCK)
+                FechaAlbaran as date, 
+                CASE WHEN Unidades <> 0 THEN ImporteNeto / Unidades ELSE Precio END as sale_price
+            FROM LineasAlbaranCliente WITH (NOLOCK)
             WHERE CodigoEmpresa = :comp 
               AND CodigoArticulo = :code
-              AND Precio > 0
+              AND ImporteNeto > 0
         """
         df_sales = pd.read_sql(text(q_sales), db.bind, params={"code": code, "comp": TARGET_COMPANY})
 
@@ -385,9 +385,9 @@ def get_article_price_history(code: str, db: Session = Depends(get_db), current_
         # Sort chronologically
         df_merged = df_merged.sort_values(by='month')
         
-        # Forward fill missing values so lines don't break if there was a month with no sales/purchases
-        df_merged['purchase_price'] = df_merged['purchase_price'].ffill()
-        df_merged['sale_price'] = df_merged['sale_price'].ffill()
+        # IMPORTANT: Removed .ffill() as requested. 
+        # Misrepresented data was being generated for months without transactions.
+        # Recharts on front-end uses connectNulls to bridge visual gaps without faking data points in the table.
 
         # Build final formatted response
         res = clean_nan(df_merged.to_dict(orient='records'))
@@ -395,9 +395,9 @@ def get_article_price_history(code: str, db: Session = Depends(get_db), current_
         # Round prices
         for r in res:
             if r.get('purchase_price') is not None:
-                r['purchase_price'] = round(r['purchase_price'], 4)
+                r['purchase_price'] = round(float(r['purchase_price']), 4)
             if r.get('sale_price') is not None:
-                r['sale_price'] = round(r['sale_price'], 4)
+                r['sale_price'] = round(float(r['sale_price']), 4)
 
         return res
     except Exception as e:
