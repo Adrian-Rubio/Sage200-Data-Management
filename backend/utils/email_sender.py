@@ -19,14 +19,16 @@ def send_excel_report_email(to_email: str, excel_bytes: io.BytesIO, filename: st
         raise Exception("Falta configurar los parámetros SMTP (SMTP_SERVER, SMTP_USER, SMTP_PASSWORD) en el servidor.")
 
     msg = EmailMessage()
-    msg['Subject'] = f'[{report_name}] Reporte Generado - {datetime.now().strftime("%d/%m/%Y")}'
+    msg['Subject'] = f'[CENVAL IT] Reporte Generado: {report_name} - {datetime.now().strftime("%d/%m/%Y")}'
     msg['From'] = smtp_from
     msg['To'] = to_email
 
     msg.set_content(
         f"Hola,\n\n"
         f"Adjunto encontrarás el reporte de '{report_name}' que has solicitado desde el dashboard.\n\n"
-        f"Un saludo,\nEquipo de Data Management"
+        f"Si tienes alguna duda o fallo, responde a este correo.\n\n"
+        f"Un saludo,\n"
+        f"Dpto. de Sistemas (IT) - CENVAL S.L."
     )
 
     # Attach the Excel file
