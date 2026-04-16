@@ -95,7 +95,17 @@ export default function Temporal() {
 
     const handleDownload = async () => {
         try {
-            const blob = await downloadAbcAnalysis();
+            const params = {
+                search: debouncedSearch,
+                division: filters.division,
+                tipo2025: filters.tipo2025,
+                tipo2026: filters.tipo2026,
+                proveedor: filters.proveedor,
+                subfamilia: filters.subfamilia,
+                sort_by: sortConfig.key,
+                sort_order: sortConfig.order
+            };
+            const blob = await downloadAbcAnalysis(params);
             const url = window.URL.createObjectURL(new Blob([blob]));
             const link = document.createElement('a');
             link.href = url;

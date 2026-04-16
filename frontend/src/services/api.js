@@ -429,9 +429,10 @@ export const fetchAbcAnalysis = async (params) => {
     }
 };
 
-export const downloadAbcAnalysis = async () => {
+export const downloadAbcAnalysis = async (params) => {
     try {
         const response = await api.get('/reports/abc-analysis/download', {
+            params,
             responseType: 'blob'
         });
         return response.data;

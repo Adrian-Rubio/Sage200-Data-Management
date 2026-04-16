@@ -463,11 +463,34 @@ def get_abc_analysis(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/abc-analysis/download")
-def download_abc_analysis(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+def download_abc_analysis(
+    search: Optional[str] = None,
+    division: Optional[str] = None,
+    tipo2025: Optional[str] = None,
+    tipo2026: Optional[str] = None,
+    proveedor: Optional[str] = None,
+    subfamilia: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    sort_order: str = "desc",
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
     try:
-        # For download, we ignore pagination but we could keep filters if we wanted. 
-        # For simplicity, returning the FULL report as requested before.
-        result = get_abc_analysis(page=1, page_size=1000000, db=db, current_user=current_user)
+        # Use a large page_size to get the "filtered" list without pagination slicing
+        result = get_abc_analysis(
+            page=1, 
+            page_size=1000000, 
+            search=search,
+            division=division,
+            tipo2025=tipo2025,
+            tipo2026=tipo2026,
+            proveedor=proveedor,
+            subfamilia=subfamilia,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            db=db, 
+            current_user=current_user
+        )
         df = pd.DataFrame(result['data'])
         
         # Prepare for Excel: Divide percentages by 100 for Excel formatting
@@ -480,16 +503,14 @@ def download_abc_analysis(db: Session = Depends(get_db), current_user: models.Us
             df.to_excel(writer, index=False, sheet_name='Análisis ABC')
             worksheet = writer.sheets['Análisis ABC']
             
-            # Formatting and Style
-            from openpyxl.styles import NumberFormat
-            
             # Identify percentage columns
             pct_cols = [i + 1 for i, c in enumerate(df.columns) if 'Porcentaje' in c] # 1-indexed for openpyxl
             
             # Application of numeric and percentage formatting
-            for row in range(2, len(df) + 2): # Skip header
-                for col in pct_cols:
-                    worksheet.cell(row=row, column=col).number_format = '0.00%'
+            if not df.empty:
+                for row in range(2, len(df) + 2): # Skip header
+                    for col in pct_cols:
+                        worksheet.cell(row=row, column=col).number_format = '0.00%'
 
             # Auto-adjust columns width
             for i, col in enumerate(df.columns):
