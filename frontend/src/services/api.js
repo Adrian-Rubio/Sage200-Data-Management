@@ -442,6 +442,16 @@ export const downloadAbcAnalysis = async (params) => {
     }
 };
 
+export const sendAbcAnalysisEmail = async (params) => {
+    try {
+        const response = await api.get('/reports/abc-analysis/send-email', { params });
+        return response.data;
+    } catch (error) {
+        console.error("Error sending ABC analysis email:", error);
+        throw error;
+    }
+};
+
 export const fetchAbcProviders = async () => {
     try {
         const response = await api.get('/reports/abc-providers');

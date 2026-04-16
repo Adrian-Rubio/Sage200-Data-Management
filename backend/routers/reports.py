@@ -10,6 +10,7 @@ import io
 from fastapi.responses import StreamingResponse
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from utils.email_sender import send_excel_report_email
 
 router = APIRouter()
 
@@ -527,6 +528,85 @@ def download_abc_analysis(
         return StreamingResponse(output, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers=headers)
     except Exception as e:
         print(f"Error downloading ABC: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/abc-analysis/send-email")
+def email_abc_analysis(
+    search: Optional[str] = None,
+    division: Optional[str] = None,
+    tipo2025: Optional[str] = None,
+    tipo2026: Optional[str] = None,
+    proveedor: Optional[str] = None,
+    subfamilia: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    sort_order: str = "desc",
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    try:
+        # Check if user has an email
+        if not current_user.email:
+            raise HTTPException(status_code=400, detail="Tu usuario no tiene una dirección de correo configurada.")
+
+        # Same logic as download: big page_size
+        result = get_abc_analysis(
+            page=1, 
+            page_size=1000000, 
+            search=search,
+            division=division,
+            tipo2025=tipo2025,
+            tipo2026=tipo2026,
+            proveedor=proveedor,
+            subfamilia=subfamilia,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            db=db, 
+            current_user=current_user
+        )
+        df = pd.DataFrame(result['data'])
+        
+        # Prepare for Excel: Divide percentages by 100 for Excel formatting
+        for col in ['Porcentaje2025', 'Porcentaje2026']:
+            if col in df.columns:
+                df[col] = df[col] / 100
+
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Análisis ABC')
+            worksheet = writer.sheets['Análisis ABC']
+            
+            # Identify percentage columns
+            pct_cols = [i + 1 for i, c in enumerate(df.columns) if 'Porcentaje' in c] # 1-indexed for openpyxl
+            
+            # Application of numeric and percentage formatting
+            if not df.empty:
+                for row in range(2, len(df) + 2): # Skip header
+                    for col in pct_cols:
+                        worksheet.cell(row=row, column=col).number_format = '0.00%'
+
+            # Auto-adjust columns width
+            for i, col in enumerate(df.columns):
+                max_len = max(df[col].astype(str).map(len).max() if not df[col].empty else 10, len(str(col))) + 2
+                div = i // 26
+                rem = i % 26
+                col_letter = (chr(64 + div) if div > 0 else "") + chr(65 + rem)
+                worksheet.column_dimensions[col_letter].width = min(max_len, 60)
+
+        output.seek(0)
+        filename = f"Analisis_ABC_{datetime.now().strftime('%Y%m%d')}.xlsx"
+        
+        # Add the file to the email and send it
+        send_excel_report_email(
+            to_email=current_user.email,
+            excel_bytes=output,
+            filename=filename,
+            report_name="Análisis ABC"
+        )
+        
+        return {"success": True, "message": f"Reporte enviado correctamente a {current_user.email}"}
+        
+    except Exception as e:
+        print(f"Error sending ABC Analysis email: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/abc-providers")
