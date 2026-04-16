@@ -323,6 +323,8 @@ def get_abc_analysis(
     division: Optional[str] = None,
     tipo2025: Optional[str] = None,
     tipo2026: Optional[str] = None,
+    proveedor: Optional[str] = None,
+    subfamilia: Optional[str] = None,
     db: Session = Depends(get_db), 
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
@@ -341,11 +343,14 @@ def get_abc_analysis(
             SELECT 
                 RTRIM(LTRIM(l.CodigoArticulo)) as CodigoArticulo,
                 MAX(l.DescripcionArticulo) as Descripcion,
-                MAX(a.CodigoFamilia) as CodigoFamilia,
+                MAX(a.CodigoFamilia) as Familia,
+                MAX(a.CodigoSubfamilia) as Subfamilia,
+                MAX(p.RazonSocial) as Proveedor,
                 SUM(CASE WHEN YEAR(l.FechaAlbaran) = 2025 THEN l.Unidades ELSE 0 END) as Venta2025,
                 SUM(CASE WHEN YEAR(l.FechaAlbaran) = 2026 THEN l.Unidades ELSE 0 END) as Venta2026
             FROM LineasAlbaranCliente l WITH (NOLOCK)
-            LEFT JOIN Articulos a WITH (NOLOCK) ON l.CodigoArticulo = a.CodigoArticulo
+            LEFT JOIN Articulos a WITH (NOLOCK) ON l.CodigoArticulo = a.CodigoArticulo AND l.CodigoEmpresa = a.CodigoEmpresa
+            LEFT JOIN Proveedores p WITH (NOLOCK) ON a.CodigoProveedor = p.CodigoProveedor AND a.CodigoEmpresa = p.CodigoEmpresa
             WHERE YEAR(l.FechaAlbaran) IN (2025, 2026)
               AND l.CodigoEmpresa = 2
               AND RTRIM(LTRIM(l.CodigoArticulo)) NOT IN ('', '.')
@@ -367,10 +372,9 @@ def get_abc_analysis(
         # Merge
         df = pd.merge(df_sales, df_stock, on='CodigoArticulo', how='left').fillna(0)
         
-        # Map Division
-        df['Division'] = df['CodigoFamilia'].apply(map_division)
-        # We might want to keep all, or filter? User said "filters by division". 
-        # For now let's keep even those with unknown division but allow filtering.
+        # Map Division (Internal Logic)
+        # Assuming we need to map based on 'Familia' field which contains CodigoFamilia
+        df['Division'] = df['Familia'].apply(map_division)
         df['Division'] = df['Division'].fillna('Otros')
 
         def apply_abc(target_df, val_col, pct_col, type_col):
@@ -405,13 +409,13 @@ def get_abc_analysis(
         
         # Join back
         res = pd.merge(
-            df_2025[['CodigoArticulo', 'Descripcion', 'Division', 'Venta2025', 'Porcentaje2025', 'Tipo2025', 'StockActual']],
+            df_2025[['CodigoArticulo', 'Descripcion', 'Familia', 'Subfamilia', 'Division', 'Proveedor', 'Venta2025', 'Porcentaje2025', 'Tipo2025', 'StockActual']],
             df_2026[['CodigoArticulo', 'Venta2026', 'Porcentaje2026', 'Tipo2026']],
             on='CodigoArticulo'
         )
 
-        # Final order: Articulo, Desc, Division, Venta25, %25, Tipo25, Venta26, %26, Tipo26, Stock
-        cols = ['CodigoArticulo', 'Descripcion', 'Division', 'Venta2025', 'Porcentaje2025', 'Tipo2025', 'Venta2026', 'Porcentaje2026', 'Tipo2026', 'StockActual']
+        # Final order: Articulo, Desc, Familia, Subfamilia, Proveedor, Division (Internal), Venta25, %25, Tipo25, Venta26, %26, Tipo26, Stock
+        cols = ['CodigoArticulo', 'Descripcion', 'Familia', 'Subfamilia', 'Proveedor', 'Division', 'Venta2025', 'Porcentaje2025', 'Tipo2025', 'Venta2026', 'Porcentaje2026', 'Tipo2026', 'StockActual']
         res = res[cols]
 
         # Apply Server-Side Filters
@@ -427,6 +431,12 @@ def get_abc_analysis(
             
         if tipo2026:
             res = res[res['Tipo2026'] == tipo2026]
+            
+        if proveedor:
+            res = res[res['Proveedor'] == proveedor]
+            
+        if subfamilia:
+            res = res[res['Subfamilia'] == subfamilia]
 
         total = len(res)
         
@@ -472,4 +482,44 @@ def download_abc_analysis(db: Session = Depends(get_db), current_user: models.Us
         return StreamingResponse(output, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers=headers)
     except Exception as e:
         print(f"Error downloading ABC: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/abc-providers")
+def get_abc_providers(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        # Get unique providers that have sales in 2025/2026
+        # This is more efficient than gathering the whole analysis for just providers
+        query = """
+            SELECT DISTINCT RTRIM(LTRIM(p.RazonSocial)) as Proveedor
+            FROM LineasAlbaranCliente l WITH (NOLOCK)
+            JOIN Articulos a WITH (NOLOCK) ON l.CodigoArticulo = a.CodigoArticulo AND l.CodigoEmpresa = a.CodigoEmpresa
+            JOIN Proveedores p WITH (NOLOCK) ON a.CodigoProveedor = p.CodigoProveedor AND a.CodigoEmpresa = p.CodigoEmpresa
+            WHERE YEAR(l.FechaAlbaran) IN (2025, 2026)
+              AND l.CodigoEmpresa = 2
+              AND p.RazonSocial IS NOT NULL AND p.RazonSocial != ''
+            ORDER BY Proveedor
+        """
+        df = pd.read_sql(text(query), db.bind)
+        return df['Proveedor'].tolist()
+    except Exception as e:
+        print(f"Error fetching ABC providers: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/abc-subfamilies")
+def get_abc_subfamilies(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        # Get unique subfamilies that have sales in 2025/2026
+        query = """
+            SELECT DISTINCT RTRIM(LTRIM(a.CodigoSubfamilia)) as Subfamilia
+            FROM LineasAlbaranCliente l WITH (NOLOCK)
+            JOIN Articulos a WITH (NOLOCK) ON l.CodigoArticulo = a.CodigoArticulo AND l.CodigoEmpresa = a.CodigoEmpresa
+            WHERE YEAR(l.FechaAlbaran) IN (2025, 2026)
+              AND l.CodigoEmpresa = 2
+              AND a.CodigoSubfamilia IS NOT NULL AND a.CodigoSubfamilia != ''
+            ORDER BY Subfamilia
+        """
+        df = pd.read_sql(text(query), db.bind)
+        return df['Subfamilia'].tolist()
+    except Exception as e:
+        print(f"Error fetching ABC subfamilies: {e}")
         raise HTTPException(status_code=500, detail=str(e))

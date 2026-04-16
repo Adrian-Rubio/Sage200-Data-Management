@@ -441,6 +441,26 @@ export const downloadAbcAnalysis = async () => {
     }
 };
 
+export const fetchAbcProviders = async () => {
+    try {
+        const response = await api.get('/reports/abc-providers');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching ABC providers:", error);
+        throw error;
+    }
+};
+
+export const fetchAbcSubfamilies = async () => {
+    try {
+        const response = await api.get('/reports/abc-subfamilies');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching ABC subfamilies:", error);
+        throw error;
+    }
+};
+
 export const fetchItemRotationReport = async () => {
     try {
         const response = await api.get('/reports/item-rotation', {

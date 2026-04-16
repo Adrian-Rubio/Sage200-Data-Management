@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchAbcAnalysis, downloadAbcAnalysis } from '../services/api';
+import { fetchAbcAnalysis, downloadAbcAnalysis, fetchAbcProviders, fetchAbcSubfamilies } from '../services/api';
 import { PageHeader } from '../components/common/PageHeader';
 
 export default function Temporal() {
@@ -12,18 +12,31 @@ export default function Temporal() {
         search: '',
         division: '',
         tipo2025: '',
-        tipo2026: ''
+        tipo2026: '',
+        proveedor: '',
+        subfamilia: ''
     });
+    const [providers, setProviders] = useState([]);
+    const [subfamilies, setSubfamilies] = useState([]);
 
     // Debounce search
     const [debouncedSearch, setDebouncedSearch] = useState('');
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearch(filters.search);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [filters.search]);
+        const loadFilters = async () => {
+            try {
+                const [pList, sList] = await Promise.all([
+                    fetchAbcProviders(),
+                    fetchAbcSubfamilies()
+                ]);
+                setProviders(pList);
+                setSubfamilies(sList);
+            } catch (error) {
+                console.error("Error loading filters:", error);
+            }
+        };
+        loadFilters();
+    }, []);
 
     const fetchData = async () => {
         setLoading(true);
@@ -34,7 +47,9 @@ export default function Temporal() {
                 search: debouncedSearch,
                 division: filters.division,
                 tipo2025: filters.tipo2025,
-                tipo2026: filters.tipo2026
+                tipo2026: filters.tipo2026,
+                proveedor: filters.proveedor,
+                subfamilia: filters.subfamilia
             };
             const result = await fetchAbcAnalysis(params);
             setData(result.data);
@@ -49,12 +64,12 @@ export default function Temporal() {
 
     useEffect(() => {
         fetchData();
-    }, [page, debouncedSearch, filters.division, filters.tipo2025, filters.tipo2026]);
+    }, [page, debouncedSearch, filters.division, filters.tipo2025, filters.tipo2026, filters.proveedor, filters.subfamilia]);
 
     // Reset page on filter change
     useEffect(() => {
         setPage(1);
-    }, [debouncedSearch, filters.division, filters.tipo2025, filters.tipo2026]);
+    }, [debouncedSearch, filters.division, filters.tipo2025, filters.tipo2026, filters.proveedor, filters.subfamilia]);
 
     const handleDownload = async () => {
         try {
@@ -77,7 +92,13 @@ export default function Temporal() {
         setFilters(prev => ({ ...prev, [name]: value }));
     };
 
-    const formatNumber = (num) => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(num || 0);
+    const formatNumber = (num) => {
+        const value = Number(num) || 0;
+        return new Intl.NumberFormat('es-ES', { 
+            useGrouping: true, 
+            maximumFractionDigits: 0 
+        }).format(value);
+    };
     const formatPercent = (num) => (num || 0).toFixed(2) + '%';
 
     const getTipoColor = (tipo) => {
@@ -124,7 +145,22 @@ export default function Temporal() {
                 </div>
 
                 <div className="flex flex-col w-48">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 tracking-wider">División</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 tracking-wider">Subfamilia</label>
+                    <select
+                        name="subfamilia"
+                        value={filters.subfamilia}
+                        onChange={handleFilterChange}
+                        className="w-full rounded-xl border-slate-200 dark:border-slate-700 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-2.5 bg-slate-50 dark:bg-slate-800 dark:text-slate-100 transition-colors"
+                    >
+                        <option value="">Todas</option>
+                        {subfamilies.map((s, idx) => (
+                            <option key={idx} value={s}>{s}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="flex flex-col w-48">
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 tracking-wider">División (Interna)</label>
                     <select
                         name="division"
                         value={filters.division}
@@ -136,6 +172,21 @@ export default function Temporal() {
                         <option value="Mecánica">Mecánica</option>
                         <option value="Informática Industrial">Informática Industrial</option>
                         <option value="Otros">Otros</option>
+                    </select>
+                </div>
+
+                <div className="flex flex-col w-64">
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 tracking-wider">Proveedor</label>
+                    <select
+                        name="proveedor"
+                        value={filters.proveedor}
+                        onChange={handleFilterChange}
+                        className="w-full rounded-xl border-slate-200 dark:border-slate-700 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-2.5 bg-slate-50 dark:bg-slate-800 dark:text-slate-100 transition-colors"
+                    >
+                        <option value="">Todos</option>
+                        {providers.map((p, idx) => (
+                            <option key={idx} value={p}>{p}</option>
+                        ))}
                     </select>
                 </div>
 
@@ -182,7 +233,9 @@ export default function Temporal() {
                             <tr className="border-b border-slate-100 dark:border-slate-700">
                                 <th className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[140px]">Artículo</th>
                                 <th className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[250px]">Descripción</th>
-                                <th className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">División</th>
+                                <th className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[120px]">Familia</th>
+                                <th className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[120px]">Subfamilia</th>
+                                <th className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[180px]">Proveedor</th>
                                 <th className="p-4 py-5 text-right text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-emerald-50/50 dark:bg-emerald-900/10">Uds 2025</th>
                                 <th className="p-4 py-5 text-right text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-emerald-50/50 dark:bg-emerald-900/10">% 2025</th>
                                 <th className="p-4 py-5 text-center text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-emerald-50/50 dark:bg-emerald-900/10">Cat 25</th>
@@ -212,7 +265,13 @@ export default function Temporal() {
                                         <td className="p-4 text-xs font-black text-slate-900 dark:text-slate-100 font-mono tracking-tight">{item.CodigoArticulo}</td>
                                         <td className="p-4 text-xs font-semibold text-slate-600 dark:text-slate-400 truncate max-w-[300px]" title={item.Descripcion}>{item.Descripcion}</td>
                                         <td className="p-4">
-                                            <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-tighter">{item.Division}</span>
+                                            <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-tighter">{item.Familia}</span>
+                                        </td>
+                                        <td className="p-4">
+                                            <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-tighter">{item.Subfamilia}</span>
+                                        </td>
+                                        <td className="p-4">
+                                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate block max-w-[180px]" title={item.Proveedor}>{item.Proveedor || '---'}</span>
                                         </td>
                                         <td className="p-4 text-right text-xs font-bold text-slate-700 dark:text-slate-300 bg-emerald-50/20 dark:bg-emerald-900/5">{formatNumber(item.Venta2025)}</td>
                                         <td className="p-4 text-right text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-emerald-50/20 dark:bg-emerald-900/5">{formatPercent(item.Porcentaje2025)}</td>
