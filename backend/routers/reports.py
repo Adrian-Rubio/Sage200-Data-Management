@@ -600,7 +600,7 @@ def email_abc_analysis(
             to_email=current_user.email,
             excel_bytes=output,
             filename=filename,
-            report_name="Análisis ABC"
+            report_name="Informe de rotación"
         )
         
         return {"success": True, "message": f"Reporte enviado correctamente a {current_user.email}"}
