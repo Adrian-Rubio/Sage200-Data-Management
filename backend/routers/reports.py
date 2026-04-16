@@ -354,7 +354,7 @@ def get_abc_analysis(
             FROM LineasAlbaranCliente l WITH (NOLOCK)
             LEFT JOIN Articulos a WITH (NOLOCK) ON l.CodigoArticulo = a.CodigoArticulo AND l.CodigoEmpresa = a.CodigoEmpresa
             LEFT JOIN Proveedores p WITH (NOLOCK) ON a.CodigoProveedor = p.CodigoProveedor AND a.CodigoEmpresa = p.CodigoEmpresa
-            WHERE YEAR(l.FechaAlbaran) IN (2025, 2026)
+            WHERE l.FechaAlbaran >= '2025-01-01' AND l.FechaAlbaran < '2027-01-01'
               AND l.CodigoEmpresa = 2
               AND RTRIM(LTRIM(l.CodigoArticulo)) NOT IN ('', '.')
             GROUP BY RTRIM(LTRIM(l.CodigoArticulo))
@@ -638,7 +638,7 @@ def get_abc_subfamilies(db: Session = Depends(get_db), current_user: models.User
             SELECT DISTINCT RTRIM(LTRIM(a.CodigoSubfamilia)) as Subfamilia
             FROM LineasAlbaranCliente l WITH (NOLOCK)
             JOIN Articulos a WITH (NOLOCK) ON l.CodigoArticulo = a.CodigoArticulo AND l.CodigoEmpresa = a.CodigoEmpresa
-            WHERE YEAR(l.FechaAlbaran) IN (2025, 2026)
+            WHERE l.FechaAlbaran >= '2025-01-01' AND l.FechaAlbaran < '2027-01-01'
               AND l.CodigoEmpresa = 2
               AND a.CodigoSubfamilia IS NOT NULL AND a.CodigoSubfamilia != ''
             ORDER BY Subfamilia
