@@ -325,6 +325,8 @@ def get_abc_analysis(
     tipo2026: Optional[str] = None,
     proveedor: Optional[str] = None,
     subfamilia: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    sort_order: str = "desc",
     db: Session = Depends(get_db), 
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
@@ -437,6 +439,9 @@ def get_abc_analysis(
             
         if subfamilia:
             res = res[res['Subfamilia'] == subfamilia]
+
+        if sort_by and sort_by in res.columns:
+            res = res.sort_values(by=sort_by, ascending=(sort_order == "asc"))
 
         total = len(res)
         

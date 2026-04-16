@@ -18,6 +18,7 @@ export default function Temporal() {
     });
     const [providers, setProviders] = useState([]);
     const [subfamilies, setSubfamilies] = useState([]);
+    const [sortConfig, setSortConfig] = useState({ key: 'Venta2026', order: 'desc' });
 
     // Debounce search
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -49,7 +50,9 @@ export default function Temporal() {
                 tipo2025: filters.tipo2025,
                 tipo2026: filters.tipo2026,
                 proveedor: filters.proveedor,
-                subfamilia: filters.subfamilia
+                subfamilia: filters.subfamilia,
+                sort_by: sortConfig.key,
+                sort_order: sortConfig.order
             };
             const result = await fetchAbcAnalysis(params);
             setData(result.data);
@@ -64,12 +67,31 @@ export default function Temporal() {
 
     useEffect(() => {
         fetchData();
-    }, [page, debouncedSearch, filters.division, filters.tipo2025, filters.tipo2026, filters.proveedor, filters.subfamilia]);
+    }, [page, debouncedSearch, filters.division, filters.tipo2025, filters.tipo2026, filters.proveedor, filters.subfamilia, sortConfig]);
 
     // Reset page on filter change
     useEffect(() => {
         setPage(1);
     }, [debouncedSearch, filters.division, filters.tipo2025, filters.tipo2026, filters.proveedor, filters.subfamilia]);
+
+    const requestSort = (key) => {
+        let order = 'desc';
+        if (sortConfig.key === key && sortConfig.order === 'desc') {
+            order = 'asc';
+        }
+        setSortConfig({ key, order });
+    };
+
+    const getSortIcon = (key) => {
+        if (sortConfig.key !== key) return (
+            <svg className="w-3 h-3 ml-1 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="C7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" /></svg>
+        );
+        return sortConfig.order === 'asc' ? (
+            <svg className="w-3 h-3 ml-1 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" /></svg>
+        ) : (
+            <svg className="w-3 h-3 ml-1 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
+        );
+    };
 
     const handleDownload = async () => {
         try {
@@ -231,18 +253,58 @@ export default function Temporal() {
                     <table className="w-full text-left border-collapse">
                         <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/90 backdrop-blur-sm z-10 transition-colors">
                             <tr className="border-b border-slate-100 dark:border-slate-700">
-                                <th className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[140px]">Artículo</th>
-                                <th className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[250px]">Descripción</th>
-                                <th className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[120px]">Familia</th>
-                                <th className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[120px]">Subfamilia</th>
-                                <th className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[180px]">Proveedor</th>
-                                <th className="p-4 py-5 text-right text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-emerald-50/50 dark:bg-emerald-900/10">Uds 2025</th>
+                                <th 
+                                    onClick={() => requestSort('CodigoArticulo')}
+                                    className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[140px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    <div className="flex items-center">Artículo {getSortIcon('CodigoArticulo')}</div>
+                                </th>
+                                <th 
+                                    onClick={() => requestSort('Descripcion')}
+                                    className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[250px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    <div className="flex items-center">Descripción {getSortIcon('Descripcion')}</div>
+                                </th>
+                                <th 
+                                    onClick={() => requestSort('Familia')}
+                                    className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[120px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    <div className="flex items-center">Familia {getSortIcon('Familia')}</div>
+                                </th>
+                                <th 
+                                    onClick={() => requestSort('Subfamilia')}
+                                    className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[120px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    <div className="flex items-center">Subfamilia {getSortIcon('Subfamilia')}</div>
+                                </th>
+                                <th 
+                                    onClick={() => requestSort('Proveedor')}
+                                    className="p-4 py-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[180px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    <div className="flex items-center">Proveedor {getSortIcon('Proveedor')}</div>
+                                </th>
+                                <th 
+                                    onClick={() => requestSort('Venta2025')}
+                                    className="p-4 py-5 text-right text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-emerald-50/50 dark:bg-emerald-900/10 cursor-pointer hover:bg-emerald-100/50 transition-colors"
+                                >
+                                    <div className="flex items-center justify-end">Uds 2025 {getSortIcon('Venta2025')}</div>
+                                </th>
                                 <th className="p-4 py-5 text-right text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-emerald-50/50 dark:bg-emerald-900/10">% 2025</th>
                                 <th className="p-4 py-5 text-center text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-emerald-50/50 dark:bg-emerald-900/10">Cat 25</th>
-                                <th className="p-4 py-5 text-right text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-blue-50/50 dark:bg-blue-900/10">Uds 2026</th>
+                                <th 
+                                    onClick={() => requestSort('Venta2026')}
+                                    className="p-4 py-5 text-right text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-blue-50/50 dark:bg-blue-900/10 cursor-pointer hover:bg-blue-100/50 transition-colors"
+                                >
+                                    <div className="flex items-center justify-end">Uds 2026 {getSortIcon('Venta2026')}</div>
+                                </th>
                                 <th className="p-4 py-5 text-right text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-blue-50/50 dark:bg-blue-900/10">% 2026</th>
                                 <th className="p-4 py-5 text-center text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-blue-50/50 dark:bg-blue-900/10">Cat 26</th>
-                                <th className="p-4 py-5 text-right text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-l border-slate-100 dark:border-slate-700">Stock</th>
+                                <th 
+                                    onClick={() => requestSort('StockActual')}
+                                    className="p-4 py-5 text-right text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-l border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    <div className="flex items-center justify-end">Stock {getSortIcon('StockActual')}</div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
