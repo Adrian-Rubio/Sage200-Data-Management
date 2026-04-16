@@ -465,15 +465,34 @@ def download_abc_analysis(db: Session = Depends(get_db), current_user: models.Us
         result = get_abc_analysis(page=1, page_size=1000000, db=db, current_user=current_user)
         df = pd.DataFrame(result['data'])
         
+        # Prepare for Excel: Divide percentages by 100 for Excel formatting
+        for col in ['Porcentaje2025', 'Porcentaje2026']:
+            if col in df.columns:
+                df[col] = df[col] / 100
+
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name='Análisis ABC')
-            
-            # Auto-adjust columns width
             worksheet = writer.sheets['Análisis ABC']
+            
+            # Formatting and Style
+            from openpyxl.styles import NumberFormat
+            
+            # Identify percentage columns
+            pct_cols = [i + 1 for i, c in enumerate(df.columns) if 'Porcentaje' in c] # 1-indexed for openpyxl
+            
+            # Application of numeric and percentage formatting
+            for row in range(2, len(df) + 2): # Skip header
+                for col in pct_cols:
+                    worksheet.cell(row=row, column=col).number_format = '0.00%'
+
+            # Auto-adjust columns width
             for i, col in enumerate(df.columns):
-                max_len = max(df[col].astype(str).map(len).max(), len(str(col))) + 2
-                col_letter = chr(65 + i) if i < 26 else f"A{chr(65 + (i - 26))}" # Simple logic for up to 52 cols
+                max_len = max(df[col].astype(str).map(len).max() if not df[col].empty else 10, len(str(col))) + 2
+                # Correct column letter logic
+                div = i // 26
+                rem = i % 26
+                col_letter = (chr(64 + div) if div > 0 else "") + chr(65 + rem)
                 worksheet.column_dimensions[col_letter].width = min(max_len, 60)
 
         output.seek(0)
