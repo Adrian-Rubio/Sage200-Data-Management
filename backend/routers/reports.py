@@ -14,6 +14,10 @@ from utils.email_sender import send_excel_report_email
 
 router = APIRouter()
 
+# Memory cache to make ABC Analysis instant after the first load
+ABC_CACHE = {"df": None, "timestamp": None}
+CACHE_SECONDS = 900 # 15 minutes
+
 class MonthlyCloseFilters(BaseModel):
     exercise: int
     period: int
@@ -340,129 +344,88 @@ def get_abc_analysis(
         raise HTTPException(status_code=403, detail="Not authorized for this report")
 
     try:
-        # 1. Query sales units for 2025 and 2026 (Company 2)
-        # Join with Articulos to get Division (CodigoFamilia)
-        query_sales = """
-            SELECT 
-                RTRIM(LTRIM(l.CodigoArticulo)) as CodigoArticulo,
-                MAX(l.DescripcionArticulo) as Descripcion,
-                MAX(a.CodigoFamilia) as Familia,
-                MAX(a.CodigoSubfamilia) as Subfamilia,
-                MAX(p.RazonSocial) as Proveedor,
-                SUM(CASE WHEN YEAR(l.FechaAlbaran) = 2025 THEN l.Unidades ELSE 0 END) as Venta2025,
-                SUM(CASE WHEN YEAR(l.FechaAlbaran) = 2026 THEN l.Unidades ELSE 0 END) as Venta2026
-            FROM LineasAlbaranCliente l WITH (NOLOCK)
-            LEFT JOIN Articulos a WITH (NOLOCK) ON l.CodigoArticulo = a.CodigoArticulo AND l.CodigoEmpresa = a.CodigoEmpresa
-            LEFT JOIN Proveedores p WITH (NOLOCK) ON a.CodigoProveedor = p.CodigoProveedor AND a.CodigoEmpresa = p.CodigoEmpresa
-            WHERE l.FechaAlbaran >= '2025-01-01' AND l.FechaAlbaran < '2027-01-01'
-              AND l.CodigoEmpresa = 2
-              AND RTRIM(LTRIM(l.CodigoArticulo)) NOT IN ('', '.')
-            GROUP BY RTRIM(LTRIM(l.CodigoArticulo))
-        """
-        df_sales = pd.read_sql(text(query_sales), db.bind)
-        
-        # 2. Get current stock
-        query_stock = """
-            SELECT RTRIM(LTRIM(CodigoArticulo)) as CodigoArticulo, MAX(UnidadSaldo) as StockActual 
-            FROM PowerBi_AcumuladoStock WITH (NOLOCK)
-            WHERE CodigoEmpresa = 2
-              AND Ejercicio = (SELECT MAX(Ejercicio) FROM PowerBi_AcumuladoStock WHERE CodigoEmpresa=2)
-              AND Periodo = (SELECT MAX(Periodo) FROM PowerBi_AcumuladoStock WHERE CodigoEmpresa=2 AND Ejercicio = (SELECT MAX(Ejercicio) FROM PowerBi_AcumuladoStock WHERE CodigoEmpresa=2))
-            GROUP BY CodigoArticulo
-        """
-        df_stock = pd.read_sql(text(query_stock), db.bind)
-        
-        # Merge
-        df = pd.merge(df_sales, df_stock, on='CodigoArticulo', how='left').fillna(0)
-        
-        # Map Division (Internal Logic)
-        # Assuming we need to map based on 'Familia' field which contains CodigoFamilia
-        df['Division'] = df['Familia'].apply(map_division)
-        df['Division'] = df['Division'].fillna('Otros')
+        now = datetime.now()
+        if (ABC_CACHE["df"] is not None and 
+            ABC_CACHE["timestamp"] is not None and 
+            (now - ABC_CACHE["timestamp"]).total_seconds() < CACHE_SECONDS):
+            df_full = ABC_CACHE["df"]
+        else:
+            query_sales = """
+                WITH SalesData AS (
+                    SELECT 
+                        RTRIM(LTRIM(CodigoArticulo)) as CodigoArticulo,
+                        SUM(CASE WHEN FechaAlbaran >= '2025-01-01' AND FechaAlbaran < '2026-01-01' THEN Unidades ELSE 0 END) as Venta2025,
+                        SUM(CASE WHEN FechaAlbaran >= '2026-01-01' AND FechaAlbaran < '2027-01-01' THEN Unidades ELSE 0 END) as Venta2026
+                    FROM LineasAlbaranCliente WITH (NOLOCK)
+                    WHERE FechaAlbaran >= '2025-01-01' AND FechaAlbaran < '2027-01-01'
+                      AND CodigoEmpresa = 2
+                      AND RTRIM(LTRIM(CodigoArticulo)) NOT IN ('', '.')
+                    GROUP BY RTRIM(LTRIM(CodigoArticulo))
+                )
+                SELECT 
+                    s.CodigoArticulo, a.DescripcionArticulo as Descripcion, a.CodigoFamilia as Familia, 
+                    a.CodigoSubfamilia as Subfamilia, p.RazonSocial as Proveedor, s.Venta2025, s.Venta2026
+                FROM SalesData s
+                LEFT JOIN Articulos a WITH (NOLOCK) ON s.CodigoArticulo = a.CodigoArticulo AND a.CodigoEmpresa = 2
+                LEFT JOIN Proveedores p WITH (NOLOCK) ON a.CodigoProveedor = p.CodigoProveedor AND a.CodigoEmpresa = 2
+            """
+            df_sales = pd.read_sql(text(query_sales), db.bind)
+            query_stock = """
+                SELECT RTRIM(LTRIM(CodigoArticulo)) as CodigoArticulo, MAX(UnidadSaldo) as StockActual 
+                FROM PowerBi_AcumuladoStock WITH (NOLOCK)
+                WHERE CodigoEmpresa = 2
+                  AND Ejercicio = (SELECT MAX(Ejercicio) FROM PowerBi_AcumuladoStock WHERE CodigoEmpresa = 2)
+                  AND Periodo = (SELECT MAX(Periodo) FROM PowerBi_AcumuladoStock WHERE CodigoEmpresa = 2 AND Ejercicio = (SELECT MAX(Ejercicio) FROM PowerBi_AcumuladoStock WHERE CodigoEmpresa = 2))
+                GROUP BY CodigoArticulo
+            """
+            df_stock = pd.read_sql(text(query_stock), db.bind)
+            df = pd.merge(df_sales, df_stock, on='CodigoArticulo', how='left').fillna(0)
+            df['Division'] = df['Familia'].apply(map_division).fillna('Otros')
 
-        def apply_abc(target_df, val_col, pct_col, type_col):
-            # Sort by value descending
-            working_df = target_df.sort_values(by=val_col, ascending=False).copy()
-            total = working_df[val_col].sum()
-            
-            if total > 0:
-                working_df[pct_col] = (working_df[val_col] / total) * 100
-                cumsum_pct = working_df[pct_col].cumsum()
-                
-                # A: 80%, B: next 80% of remaining (up to 96%), C: rest
-                # cumulative %: A <= 80, B <= 96, C > 96
-                def classify(cp):
-                    if cp <= 80.001: return 'A'
-                    elif cp <= 96.001: return 'B'
-                    else: return 'C'
-                
-                working_df[type_col] = cumsum_pct.apply(classify)
-            else:
-                working_df[pct_col] = 0.0
-                working_df[type_col] = 'C'
-            
-            return working_df
+            def apply_abc(target_df, val_col, pct_col, type_col):
+                w_df = target_df.sort_values(by=val_col, ascending=False).copy()
+                total_val = w_df[val_col].sum()
+                if total_val > 0:
+                    w_df[pct_col] = (w_df[val_col] / total_val) * 100
+                    c_pct = w_df[pct_col].cumsum()
+                    w_df[type_col] = c_pct.apply(lambda cp: 'A' if cp <= 80.001 else ('B' if cp <= 96.001 else 'C'))
+                else:
+                    w_df[pct_col] = 0.0
+                    w_df[type_col] = 'C'
+                return w_df
 
-        # Apply ABC for both years
-        # Note: We need to do this carefully because we want to return a single row per item
-        # so we calculate separately and merge or update.
-        
-        df_2025 = apply_abc(df, 'Venta2025', 'Porcentaje2025', 'Tipo2025')
-        df_2026 = apply_abc(df, 'Venta2026', 'Porcentaje2026', 'Tipo2026')
-        
-        # Join back
-        res = pd.merge(
-            df_2025[['CodigoArticulo', 'Descripcion', 'Familia', 'Subfamilia', 'Division', 'Proveedor', 'Venta2025', 'Porcentaje2025', 'Tipo2025', 'StockActual']],
-            df_2026[['CodigoArticulo', 'Venta2026', 'Porcentaje2026', 'Tipo2026']],
-            on='CodigoArticulo'
-        )
+            df_2025 = apply_abc(df, 'Venta2025', 'Porcentaje2025', 'Tipo2025')
+            df_2026 = apply_abc(df, 'Venta2026', 'Porcentaje2026', 'Tipo2026')
+            df_full = pd.merge(
+                df_2025[['CodigoArticulo', 'Descripcion', 'Familia', 'Subfamilia', 'Division', 'Proveedor', 'Venta2025', 'Porcentaje2025', 'Tipo2025', 'StockActual']],
+                df_2026[['CodigoArticulo', 'Venta2026', 'Porcentaje2026', 'Tipo2026']],
+                on='CodigoArticulo'
+            )
+            cols_order = ['CodigoArticulo', 'Descripcion', 'Familia', 'Subfamilia', 'Proveedor', 'Division', 'Venta2025', 'Porcentaje2025', 'Tipo2025', 'Venta2026', 'Porcentaje2026', 'Tipo2026', 'StockActual']
+            df_full = df_full[cols_order]
+            ABC_CACHE["df"] = df_full
+            ABC_CACHE["timestamp"] = now
 
-        # Final order: Articulo, Desc, Familia, Subfamilia, Proveedor, Division (Internal), Venta25, %25, Tipo25, Venta26, %26, Tipo26, Stock
-        cols = ['CodigoArticulo', 'Descripcion', 'Familia', 'Subfamilia', 'Proveedor', 'Division', 'Venta2025', 'Porcentaje2025', 'Tipo2025', 'Venta2026', 'Porcentaje2026', 'Tipo2026', 'StockActual']
-        res = res[cols]
-
-        # Apply Server-Side Filters
+        res = df_full.copy()
         if search:
             search = search.lower()
             res = res[res['CodigoArticulo'].str.lower().str.contains(search) | res['Descripcion'].str.lower().str.contains(search)]
-        
-        if division:
-            res = res[res['Division'] == division]
-        
-        if tipo2025:
-            res = res[res['Tipo2025'] == tipo2025]
-            
-        if tipo2026:
-            res = res[res['Tipo2026'] == tipo2026]
-            
-        if proveedor:
-            res = res[res['Proveedor'] == proveedor]
-            
-        if subfamilia:
-            res = res[res['Subfamilia'] == subfamilia]
-
+        if division: res = res[res['Division'] == division]
+        if tipo2025: res = res[res['Tipo2025'] == tipo2025]
+        if tipo2026: res = res[res['Tipo2026'] == tipo2026]
+        if proveedor: res = res[res['Proveedor'] == proveedor]
+        if subfamilia: res = res[res['Subfamilia'] == subfamilia]
         if sort_by and sort_by in res.columns:
             res = res.sort_values(by=sort_by, ascending=(sort_order == "asc"))
 
         total = len(res)
-        
-        # Paginate
         start = (page - 1) * page_size
         end = start + page_size
-        paginated_data = res.iloc[start:end]
-
-        return {
-            "data": paginated_data.to_dict(orient='records'),
-            "total": total,
-            "page": page,
-            "page_size": page_size,
-            "total_pages": (total + page_size - 1) // page_size
-        }
-
+        paginated_data = res.iloc[start:end].to_dict('records')
+        return {"data": paginated_data, "total": total, "page": page, "page_size": page_size, "total_pages": math.ceil(total / page_size)}
     except Exception as e:
-        print(f"Error in ABC analysis: {e}")
+        print(f"Error checking ABC Analysis logic: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 @router.get("/abc-analysis/download")
 def download_abc_analysis(
     search: Optional[str] = None,
