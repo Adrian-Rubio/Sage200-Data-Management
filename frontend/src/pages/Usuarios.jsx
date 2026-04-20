@@ -25,6 +25,8 @@ export default function Usuarios() {
         role: 'comercial', // legacy
         role_id: '',
         sales_rep_id: '',
+        user_type: 'CENVAL',
+        data_filters: '',
         is_active: true
     });
 
@@ -36,6 +38,7 @@ export default function Usuarios() {
         can_view_produccion: false,
         can_view_finanzas: false,
         can_view_almacen: false,
+        can_view_inventario: false,
         can_manage_users: false
     });
 
@@ -91,6 +94,8 @@ export default function Usuarios() {
             role: user.role,
             role_id: user.role_id || '',
             sales_rep_id: user.sales_rep_id || '',
+            user_type: user.user_type || 'CENVAL',
+            data_filters: user.data_filters || '',
             is_active: user.is_active
         });
         setIsUserModalOpen(true);
@@ -121,6 +126,7 @@ export default function Usuarios() {
             can_view_produccion: role.can_view_produccion,
             can_view_finanzas: role.can_view_finanzas,
             can_view_almacen: role.can_view_almacen,
+            can_view_inventario: role.can_view_inventario,
             can_manage_users: role.can_manage_users
         });
         setIsRoleModalOpen(true);
@@ -200,8 +206,8 @@ export default function Usuarios() {
         setIsRoleModalOpen(false);
         setIsEditMode(false);
         setEditingId(null);
-        setUserFormData({ username: '', email: '', password: '', role: 'comercial', role_id: '', sales_rep_id: '', is_active: true });
-        setRoleFormData({ name: '', description: '', can_view_ventas: false, can_view_compras: false, can_view_produccion: false, can_view_finanzas: false, can_view_almacen: false, can_manage_users: false });
+        setUserFormData({ username: '', email: '', password: '', role: 'comercial', role_id: '', sales_rep_id: '', user_type: 'CENVAL', data_filters: '', is_active: true });
+        setRoleFormData({ name: '', description: '', can_view_ventas: false, can_view_compras: false, can_view_produccion: false, can_view_finanzas: false, can_view_almacen: false, can_view_inventario: false, can_manage_users: false });
     };
 
     const formatDate = (dateStr) => {
@@ -280,12 +286,23 @@ export default function Usuarios() {
                         <InputField required type="email" label="Email" name="email" value={userFormData.email} onChange={handleUserInputChange} />
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 px-1 transition-colors">Asignar Rol</label>
-                                <select required name="role_id" value={userFormData.role_id} onChange={handleUserInputChange} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:ring-indigo-500/40 outline-none transition-colors">
+                                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 px-1 transition-colors">Tipo de Cuenta</label>
+                                <select required name="user_type" value={userFormData.user_type} onChange={handleUserInputChange} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:ring-indigo-500/40 outline-none transition-colors">
+                                    <option value="CENVAL">Interno (CENVAL)</option>
+                                    <option value="DISTRIBUIDOR">Externo (DISTRIBUIDOR)</option>
+                                    <option value="SOCIO">Externo (SOCIO)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 px-1 transition-colors">Asignar Rol {['DISTRIBUIDOR', 'SOCIO'].includes(userFormData.user_type) && '(Ignorado)'}</label>
+                                <select required={userFormData.user_type === 'CENVAL'} disabled={['DISTRIBUIDOR', 'SOCIO'].includes(userFormData.user_type)} name="role_id" value={userFormData.role_id} onChange={handleUserInputChange} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:ring-indigo-500/40 outline-none transition-colors disabled:opacity-50">
                                     <option value="">Selecciona un rol...</option>
                                     {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                 </select>
                             </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 px-1 transition-colors">ID Sage Resp. (Comercial)</label>
                                 <select name="sales_rep_id" value={userFormData.sales_rep_id} onChange={handleUserInputChange} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:ring-indigo-500/40 outline-none transition-colors">
@@ -293,6 +310,7 @@ export default function Usuarios() {
                                     {filterOptions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                 </select>
                             </div>
+                            <InputField label="Filtros de Datos (JSON)" name="data_filters" value={userFormData.data_filters} onChange={handleUserInputChange} placeholder='{"allowed_vendors": ["V001"]}' />
                         </div>
                         <div className="flex items-center gap-2">
                             <input type="checkbox" name="is_active" checked={userFormData.is_active} onChange={handleUserInputChange} className="w-4 h-4 rounded text-indigo-600 dark:text-indigo-500 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900" />
@@ -324,6 +342,7 @@ export default function Usuarios() {
                                 <PermissionCheck label="Gestión Producción" name="can_view_produccion" checked={roleFormData.can_view_produccion} onChange={handleRoleInputChange} />
                                 <PermissionCheck label="Datos Finanzas" name="can_view_finanzas" checked={roleFormData.can_view_finanzas} onChange={handleRoleInputChange} />
                                 <PermissionCheck label="Módulo Almacén" name="can_view_almacen" checked={roleFormData.can_view_almacen} onChange={handleRoleInputChange} />
+                                <PermissionCheck label="Módulo Inventario" name="can_view_inventario" checked={roleFormData.can_view_inventario} onChange={handleRoleInputChange} />
                                 <PermissionCheck label="Admin Usuarios" name="can_manage_users" checked={roleFormData.can_manage_users} onChange={handleRoleInputChange} />
                             </div>
                         </div>
@@ -405,6 +424,7 @@ function RolesTable({ roles, onEdit, onDelete }) {
                         <StaticPermission label="Producción" active={role.can_view_produccion} />
                         <StaticPermission label="Finanzas" active={role.can_view_finanzas} />
                         <StaticPermission label="Almacén" active={role.can_view_almacen} />
+                        <StaticPermission label="Inventario" active={role.can_view_inventario} />
                         <StaticPermission label="Gestión USR" active={role.can_manage_users} />
                     </div>
                 </div>

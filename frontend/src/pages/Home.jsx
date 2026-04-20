@@ -41,7 +41,7 @@ export default function Home() {
         {
             name: 'Inventario',
             path: '/inventario',
-            permission: 'almacen',
+            permission: 'inventario',
             color: 'bg-[#10b981]',
             hover: 'hover:bg-[#0da271]',
             icon: <img src="/cajas.png" alt="Inventario" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform opacity-90" />
@@ -68,7 +68,7 @@ export default function Home() {
     const modules = allModules.map(mod => {
         const hasPermission = user?.permissions?.[mod.permission] || (user?.role === 'admin') || (mod.permission === 'admin' && user?.role === 'admin');
         // Default permissions for specific modules if not defined
-        const isDefault = mod.permission === 'ventas' || mod.permission === 'compras';
+        const isDefault = mod.permission === 'ventas' || mod.permission === 'compras' || mod.permission === 'inventario';
         const finalHasPermission = hasPermission || (!user?.permissions && isDefault);
 
         return { ...mod, disabled: !finalHasPermission };
@@ -122,36 +122,19 @@ export default function Home() {
             {/* Main Navigation Container */}
             <div className="bg-[#2a2e35]/80 backdrop-blur-md rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-wrap justify-center gap-6 max-w-[95%] border border-white/10">
 
-                {modules.map((mod) => (
-                    mod.disabled ? (
-                        <div
-                            key={mod.name}
-                            className="flex flex-col items-center justify-center w-[160px] h-[160px] bg-slate-800/40 text-gray-500 rounded-[1.5rem] border border-white/5 cursor-not-allowed opacity-60 grayscale relative group"
-                        >
+                {modules.filter(m => !m.disabled).map((mod) => (
+                    <Link
+                        key={mod.name}
+                        to={mod.path}
+                        className={`flex flex-col items-center justify-center w-[160px] h-[160px] ${mod.color} ${mod.hover} text-white rounded-[1.5rem] transition-all hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)] border border-white/10`}
+                    >
+                        <div className="transform group-hover:scale-110 transition-transform">
                             {mod.icon}
-                            <span className="text-[13px] font-bold tracking-widest uppercase mb-1">
-                                {mod.name}
-                            </span>
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity">
-                                <svg className="w-8 h-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002-2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                            </div>
                         </div>
-                    ) : (
-                        <Link
-                            key={mod.name}
-                            to={mod.path}
-                            className={`flex flex-col items-center justify-center w-[160px] h-[160px] ${mod.color} ${mod.hover} text-white rounded-[1.5rem] transition-all hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)] border border-white/10`}
-                        >
-                            <div className="transform group-hover:scale-110 transition-transform">
-                                {mod.icon}
-                            </div>
-                            <span className="text-[13px] font-bold tracking-widest uppercase">
-                                {mod.name}
-                            </span>
-                        </Link>
-                    )
+                        <span className="text-[13px] font-bold tracking-widest uppercase">
+                            {mod.name}
+                        </span>
+                    </Link>
                 ))}
 
             </div>

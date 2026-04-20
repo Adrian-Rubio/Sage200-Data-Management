@@ -15,6 +15,7 @@ class Role(Base):
     can_view_produccion = Column(Boolean, default=False)
     can_view_finanzas = Column(Boolean, default=False)
     can_view_almacen = Column(Boolean, default=False)
+    can_view_inventario = Column(Boolean, default=False)
     can_manage_users = Column(Boolean, default=False)
     
     users = relationship("User", back_populates="role_obj")
@@ -37,5 +38,10 @@ class User(Base):
     # Optional field to link a dashboard user to a specific Sage200 sales representative
     sales_rep_id = Column(String(50), nullable=True)
     
+    # Type of user: CENVAL or DISTRIBUIDOR
+    user_type = Column(String(20), default="CENVAL", nullable=False)
+    # JSON string for data restrictions (e.g. allowed supplier IDs)
+    data_filters = Column(String(1000), nullable=True)
+
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)

@@ -586,4 +586,24 @@ export const fetchArticlePriceHistory = async (code) => {
     }
 };
 
+export const searchSuppliers = async (query) => {
+    try {
+        const response = await api.get(`/inventory-tracking/search-suppliers?q=${encodeURIComponent(query)}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error searching suppliers:", error);
+        throw error;
+    }
+};
+
+export const fetchSupplierArticles = async (vendorCode, page = 1, query = '') => {
+    try {
+        const response = await api.get(`/inventory-tracking/supplier-articles?vendor_code=${encodeURIComponent(vendorCode)}&page=${page}&q=${encodeURIComponent(query)}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching supplier articles:", error);
+        throw error;
+    }
+};
+
 export default api;

@@ -404,3 +404,68 @@ def get_article_price_history(code: str, db: Session = Depends(get_db), current_
         print(f"Error in get_article_price_history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.get("/search-suppliers")
+def search_suppliers(q: str, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        query = """
+            SELECT TOP 50
+                CodigoProveedor as code, 
+                RazonSocial as name
+            FROM Proveedores
+            WHERE CodigoEmpresa = :comp 
+              AND (CodigoProveedor LIKE :q OR RazonSocial LIKE :q)
+            ORDER BY RazonSocial
+        """
+        df = pd.read_sql(text(query), db.bind, params={"q": f"%{q}%", "comp": TARGET_COMPANY})
+        return clean_nan(df.to_dict(orient='records'))
+    except Exception as e:
+        print(f"Error in search_suppliers: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/supplier-articles")
+def get_supplier_articles(vendor_code: str, page: int = 1, page_size: int = 20, q: Optional[str] = None, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    try:
+        offset = (page - 1) * page_size
+        params = {"vendor_code": vendor_code, "comp": TARGET_COMPANY, "page_size": page_size, "offset": offset}
+        
+        search_filter = ""
+        if q:
+            search_filter = "AND (CodigoArticulo LIKE :search OR DescripcionArticulo LIKE :search)"
+            params["search"] = f"%{q}%"
+
+        query = f"""
+            SELECT 
+                CodigoArticulo as code, 
+                DescripcionArticulo as description,
+                UnidadMedidaVentas_ as unit
+            FROM Articulos
+            WHERE CodigoEmpresa = :comp 
+              AND CodigoProveedor = :vendor_code
+              {search_filter}
+            ORDER BY CodigoArticulo
+            OFFSET :offset ROWS FETCH NEXT :page_size ROWS ONLY
+        """
+        
+        count_query = f"""
+            SELECT COUNT(*) as total
+            FROM Articulos
+            WHERE CodigoEmpresa = :comp 
+              AND CodigoProveedor = :vendor_code
+              {search_filter}
+        """
+        
+        df = pd.read_sql(text(query), db.bind, params=params)
+        df_count = pd.read_sql(text(count_query), db.bind, params={"vendor_code": vendor_code, "comp": TARGET_COMPANY, "search": f"%{q}%" if q else None})
+        
+        total = int(df_count['total'][0])
+        
+        return {
+            "items": clean_nan(df.to_dict(orient='records')),
+            "total": total,
+            "page": page,
+            "page_size": page_size
+        }
+    except Exception as e:
+        print(f"Error in get_supplier_articles: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

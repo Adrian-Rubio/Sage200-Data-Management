@@ -23,16 +23,26 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
         raise HTTPException(status_code=400, detail="Inactive user")
 
     # Compute permissions for the token
-    perms = {
-        "ventas": True, "compras": True, "produccion": True, "finanzas": True, "almacen": True, "admin": True
-    } if user.role == "admin" or (user.role_obj and user.role_obj.name == "admin") else {
-        "ventas": user.role_obj.can_view_ventas if user.role_obj else True,
-        "compras": user.role_obj.can_view_compras if user.role_obj else True,
-        "produccion": user.role_obj.can_view_produccion if user.role_obj else False,
-        "finanzas": user.role_obj.can_view_finanzas if user.role_obj else False,
-        "almacen": user.role_obj.can_view_almacen if user.role_obj else False,
-        "admin": user.role_obj.can_manage_users if user.role_obj else False
-    }
+    if user.user_type in ["DISTRIBUIDOR", "SOCIO"]:
+        perms = {
+            "ventas": False, "compras": False, "produccion": False, 
+            "finanzas": False, "almacen": False, "inventario": True, "admin": False
+        }
+    elif user.role == "admin" or (user.role_obj and user.role_obj.name == "admin"):
+        perms = {
+            "ventas": True, "compras": True, "produccion": True, 
+            "finanzas": True, "almacen": True, "inventario": True, "admin": True
+        }
+    else:
+        perms = {
+            "ventas": user.role_obj.can_view_ventas if user.role_obj else True,
+            "compras": user.role_obj.can_view_compras if user.role_obj else True,
+            "produccion": user.role_obj.can_view_produccion if user.role_obj else False,
+            "finanzas": user.role_obj.can_view_finanzas if user.role_obj else False,
+            "almacen": user.role_obj.can_view_almacen if user.role_obj else False,
+            "inventario": user.role_obj.can_view_inventario if user.role_obj else True,
+            "admin": user.role_obj.can_manage_users if user.role_obj else False
+        }
 
     access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
@@ -41,8 +51,10 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
             "role": user.role, 
             "role_id": user.role_id,
             "role_name": user.role_obj.name if user.role_obj else user.role,
+            "user_type": user.user_type,
             "permissions": perms,
-            "sales_rep_id": user.sales_rep_id
+            "sales_rep_id": user.sales_rep_id,
+            "data_filters": user.data_filters
         }, 
         expires_delta=access_token_expires
     )
@@ -83,6 +95,8 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db), admin: 
         role=user.role,
         role_id=user.role_id,
         sales_rep_id=user.sales_rep_id,
+        user_type=user.user_type,
+        data_filters=user.data_filters,
         is_active=user.is_active
     )
     db.add(db_user)
@@ -128,6 +142,8 @@ def update_user(user_id: int, user_update: schemas.UserCreate, db: Session = Dep
     db_user.role = user_update.role
     db_user.role_id = user_update.role_id
     db_user.sales_rep_id = user_update.sales_rep_id
+    db_user.user_type = user_update.user_type
+    db_user.data_filters = user_update.data_filters
     db_user.is_active = user_update.is_active
     
     db.commit()

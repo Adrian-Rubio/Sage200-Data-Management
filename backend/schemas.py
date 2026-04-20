@@ -10,6 +10,7 @@ class RoleBase(BaseModel):
     can_view_produccion: bool = False
     can_view_finanzas: bool = False
     can_view_almacen: bool = False
+    can_view_inventario: bool = False
     can_manage_users: bool = False
 
 class RoleCreate(RoleBase):
@@ -26,6 +27,8 @@ class UserBase(BaseModel):
     role: str = "comercial" # Still keeping for compatibility
     role_id: Optional[int] = None
     sales_rep_id: Optional[str] = None
+    user_type: str = "CENVAL"
+    data_filters: Optional[str] = None
     is_active: bool = True
 
 class UserCreate(UserBase):
@@ -48,3 +51,4 @@ class TokenData(BaseModel):
     role: Optional[str] = None
     role_id: Optional[int] = None
     sales_rep_id: Optional[str] = None
+    user_type: Optional[str] = None
