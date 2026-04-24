@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell, Label
@@ -17,8 +17,6 @@ import {
     Clock,
     CheckCircle2
 } from 'lucide-react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const GaugeChart = ({ value, target, title, color }) => {
     const data = [
@@ -126,7 +124,7 @@ export default function EntregasTiempoPBIX() {
         try {
             const params = { year };
             if (month) params.month = month;
-            const res = await axios.get(`${API_URL}/api/entregas/kpi-data`, { params });
+            const res = await api.get('/api/entregas/kpi-data', { params });
             setData(res.data);
         } catch (error) {
             console.error('Error fetching data:', error);
