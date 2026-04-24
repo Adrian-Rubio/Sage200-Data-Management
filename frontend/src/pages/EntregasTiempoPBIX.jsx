@@ -29,7 +29,7 @@ const GaugeChart = ({ value, target, title, color }) => {
     return (
         <div className="flex flex-col items-center">
             <div className="relative w-48 h-32">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <PieChart>
                         <Pie
                             data={data}
