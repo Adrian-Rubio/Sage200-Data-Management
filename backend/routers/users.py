@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import List
@@ -10,7 +10,7 @@ from database import get_db
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 @router.post("/login", response_model=schemas.Token)
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == form_data.username).first()
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -59,7 +59,22 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
         expires_delta=access_token_expires
     )
 
+    # Secure HTTPOnly Cookie approach
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,  # Impide que Javascript lea la cookie (anti-XSS)
+        secure=False,   # Set to True only when fully HTTPS, False if HTTP
+        samesite="lax", # Proteccion anti-CSRF
+        max_age=auth.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(key="access_token", httponly=True, samesite="lax")
+    return {"message": "Logged out successfully"}
 
 def check_admin_role(current_user: models.User = Depends(auth.get_current_active_user)):
     # Permite acceso si es el usuario "admin" original o si su rol dinámico tiene el permiso de gestión

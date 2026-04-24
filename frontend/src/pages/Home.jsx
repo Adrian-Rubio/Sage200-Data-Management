@@ -138,6 +138,23 @@ export default function Home() {
                 ))}
 
             </div>
+
+            {/* Floating Button for Entregas KPI (Direccion/Admin) */}
+            {(() => {
+                const role = (user?.role_name || user?.role || '').toLowerCase();
+                return role.includes('admin') || role.includes('direcci') || role.includes('direccion');
+            })() && (
+                <Link
+                    to="/entregas-tiempo"
+                    className="fixed bottom-8 right-8 bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-110 z-50 group border-2 border-white/20"
+                    title="KPI Entregas a Tiempo"
+                >
+                    <img src="/pedidos.png" alt="KPI" className="w-8 h-8 object-contain" />
+                    <span className="absolute right-full mr-4 bg-indigo-900/90 text-white text-[10px] px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-bold uppercase tracking-wider border border-white/10 backdrop-blur-sm">
+                        KPI Entregas a Tiempo
+                    </span>
+                </Link>
+            )}
         </div>
     );
 }

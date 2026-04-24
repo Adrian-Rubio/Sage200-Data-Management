@@ -71,22 +71,48 @@ const OperationsTable = ({ exercise, workNum, fabNum, series }) => {
                                 <td className="px-3 py-2 text-indigo-600 dark:text-indigo-400 font-bold border-x border-indigo-50 dark:border-slate-800">{op.Operacion}</td>
                                 <td className="px-3 py-2 text-indigo-700 dark:text-indigo-300 font-medium">{op.CodigoArticulo}</td>
                                 <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{op.DescripcionOperacion}</td>
-                                <td className="px-3 py-2 text-slate-500 dark:text-slate-400 text-xs italic">{op.Operarios || '-'}</td>
+                                <td className="px-3 py-2 text-slate-500 dark:text-slate-400 text-xs italic">
+                                    <div className="flex flex-col gap-1 items-start">
+                                        <span className={op.IsSileaOperatives ? "font-bold text-slate-700 dark:text-slate-300 not-italic" : ""}>{op.Operarios || '-'}</span>
+                                        {op.IsSileaOperatives && (
+                                            <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/40 dark:text-blue-400 dark:border-blue-800 flex items-center gap-1 w-fit">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                                                TIEMPO SILEA
+                                            </span>
+                                        )}
+                                    </div>
+                                </td>
                                 <td className="px-3 py-2 text-center">
                                     {op.OperacionExterna === 1
                                         ? <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800/50">EXTERNA</span>
                                         : <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">TALLER</span>}
                                 </td>
                                 <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-400 font-mono">{op.TiempoUnFabricacionFormat}</td>
-                                <td className="px-3 py-2 text-right text-slate-800 dark:text-slate-200 font-mono font-bold">{op.TiempoTotalFormat}</td>
+                                <td className="px-3 py-2 text-right font-mono font-bold">
+                                    <div className="flex flex-col items-end">
+                                        <span className={op.IsSileaTime ? "text-blue-700 dark:text-blue-400" : "text-slate-800 dark:text-slate-200"}>{op.TiempoTotalFormat}</span>
+                                        {op.IsSileaTime && <span className="text-[8px] text-blue-500 dark:text-blue-400 font-black tracking-wider shadow-sm px-1 rounded bg-blue-50 dark:bg-blue-900/20" title="Tiempo real extraído de la máquina en planta">REAL TALLER</span>}
+                                    </div>
+                                </td>
                                 <td className="px-3 py-2 text-right">
-                                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${op.EstadoOperacion === 2 ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' :
-                                        op.EstadoOperacion === 1 ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400' :
-                                            op.EstadoOperacion === 3 ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400' :
-                                                'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                                        }`}>
-                                        {op.EstadoDesc}
-                                    </span>
+                                    {op.SileaEstadoRaw === 'ACTIVO' ? (
+                                        <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-blue-600 text-white flex items-center justify-end gap-2 w-fit ml-auto shadow-[0_0_12px_rgba(37,99,235,0.6)]">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                                            ACTIVO
+                                        </span>
+                                    ) : op.SileaEstadoRaw === 'PAUSADO' ? (
+                                        <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700 w-fit ml-auto shadow-inner">
+                                            PAUSADO
+                                        </span>
+                                    ) : (
+                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${op.EstadoOperacion === 2 ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' :
+                                            op.EstadoOperacion === 1 ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400' :
+                                                op.EstadoOperacion === 3 ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400' :
+                                                    'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                                            }`}>
+                                            {op.EstadoDesc}
+                                        </span>
+                                    )}
                                 </td>
                             </tr>
                         ))}

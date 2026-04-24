@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 import jwt
 from jwt.exceptions import InvalidTokenError
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 import bcrypt
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -10,13 +10,29 @@ from database import get_db
 import models
 import schemas
 import os
+import sys
 
-# Use environment variables in production
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7")
+# Critical Security: Do not allow fallback to a hardcoded string in production.
+# Require the environment variable to be set.
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    print("CRITICAL ERROR: JWT_SECRET_KEY environment variable is not set. Refusing to start.")
+    sys.exit(1)
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 1 week
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+# We keep this for API docs generation, but authentication will happen via Cookies.
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
+
+def get_token_from_cookie(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        # Fallback to header for swagger UI if needed, but primary is cookie
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+    return token
 
 def verify_password(plain_password: str, hashed_password: str):
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
@@ -34,12 +50,16 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    token = get_token_from_cookie(request)
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if not token:
+        raise credentials_exception
+        
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")

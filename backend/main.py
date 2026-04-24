@@ -3,22 +3,45 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import get_db, engine
 from sqlalchemy import text
-from routers import sales, filters, orders, users, purchases, production, almacen, finance, inventory, reports, rma, inventory_tracking, aprovisionamiento, budgets
+from routers import sales, filters, orders, users, purchases, production, almacen, finance, inventory, reports, rma, inventory_tracking, aprovisionamiento, budgets, entregas
 import models
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from starlette.requests import Request
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Sage200 Dashboard API")
+# Configurar Rate Limiter
+# Extraer la IP real del cliente si estamos detrás de un proxy (Squid/Nginx)
+def get_real_ip(request: Request):
+    if "x-forwarded-for" in request.headers:
+        return request.headers["x-forwarded-for"].split(",")[0].strip()
+    if "x-real-ip" in request.headers:
+        return request.headers["x-real-ip"]
+    return request.client.host or "127.0.0.1"
 
-# Configure CORS
+limiter = Limiter(key_func=get_real_ip, default_limits=["200/minute"])
+
+app = FastAPI(title="Sage200 Dashboard API")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Configure CORS (Endurecido)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*", "http://metricas.cenval.es"],
+    allow_origins=[
+        "http://metricas.cenval.es", 
+        "http://localhost:3000", 
+        "http://localhost:5173",
+        "http://localhost"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(entregas.router)
 app.include_router(sales.router)
 app.include_router(filters.router)
 app.include_router(orders.router)

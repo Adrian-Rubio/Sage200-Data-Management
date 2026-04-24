@@ -50,6 +50,18 @@ def format_decimal_days_to_hhmmss(decimal_days):
     except (ValueError, TypeError):
         return "00:00:00"
 
+def format_ms_to_hhmmss(ms):
+    try:
+        if pd.isnull(ms) or ms == 0:
+            return "00:00:00"
+        total_seconds = int(ms) // 1000
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    except (ValueError, TypeError):
+        return "00:00:00"
+
 @router.post("/orders")
 def get_production_orders(filters: ProductionFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     # Generate Cache Key
@@ -210,6 +222,36 @@ def get_production_operations(exercise: int, work_num: int, db: Session = Depend
                 op.TiempoUnFabricacion, op.TiempoTotal,
                 op.EjercicioTrabajo, op.NumeroTrabajo, -- For debugging if needed
                 (
+                    SELECT TOP 1 l.estadoLinea 
+                    FROM SileaCenval.dbo.OrdenFabOperacionLinea l
+                    JOIN SileaCenval.dbo.OrdenFabOperacionLineaTipo t ON t.orden_fab_operacion_id = l.idOperacion
+                    WHERE t.CodigoEmpresa = op.CodigoEmpresa
+                      AND t.EjercicioTrabajo = op.EjercicioTrabajo
+                      AND t.NumeroTrabajo = op.NumeroTrabajo
+                      AND t.Orden = op.Orden
+                    ORDER BY l.fechaInicio DESC, l.id DESC
+                ) as SileaEstadoRaw,
+                (
+                    SELECT ISNULL(CAST(SUM(l.tiempo) AS BIGINT), 0)
+                    FROM SileaCenval.dbo.OrdenFabOperacionLinea l
+                    JOIN SileaCenval.dbo.OrdenFabOperacionLineaTipo t ON t.orden_fab_operacion_id = l.idOperacion
+                    WHERE t.CodigoEmpresa = op.CodigoEmpresa
+                      AND t.EjercicioTrabajo = op.EjercicioTrabajo
+                      AND t.NumeroTrabajo = op.NumeroTrabajo
+                      AND t.Orden = op.Orden
+                ) as SileaTiempoTotalMs,
+                (
+                    SELECT STRING_AGG(o.operario_id, ', ')
+                    FROM SileaCenval.dbo.OrdenFabOperacionLinea l
+                    JOIN SileaCenval.dbo.OrdenFabOperacionLineaTipo t ON t.orden_fab_operacion_id = l.idOperacion
+                    JOIN SileaCenval.dbo.operario_orden_fab_linea o ON o.linea_id = l.id
+                    WHERE t.CodigoEmpresa = op.CodigoEmpresa
+                      AND t.EjercicioTrabajo = op.EjercicioTrabajo
+                      AND t.NumeroTrabajo = op.NumeroTrabajo
+                      AND t.Orden = op.Orden
+                      AND l.estadoLinea IN ('ACTIVO', 'PAUSADO')
+                ) as SileaOperarios_EnCurso,
+                (
                     SELECT STRING_AGG(NombreOperario, ', ')
                     FROM (
                         SELECT DISTINCT 
@@ -240,23 +282,57 @@ def get_production_operations(exercise: int, work_num: int, db: Session = Depend
         ops = json.loads(ops_json)
         
         for op in ops:
-            # Format Times (Dec. Days to HH:MM:SS)
-            op['TiempoUnFabricacionFormat'] = format_decimal_days_to_hhmmss(op.get('TiempoUnFabricacion'))
-            op['TiempoTotalFormat'] = format_decimal_days_to_hhmmss(op.get('TiempoTotal'))
-            
-            # Map Status
-            status_id = op.get('EstadoOperacion')
-            if status_id == 0:
-                op['EstadoDesc'] = 'Pendiente'
-            elif status_id == 1:
-                op['EstadoDesc'] = 'En Curso'
-            elif status_id == 2:
-                op['EstadoDesc'] = 'Finalizada'
-            elif status_id == 3:
-                op['EstadoDesc'] = 'Anulada'
+            # Silea Tracking Variables
+            silea_estado = op.get('SileaEstadoRaw')
+            silea_operarios = op.get('SileaOperarios_EnCurso')
+            silea_time_ms = op.get('SileaTiempoTotalMs', 0)
+            has_silea = False
+
+            if silea_estado:
+                has_silea = True
+                if silea_estado == 'ACTIVO':
+                    op['EstadoDesc'] = 'En Curso'
+                    op['EstadoOperacion'] = 1
+                elif silea_estado == 'PAUSADO':
+                    op['EstadoDesc'] = 'Pausada'
+                    op['EstadoOperacion'] = 1
+                elif silea_estado == 'FINALIZADO':
+                    op['EstadoDesc'] = 'Finalizada'
+                    op['EstadoOperacion'] = 2
+                else:
+                    op['EstadoDesc'] = 'Pendiente'
+                    op['EstadoOperacion'] = 0
             else:
-                op['EstadoDesc'] = 'Desconocido'
-                
+                # Fallback to Sage if no Silea data
+                status_id = op.get('EstadoOperacion')
+                if status_id == 0:
+                    op['EstadoDesc'] = 'Pendiente'
+                elif status_id == 1:
+                    op['EstadoDesc'] = 'En Curso'
+                elif status_id == 2:
+                    op['EstadoDesc'] = 'Finalizada'
+                elif status_id == 3:
+                    op['EstadoDesc'] = 'Anulada'
+                else:
+                    op['EstadoDesc'] = 'Desconocido'
+
+            # Format Times
+            op['TiempoUnFabricacionFormat'] = format_decimal_days_to_hhmmss(op.get('TiempoUnFabricacion'))
+            
+            if has_silea and silea_time_ms > 0:
+                op['TiempoTotalFormat'] = format_ms_to_hhmmss(silea_time_ms)
+                op['IsSileaTime'] = True
+            else:
+                op['TiempoTotalFormat'] = format_decimal_days_to_hhmmss(op.get('TiempoTotal'))
+                op['IsSileaTime'] = False
+
+            # Operatives Priority
+            if silea_operarios:
+                op['Operarios'] = silea_operarios
+                op['IsSileaOperatives'] = True
+            else:
+                op['IsSileaOperatives'] = False
+
         return ops
         
     except Exception as e:

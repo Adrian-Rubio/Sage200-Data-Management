@@ -1,22 +1,13 @@
 import axios from 'axios';
 
+// API Config setup with credentials for HTTPOnly Cookies
 const api = axios.create({
     baseURL: '/api',
+    withCredentials: true,
 });
 
-// Add a request interceptor to include the bearer token
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
+// We no longer manually intercept or store Bearer tokens in localStorage since the 
+// HTTPOnly cookie gets attached automatically by the browser with `withCredentials`.
 
 // Add a response interceptor to handle 401 errors
 api.interceptors.response.use(
@@ -25,7 +16,7 @@ api.interceptors.response.use(
     },
     (error) => {
         if (error.response && error.response.status === 401) {
-            localStorage.removeItem('token');
+            // Simply clear user state (cookie handling is automatic, we just redirect)
             if (window.location.pathname !== '/login') {
                 window.location.href = '/login';
             }
