@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ETL Marketing | Lead Control Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #6366f1; --bg: #0b0f1a; --card: rgba(23, 32, 53, 0.8); --text: #f8fafc; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 2rem; }
+        .container { max-width: 1300px; margin: 0 auto; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 1rem; }
+        h1 { font-size: 2rem; margin: 0; background: linear-gradient(90deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* BOTÓN SYNC */
+        .sync-btn {
+            background: #10b981; color: white; border: none; padding: 0.7rem 1.2rem; border-radius: 0.6rem; 
+            cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+        }
+        .sync-btn:hover { background: #059669; transform: scale(1.05); }
+        .sync-btn:disabled { background: #334155; cursor: wait; opacity: 0.7; }
+
+        .controls { display: flex; gap: 1rem; margin-bottom: 2rem; background: var(--card); padding: 1rem; border-radius: 1rem; }
+        .search-box { flex-grow: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 0.8rem; border-radius: 0.5rem; color: #fff; }
+
+        .leads-table-container { background: var(--card); border-radius: 1rem; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 1rem; color: #64748b; font-size: 0.8rem; background: rgba(0,0,0,0.2); }
+        td { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        
+        .lead-row { cursor: pointer; }
+        .lead-row:hover { background: rgba(255,255,255,0.03); }
+        .detail-row { display: none; background: rgba(0,0,0,0.4); }
+        .detail-pane { padding: 1.5rem; border-left: 4px solid var(--primary); }
+
+        .pagination { display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; align-items: center; }
+        .page-btn { background: var(--primary); border: none; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Lead Control Center</h1>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div id="last-update" style="font-size: 0.8rem; color: #94a3b8;"></div>
+                <button id="sync-now-btn" class="sync-btn">
+                    <span id="sync-icon">🔄</span> Sincronizar Ahora
+                </button>
+            </div>
+        </header>
+
+        <div class="controls">
+            <input type="text" id="search-input" class="search-box" placeholder="Buscar por email, producto o comentario...">
+        </div>
+
+        <div class="leads-table-container">
+            <table>
+                <thead>
+                    <tr><th>Email</th><th>Tienda</th><th>Actividad</th><th>Score</th></tr>
+                </thead>
+                <tbody id="leads-body"></tbody>
+            </table>
+        </div>
+
+        <div class="pagination">
+            <button class="page-btn" id="prev-btn">Anterior</button>
+            <span id="page-info"></span>
+            <button class="page-btn" id="next-btn">Siguiente</button>
+        </div>
+    </div>
+
+    <script>
+        let allLeads = [];
+        let filteredLeads = [];
+        let currentPage = 1;
+        const rowsPerPage = 15;
+
+        // FUNCIÓN DE SINCRONIZACIÓN WEB
+        document.getElementById('sync-now-btn').onclick = async function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = "⌛ Sincronizando...";
+
+            try {
+                const response = await fetch('/sync', { method: 'POST' });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert("¡Sincronización completada con éxito!");
+                    location.reload(); // Recargar para ver los nuevos datos
+                } else {
+                    alert("Error: " + result.message);
+                }
+            } catch (e) {
+                alert("Error de conexión con el servidor.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        };
+
+        async function init() {
+            try {
+                // Notar que ahora la ruta es absoluta desde la raíz del servidor Flask
+                const response = await fetch('/data/unified_data.json');
+                const data = await response.json();
+                allLeads = data.sales.leads;
+                filteredLeads = [...allLeads];
+                document.getElementById('last-update').textContent = `Sync: ${new Date(data.last_updated).toLocaleString()}`;
+                updateDisplay();
+            } catch(e) {
+                document.getElementById('last-update').textContent = "Error al cargar datos.";
+            }
+        }
+
+        function updateDisplay() {
+            const tbody = document.getElementById('leads-body');
+            tbody.innerHTML = '';
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const pageData = filteredLeads.slice(start, end);
+
+            pageData.forEach((lead, i) => {
+                const idx = start + i;
+                const row = document.createElement('tr');
+                row.className = 'lead-row';
+                row.onclick = () => {
+                    const d = document.getElementById(`detail-${idx}`);
+                    d.style.display = d.style.display === 'table-row' ? 'none' : 'table-row';
+                };
+                row.innerHTML = `<td><strong>${lead.email}</strong></td><td>${lead.store}</td><td>${lead.stats.pdfs_count} PDFs, ${lead.stats.quotes_count} Qs</td><td>${lead.score}</td>`;
+                tbody.appendChild(row);
+
+                const detail = document.createElement('tr');
+                detail.id = `detail-${idx}`;
+                detail.className = 'detail-row';
+                let html = '<div class="detail-pane"><h4>Historial Completo</h4>';
+                lead.history.pdfs.forEach(p => html += `<div>[PDF] ${p.date}: <b>${p.product_name}</b></div>`);
+                lead.history.quotes.forEach(q => html += `<div>[QUOTE] ${q.date_add}: <b>${q.product_list_names.join(', ')}</b><br><small>${q.comment || ''}</small></div>`);
+                detail.innerHTML = `<td colspan="4">${html}</div></td>`;
+                tbody.appendChild(detail);
+            });
+
+            const totalPages = Math.ceil(filteredLeads.length / rowsPerPage) || 1;
+            document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages}`;
+            document.getElementById('prev-btn').disabled = currentPage === 1;
+            document.getElementById('next-btn').disabled = currentPage === totalPages;
+        }
+
+        document.getElementById('search-input').oninput = (e) => {
+            const term = e.target.value.toLowerCase();
+            filteredLeads = allLeads.filter(l => l.email.includes(term) || l.history.pdfs.some(p => p.product_name.toLowerCase().includes(term)) || l.history.quotes.some(q => q.product_list_names.some(pn => pn.toLowerCase().includes(term))));
+            currentPage = 1;
+            updateDisplay();
+        };
+
+        document.getElementById('prev-btn').onclick = () => { if(currentPage > 1) { currentPage--; updateDisplay(); } };
+        document.getElementById('next-btn').onclick = () => { if(currentPage * rowsPerPage < filteredLeads.length) { currentPage++; updateDisplay(); } };
+
+        init();
+    </script>
+</body>
+</html>

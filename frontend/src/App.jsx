@@ -24,6 +24,7 @@ import RmaDashboard from './pages/RmaDashboard';
 import Clientes from './pages/Clientes';
 import Temporal from './pages/Temporal';
 import EntregasTiempoPBIX from './pages/EntregasTiempoPBIX';
+import Marketing from './pages/Marketing';
 
 function App() {
   const { theme } = useThemeStore();
@@ -63,6 +64,7 @@ function App() {
           <Route path="/clientes" element={<Clientes />} />
           <Route path="/temporal" element={<Temporal />} />
           <Route path="/entregas-tiempo" element={<EntregasTiempoPBIX />} />
+          <Route path="/marketing" element={<Marketing />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,0 +1,16 @@
+{
+    "last_updated": "2026-04-28T09:23:46.287992",
+    "marketing": {
+        "total_subscribers": 0,
+        "campaigns": []
+    },
+    "sales": {
+        "total_customers": 0,
+        "total_pdfs": 0,
+        "total_quotes": 0,
+        "leads": []
+    },
+    "kpis": {
+        "marketing_coverage": 0
+    }
+}

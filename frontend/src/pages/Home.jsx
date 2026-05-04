@@ -60,7 +60,14 @@ export default function Home() {
             permission: 'admin',
             color: 'bg-slate-700',
             hover: 'hover:bg-slate-800',
-            icon: <img src="/usuarios.png" alt="Usuarios" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform" />
+        },
+        {
+            name: 'Marketing',
+            path: '/marketing',
+            permission: 'marketing',
+            color: 'bg-[#e6007e]',
+            hover: 'hover:bg-[#cc006f]',
+            icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 mb-2 text-white group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
         }
     ];
 

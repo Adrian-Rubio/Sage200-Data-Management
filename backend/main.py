@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import get_db, engine
 from sqlalchemy import text
-from routers import sales, filters, orders, users, purchases, production, almacen, finance, inventory, reports, rma, inventory_tracking, aprovisionamiento, budgets, entregas
+from routers import sales, filters, orders, users, purchases, production, almacen, finance, inventory, reports, rma, inventory_tracking, aprovisionamiento, budgets, entregas, marketing
 import models
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -56,6 +56,7 @@ app.include_router(rma.router)
 app.include_router(inventory_tracking.router, prefix="/api/inventory-tracking", tags=["Inventory Tracking"])
 app.include_router(aprovisionamiento.router)
 app.include_router(budgets.router, prefix="/api", tags=["budgets"])
+app.include_router(marketing.router, prefix="/api/marketing", tags=["Marketing"])
 
 @app.get("/")
 def read_root():

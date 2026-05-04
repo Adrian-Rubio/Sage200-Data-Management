@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #020617;
+  --color-foreground: #f8fafc;
+  
+  /* Paleta Premium: Azul profundo con acentos Oro/Cian */
+  --color-primary: #38bdf8;
+  --color-primary-foreground: #0f172a;
+  
+  --color-secondary: #f59e0b;
+  --color-secondary-foreground: #0f172a;
+  
+  --color-card: rgba(15, 23, 42, 0.6);
+  --color-card-foreground: #f1f5f9;
+  
+  --color-accent: #8b5cf6;
+  --color-accent-foreground: #f1f5f9;
+  
+  --color-muted: #1e293b;
+  --color-muted-foreground: #94a3b8;
+  
+  --color-border: rgba(255, 255, 255, 0.05);
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply backdrop-blur-md bg-card border border-white/5 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.3)];
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .glass-card:hover {
+    @apply border-white/10 bg-slate-900/70;
+    transform: translateY(-2px);
+  }
+  
+  .premium-gradient {
+    background: #020617;
+  }
+  
+  .nav-item {
+    @apply flex items-center gap-3 px-5 py-2.5 rounded-2xl transition-all duration-300 hover:bg-white/5 relative overflow-hidden;
+  }
+  
+  .nav-item.active {
+    @apply bg-primary/10 text-primary font-bold;
+  }
+
+  .premium-button {
+    @apply px-6 py-3 rounded-2xl font-bold transition-all duration-300 active:scale-95 flex items-center gap-2;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    color: white;
+    box-shadow: 0 10px 20px -10px rgba(56, 189, 248, 0.5);
+  }
+
+  .premium-button:hover {
+    @apply opacity-90 shadow-lg;
+    transform: translateY(-1px);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/20 rounded-full hover:bg-primary/40;
+}

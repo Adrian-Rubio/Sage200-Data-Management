@@ -1,0 +1,133 @@
+import datetime
+import time
+import logging
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session, joinedload, sessionmaker
+from urllib.parse import quote_plus
+import database
+from database_cache import SessionLocal as CacheSession, engine as cache_engine
+import models
+
+# Configuración de Logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Asegurar que las tablas existen en la caché local
+models.Base.metadata.create_all(bind=cache_engine)
+
+def sync_tables():
+    logger.info("Iniciando ciclo de sincronización multi-local...")
+    
+    # Lista de IPs conocidas para Jardín, Gulah y otros
+    possible_ips = ["10.0.8.2", "10.0.8.3", "10.0.8.5", "127.0.0.1"]
+    
+    for ip in possible_ips:
+        try:
+            temp_params = quote_plus(
+                f"DRIVER={{{database.DB_DRIVER}}};SERVER={ip}\\Misstipsi;DATABASE={database.DB_DATABASE};UID={database.DB_USER};PWD={database.DB_PASSWORD};Connect Timeout=2"
+            )
+            temp_url = f"mssql+pyodbc:///?odbc_connect={temp_params}"
+            temp_engine = create_engine(temp_url)
+            
+            # Verificar conexión
+            with temp_engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            
+            logger.info(f"--- Sincronizando servidor: {ip} ---")
+            
+            source_db = sessionmaker(bind=temp_engine)()
+            cache_db = CacheSession()
+            
+            try:
+                # Obtener nombre del local para el log
+                local_obj = source_db.query(models.Local).first()
+                local_name = local_obj.Name if local_obj else "Desconocido"
+                logger.info(f"Local detectado: {local_name}")
+
+                # 1. Sincronizar Staff (Empleados)
+                staff = source_db.query(models.Employee).all()
+                for emp in staff:
+                    cache_db.merge(emp)
+                cache_db.commit()
+
+                # 1b. Sincronizar Locales y Mapas
+                locals_list = source_db.query(models.Local).all()
+                for loc in locals_list:
+                    cache_db.merge(loc)
+                
+                maps_list = source_db.query(models.Map).all()
+                for m in maps_list:
+                    cache_db.merge(m)
+                
+                cache_db.commit()
+
+                # 2. Sincronizar Elementos (Mesas/Barra)
+                elements = source_db.query(models.Element).all()
+                for el in elements:
+                    cache_db.merge(el)
+                cache_db.commit()
+
+                # 3. Sincronizar Ventas (Sales) - INCREMENTAL por local
+                # Buscamos la última venta de este local específico en la caché
+                local_ids = [l.Id for l in locals_list]
+                last_sale = cache_db.query(models.Sale).join(models.Element).join(models.Map).filter(
+                    models.Map.LocalId.in_(local_ids)
+                ).order_by(models.Sale.CheckOutDate.desc()).first()
+                
+                # Si no hay ventas, traemos los últimos 2 años
+                last_date = last_sale.CheckOutDate if last_sale else (datetime.datetime.now() - datetime.timedelta(days=730))
+                
+                new_sales_query = source_db.query(models.Sale).options(joinedload(models.Sale.lines)).filter(
+                    models.Sale.CheckOutDate > last_date,
+                    models.Sale.IsDeleted == False
+                ).order_by(models.Sale.CheckOutDate.asc())
+
+                all_new_sales = new_sales_query.all()
+                
+                if all_new_sales:
+                    logger.info(f"Detectadas {len(all_new_sales)} nuevas ventas en {local_name}. Procesando...")
+                    total_new = 0
+                    for sale in all_new_sales:
+                        sale_copy = models.Sale(
+                            Id=sale.Id, ElementId=sale.ElementId, WaiterId=sale.WaiterId,
+                            CheckInDate=sale.CheckInDate, CheckOutDate=sale.CheckOutDate, 
+                            GuestNumber=sale.GuestNumber, Total=sale.Total, 
+                            SubTotal=sale.SubTotal, IsDeleted=sale.IsDeleted,
+                            OrderNumber=sale.OrderNumber
+                        )
+                        cache_db.merge(sale_copy)
+                        for line in sale.lines:
+                            line_copy = models.SaleDetail(
+                                Id=line.Id, TicketId=line.TicketId, SaleId=line.SaleId,
+                                ArticleId=line.ArticleId, Description=line.Description,
+                                Amount=line.Amount, UnitPrice=line.UnitPrice, Total=line.Total,
+                                Invitation=line.Invitation,
+                                Observation=line.Observation
+                            )
+                            cache_db.merge(line_copy)
+                        
+                        total_new += 1
+                        if total_new % 200 == 0:
+                            cache_db.commit()
+                            logger.info(f"Sincronizados {total_new} tickets...")
+                    
+                    cache_db.commit()
+                    logger.info(f"Sincronización finalizada para {local_name}. Total {total_new} nuevas ventas.")
+                else:
+                    logger.info(f"Base de datos de {local_name} ya actualizada.")
+
+            except Exception as e:
+                logger.error(f"Error sincronizando {ip}: {e}")
+                cache_db.rollback()
+            finally:
+                source_db.close()
+                cache_db.close()
+                
+        except Exception:
+            # Silently skip offline servers
+            continue
+    
+    logger.info("Ciclo de sincronización completado.")
+
+if __name__ == "__main__":
+    sync_tables()

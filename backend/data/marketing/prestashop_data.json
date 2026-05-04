@@ -1,0 +1,25 @@
+{
+    "last_updated": "2026-04-28T09:23:16.065266",
+    "stores": [
+        {
+            "store_name": "CENVAL",
+            "customers_count": 0,
+            "pdfs_count": 0,
+            "quotes_count": 0,
+            "product_names": {},
+            "customers": [],
+            "pdfs": [],
+            "quotes": []
+        },
+        {
+            "store_name": "CONEXCON",
+            "customers_count": 0,
+            "pdfs_count": 0,
+            "quotes_count": 0,
+            "product_names": {},
+            "customers": [],
+            "pdfs": [],
+            "quotes": []
+        }
+    ]
+}

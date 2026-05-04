@@ -1,0 +1,4 @@
+server: .\Misstipsi
+Database: MisstipsiPro
+user: TpvReadOnly
+pass: 98cxMs}xV>bDzD@Y
