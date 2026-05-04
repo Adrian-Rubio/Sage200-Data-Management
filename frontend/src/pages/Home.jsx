@@ -55,26 +55,47 @@ export default function Home() {
             icon: <img src="/pedidos.png" alt="Almacén" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform" />
         },
         {
-            name: 'Usuarios',
-            path: '/usuarios',
-            permission: 'admin',
-            color: 'bg-slate-700',
-            hover: 'hover:bg-slate-800',
-        },
-        {
             name: 'Marketing',
             path: '/marketing',
             permission: 'marketing',
             color: 'bg-[#e6007e]',
             hover: 'hover:bg-[#cc006f]',
-            icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 mb-2 text-white group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
+            icon: <img src="/marketing.png" alt="Marketing" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform" />
+        },
+        {
+            name: 'Restauración',
+            path: '/dubes',
+            permission: 'direccion',
+            color: 'bg-[#ff9f1c]',
+            hover: 'hover:bg-[#e88a0b]',
+            icon: <img src="/restauracion.png" alt="Restauración" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform" />
+        },
+        {
+            name: 'Usuarios',
+            path: '/usuarios',
+            permission: 'admin',
+            color: 'bg-slate-700',
+            hover: 'hover:bg-slate-800',
+            icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 mb-2 text-white group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
         }
     ];
 
     // We show all modules, but some will be "locked" if no permissions
     const modules = allModules.map(mod => {
-        const hasPermission = user?.permissions?.[mod.permission] || (user?.role === 'admin') || (mod.permission === 'admin' && user?.role === 'admin');
-        // Default permissions for specific modules if not defined
+        const userRole = (user?.role_name || user?.role || '').toLowerCase();
+        const isManagement = userRole.includes('admin') || userRole.includes('direcci') || userRole.includes('direccion');
+
+        // Lógica de permisos:
+        // 1. Restauración: Solo admin/dirección
+        // 2. Otros: Sus permisos específicos o ser admin
+        let hasPermission = false;
+        if (mod.name === 'Restauración') {
+            hasPermission = isManagement;
+        } else {
+            hasPermission = user?.permissions?.[mod.permission] || (user?.role === 'admin') || (mod.permission === 'admin' && user?.role === 'admin');
+        }
+
+        // Default permissions for specific modules if not defined (Ventas, Compras, Inventario)
         const isDefault = mod.permission === 'ventas' || mod.permission === 'compras' || mod.permission === 'inventario';
         const finalHasPermission = hasPermission || (!user?.permissions && isDefault);
 
