@@ -52,3 +52,16 @@ class TokenData(BaseModel):
     role_id: Optional[int] = None
     sales_rep_id: Optional[str] = None
     user_type: Optional[str] = None
+
+class ModuleSettingBase(BaseModel):
+    name: str
+    is_active: bool
+
+class ModuleSettingUpdate(BaseModel):
+    is_active: bool
+
+class ModuleSetting(ModuleSettingBase):
+    id: int
+    last_modified: datetime
+    class Config:
+        orm_mode = True

@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '../components/common/PageHeader';
 import { fetchUsers, createUser, updateUser, deleteUser, fetchRoles, createRole, updateRole, deleteRole, fetchFilterOptions } from '../services/api';
+import configApi from '../services/configApi';
 
 export default function Usuarios() {
     const [activeTab, setActiveTab] = useState('usuarios');
     const [users, setUsers] = useState([]);
     const [roles, setRoles] = useState([]);
+    const [moduleSettings, setModuleSettings] = useState([]);
     const [filterOptions, setFilterOptions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -49,19 +51,44 @@ export default function Usuarios() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [usersData, rolesData, filtersData] = await Promise.all([
+            const [usersData, rolesData, filtersData, modulesData] = await Promise.all([
                 fetchUsers(),
                 fetchRoles(),
-                fetchFilterOptions()
+                fetchFilterOptions(),
+                configApi.getModules()
             ]);
             setUsers(usersData);
             setRoles(rolesData);
+            setModuleSettings(modulesData);
             // We only need the reps array
             setFilterOptions(filtersData.reps || []);
         } catch (err) {
             setError(err.response?.data?.detail || "Error al cargar los datos.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleToggleModule = async (name, currentStatus) => {
+        try {
+            await configApi.updateModule(name, !currentStatus);
+            setModuleSettings(prev => prev.map(s => s.name === name ? { ...s, is_active: !currentStatus } : s));
+            setSuccessMsg(`Estado del módulo "${name}" actualizado.`);
+            setTimeout(() => setSuccessMsg(''), 3000);
+        } catch (err) {
+            setError("Error al actualizar la configuración del módulo.");
+        }
+    };
+
+    const handleInitializeModules = async () => {
+        if (!window.confirm("¿Inicializar todos los módulos por defecto?")) return;
+        try {
+            await configApi.initialize();
+            loadData();
+            setSuccessMsg("Módulos inicializados correctamente.");
+            setTimeout(() => setSuccessMsg(''), 3000);
+        } catch (err) {
+            setError("Error al inicializar módulos.");
         }
     };
 
@@ -221,13 +248,23 @@ export default function Usuarios() {
     return (
         <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-6 text-gray-800 dark:text-slate-200 font-sans transition-colors">
             <PageHeader moduleName="Usuarios y Permisos" showRefresh={false}>
-                <button
-                    onClick={() => { cerrarModal(); activeTab === 'usuarios' ? setIsUserModalOpen(true) : setIsRoleModalOpen(true); }}
-                    className="bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1.5 rounded shadow-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition font-bold text-xs h-[34px] flex items-center gap-2 whitespace-nowrap"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-                    {activeTab === 'usuarios' ? 'Nuevo Usuario' : 'Nuevo Rol'}
-                </button>
+                {activeTab !== 'config' ? (
+                    <button
+                        onClick={() => { cerrarModal(); activeTab === 'usuarios' ? setIsUserModalOpen(true) : setIsRoleModalOpen(true); }}
+                        className="bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1.5 rounded shadow-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition font-bold text-xs h-[34px] flex items-center gap-2 whitespace-nowrap"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                        {activeTab === 'usuarios' ? 'Nuevo Usuario' : 'Nuevo Rol'}
+                    </button>
+                ) : (
+                    <button
+                        onClick={handleInitializeModules}
+                        className="bg-emerald-600 dark:bg-emerald-500 text-white px-3 py-1.5 rounded shadow-sm hover:bg-emerald-700 dark:hover:bg-emerald-600 transition font-bold text-xs h-[34px] flex items-center gap-2 whitespace-nowrap"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        Inicializar Módulos
+                    </button>
+                )}
             </PageHeader>
 
             {/* Tab Navigation */}
@@ -243,6 +280,12 @@ export default function Usuarios() {
                     className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'roles' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                 >
                     Roles y Permisos
+                </button>
+                <button
+                    onClick={() => setActiveTab('config')}
+                    className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'config' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                >
+                    Configuración Global
                 </button>
             </div>
 
@@ -271,8 +314,10 @@ export default function Usuarios() {
                 </div>
             ) : activeTab === 'usuarios' ? (
                 <UsersTable users={users} roles={roles} formatDate={formatDate} onEdit={handleEditUser} onDelete={handleDeleteUser} />
-            ) : (
+            ) : activeTab === 'roles' ? (
                 <RolesTable roles={roles} onEdit={handleEditRole} onDelete={handleDeleteRole} />
+            ) : (
+                <ModuleConfigTable settings={moduleSettings} onToggle={handleToggleModule} />
             )}
 
             {/* User Modal */}
@@ -429,6 +474,48 @@ function RolesTable({ roles, onEdit, onDelete }) {
                     </div>
                 </div>
             ))}
+        </div>
+    );
+}
+
+function ModuleConfigTable({ settings, onToggle }) {
+    return (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors max-w-2xl">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Visibilidad de Módulos</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 uppercase font-black tracking-widest">Activa o desactiva el acceso global a cada herramienta</p>
+            </div>
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 transition-colors">
+                <thead className="bg-slate-50 dark:bg-slate-950/50 transition-colors">
+                    <tr>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Módulo</th>
+                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado Global</th>
+                        <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Acción</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 transition-colors">
+                    {settings.map(mod => (
+                        <tr key={mod.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <td className="px-6 py-4">
+                                <span className="font-bold text-slate-800 dark:text-slate-200 transition-colors">{mod.name}</span>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border transition-all ${mod.is_active ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50'}`}>
+                                    {mod.is_active ? 'Visible' : 'Oculto'}
+                                </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                                <button
+                                    onClick={() => onToggle(mod.name, mod.is_active)}
+                                    className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-sm ${mod.is_active ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white' : 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'}`}
+                                >
+                                    {mod.is_active ? 'Desactivar' : 'Activar'}
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
         </div>
     );
 }

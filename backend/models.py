@@ -45,3 +45,10 @@ class User(Base):
 
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class ModuleSetting(Base):
+    __tablename__ = "module_settings"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), unique=True, index=True, nullable=False)
+    is_active = Column(Boolean, default=True)
+    last_modified = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

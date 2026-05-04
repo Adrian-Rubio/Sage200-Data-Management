@@ -1,8 +1,26 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import useAuthStore from '../store/authStore';
+import configApi from '../services/configApi';
 
 export default function Home() {
     const { user, logoutUser } = useAuthStore();
+    const [moduleSettings, setModuleSettings] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const settings = await configApi.getModules();
+                setModuleSettings(settings);
+            } catch (err) {
+                console.error("Error fetching module settings:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchSettings();
+    }, []);
 
     // Definimos los módulos del sistema con los colores exactos de tu diseño
     const allModules = [
@@ -95,12 +113,24 @@ export default function Home() {
             hasPermission = user?.permissions?.[mod.permission] || (user?.role === 'admin') || (mod.permission === 'admin' && user?.role === 'admin');
         }
 
+        // Check if module is globally active
+        const setting = moduleSettings.find(s => s.name === mod.name);
+        const isGloballyActive = setting ? setting.is_active : true;
+
         // Default permissions for specific modules if not defined (Ventas, Compras, Inventario)
         const isDefault = mod.permission === 'ventas' || mod.permission === 'compras' || mod.permission === 'inventario';
         const finalHasPermission = hasPermission || (!user?.permissions && isDefault);
 
-        return { ...mod, disabled: !finalHasPermission };
+        return { ...mod, disabled: !finalHasPermission, globallyInactive: !isGloballyActive };
     });
+
+    if (loading) {
+        return (
+            <div className="w-full min-h-screen bg-slate-900 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-indigo-500"></div>
+            </div>
+        );
+    }
 
     return (
         <div
@@ -150,7 +180,7 @@ export default function Home() {
             {/* Main Navigation Container */}
             <div className="bg-[#2a2e35]/80 backdrop-blur-md rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-wrap justify-center gap-6 max-w-[95%] border border-white/10">
 
-                {modules.filter(m => !m.disabled).map((mod) => (
+                {modules.filter(m => !m.disabled && !m.globallyInactive).map((mod) => (
                     <Link
                         key={mod.name}
                         to={mod.path}
