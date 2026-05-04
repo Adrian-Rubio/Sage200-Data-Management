@@ -14,7 +14,8 @@ export default function Home() {
                 const settings = await configApi.getModules();
                 setModuleSettings(settings);
             } catch (err) {
-                console.error("Error fetching module settings:", err);
+                console.warn("Could not fetch module settings, using defaults:", err);
+                // No bloqueamos al usuario si falla la config global, usamos valores por defecto (todo activo)
             } finally {
                 setLoading(false);
             }

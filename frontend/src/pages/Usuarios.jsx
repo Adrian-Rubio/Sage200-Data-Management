@@ -51,17 +51,23 @@ export default function Usuarios() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [usersData, rolesData, filtersData, modulesData] = await Promise.all([
+            const [usersData, rolesData, filtersData] = await Promise.all([
                 fetchUsers(),
                 fetchRoles(),
-                fetchFilterOptions(),
-                configApi.getModules()
+                fetchFilterOptions()
             ]);
             setUsers(usersData);
             setRoles(rolesData);
-            setModuleSettings(modulesData);
-            // We only need the reps array
             setFilterOptions(filtersData.reps || []);
+
+            // Intentamos cargar los módulos pero si falla no bloqueamos el resto
+            try {
+                const modulesData = await configApi.getModules();
+                setModuleSettings(modulesData);
+            } catch (modErr) {
+                console.warn("No se pudieron cargar los ajustes de módulos:", modErr);
+            }
+
         } catch (err) {
             setError(err.response?.data?.detail || "Error al cargar los datos.");
         } finally {
