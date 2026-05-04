@@ -3,12 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import get_db, engine
 from sqlalchemy import text
-from routers import sales, filters, orders, users, purchases, production, almacen, finance, inventory, reports, rma, inventory_tracking, aprovisionamiento, budgets, entregas, marketing
+from routers import sales, filters, orders, users, purchases, production, almacen, finance, inventory, reports, rma, inventory_tracking, aprovisionamiento, budgets, entregas, marketing, dubes
 import models
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from starlette.requests import Request
+import threading
+import time
+from dubes import sync_data as dubes_sync
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -26,6 +29,21 @@ limiter = Limiter(key_func=get_real_ip, default_limits=["200/minute"])
 app = FastAPI(title="Sage200 Dashboard API")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# --- TAREAS EN SEGUNDO PLANO (DUBES) ---
+def start_dubes_sync():
+    while True:
+        try:
+            dubes_sync.sync_tables()
+        except Exception as e:
+            print(f"Error en sincronización de Dubes: {e}")
+        time.sleep(600)
+
+@app.on_event("startup")
+def startup_event():
+    # Iniciar sincronización de Dubes en un hilo separado
+    thread = threading.Thread(target=start_dubes_sync, daemon=True)
+    thread.start()
 
 # Configure CORS (Endurecido)
 app.add_middleware(
@@ -57,6 +75,7 @@ app.include_router(inventory_tracking.router, prefix="/api/inventory-tracking", 
 app.include_router(aprovisionamiento.router)
 app.include_router(budgets.router, prefix="/api", tags=["budgets"])
 app.include_router(marketing.router, prefix="/api/marketing", tags=["Marketing"])
+app.include_router(dubes.router, prefix="/api/dubes", tags=["Dubes"])
 
 @app.get("/")
 def read_root():
