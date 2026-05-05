@@ -32,22 +32,33 @@ def sync_tables():
     for ip in possible_ips:
         # Intentar con y sin instancia
         servers = [f"{ip}\\Misstipsi", ip]
+        # Intentar con varios drivers para máxima compatibilidad
+        drivers = ["ODBC Driver 17 for SQL Server", "FreeTDS"]
         connected = False
         
-        for server in servers:
+        for driver in drivers:
             if connected: break
-            temp_engine = None
-            try:
-                # Usar credenciales específicas para Misstipsi
-                db_name = os.getenv("DUBES_DATABASE", "MisstipsiPro")
-                db_user = os.getenv("DUBES_USER", "TpvReadOnly")
-                db_pass = os.getenv("DUBES_PASSWORD", "98cxMs}xV>bDzD@Y")
-                
-                temp_params = quote_plus(
-                    f"DRIVER={{{database.DB_DRIVER}}};SERVER={server};DATABASE={db_name};UID={db_user};PWD={db_pass};Connect Timeout=3;TrustServerCertificate=yes;Encrypt=no;TDS_Version=7.1;"
-                )
-                temp_url = f"mssql+pyodbc:///?odbc_connect={temp_params}"
-                temp_engine = create_engine(temp_url)
+            for server in servers:
+                if connected: break
+                temp_engine = None
+                try:
+                    # Usar credenciales específicas para Misstipsi
+                    db_name = os.getenv("DUBES_DATABASE", "MisstipsiPro")
+                    db_user = os.getenv("DUBES_USER", "TpvReadOnly")
+                    db_pass = os.getenv("DUBES_PASSWORD", "98cxMs}xV>bDzD@Y")
+                    
+                    if driver == "FreeTDS":
+                        # FreeTDS usa una cadena ligeramente distinta
+                        temp_params = quote_plus(
+                            f"DRIVER={{FreeTDS}};SERVER={server.split('\\')[0]};PORT=1433;DATABASE={db_name};UID={db_user};PWD={db_pass};TDS_Version=7.1;"
+                        )
+                    else:
+                        temp_params = quote_plus(
+                            f"DRIVER={{{driver}}};SERVER={server};DATABASE={db_name};UID={db_user};PWD={db_pass};Connect Timeout=3;TrustServerCertificate=yes;Encrypt=no;TDS_Version=7.1;"
+                        )
+                    
+                    temp_url = f"mssql+pyodbc:///?odbc_connect={temp_params}"
+                    temp_engine = create_engine(temp_url)
                 
                 # Verificar conexión
                 with temp_engine.connect() as conn:
