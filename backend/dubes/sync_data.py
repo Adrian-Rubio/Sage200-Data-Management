@@ -24,7 +24,7 @@ def sync_tables():
     for ip in possible_ips:
         try:
             temp_params = quote_plus(
-                f"DRIVER={{{database.DB_DRIVER}}};SERVER={ip}\\Misstipsi;DATABASE={database.DB_DATABASE};UID={database.DB_USER};PWD={database.DB_PASSWORD};Connect Timeout=2"
+                f"DRIVER={{{database.DB_DRIVER}}};SERVER={ip}\\Misstipsi;DATABASE={database.DB_DATABASE};UID={database.DB_USER};PWD={database.DB_PASSWORD};Connect Timeout=2;TrustServerCertificate=yes;Encrypt=no;"
             )
             temp_url = f"mssql+pyodbc:///?odbc_connect={temp_params}"
             temp_engine = create_engine(temp_url)
