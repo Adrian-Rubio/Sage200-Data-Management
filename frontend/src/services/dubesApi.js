@@ -32,8 +32,8 @@ export const dashboardService = {
     return api.get(url);
   },
   getInvitationDetails: (start, end) => api.get(`/api/dubes/invitations/details${start ? `?start_date=${start}&end_date=${end}` : ''}`),
-  getClosures: (start, end, localId) => {
-    let url = '/api/dubes/closures?';
+  getClosures: (start, end, localId, page = 1, pageSize = 20) => {
+    let url = `/api/dubes/closures?page=${page}&page_size=${pageSize}&`;
     if (start) url += `start_date=${start}&end_date=${end}&`;
     if (localId && localId !== 'all') url += `local_id=${localId}`;
     return api.get(url);

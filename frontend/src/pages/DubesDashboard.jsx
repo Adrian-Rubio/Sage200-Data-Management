@@ -226,7 +226,7 @@ const DubesDashboard = () => {
   const [hourly, setHourly] = useState([]);
   const [ticketsData, setTicketsData] = useState({ data: [], pagination: {} });
   const [invitationsDetails, setInvitationsDetails] = useState([]);
-  const [closures, setClosures] = useState([]);
+  const [closuresData, setClosuresData] = useState({ items: [], total: 0, total_pages: 0 });
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showInvitationsModal, setShowInvitationsModal] = useState(false);
@@ -240,6 +240,7 @@ const DubesDashboard = () => {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [closuresPage, setClosuresPage] = useState(1);
   const [ticketsLimit, setTicketsLimit] = useState(10);
 
   const fetchLocals = async () => {
@@ -283,7 +284,7 @@ const DubesDashboard = () => {
         dashboardService.getHourlyDistribution(start, end, selectedLocal),
         dashboardService.getRecentTickets(currentPage, ticketsLimit, start, end, selectedLocal),
         dashboardService.getInvitationDetails(start, end, selectedLocal),
-        dashboardService.getClosures(start, end, selectedLocal)
+        dashboardService.getClosures(start, end, selectedLocal, closuresPage)
       ]);
       setKpis(kpiRes.data);
       const trendData = trendRes.data.labels?.map((label, idx) => ({
@@ -299,7 +300,7 @@ const DubesDashboard = () => {
       setHourly(hourlyData);
       setTicketsData(ticketRes.data || { data: [], pagination: {} });
       setInvitationsDetails(invRes.data || []);
-      setClosures(closureRes.data || []);
+      setClosuresData(closureRes.data || { items: [], total: 0, total_pages: 0 });
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -313,7 +314,7 @@ const DubesDashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, [dateRange, startDate, endDate, currentPage, ticketsLimit, selectedLocal]);
+  }, [dateRange, startDate, endDate, currentPage, closuresPage, ticketsLimit, selectedLocal]);
 
   useEffect(() => {
     if (activeTab === 'tickets') {
@@ -543,8 +544,8 @@ const DubesDashboard = () => {
             </tr>
           </thead>
           <tbody>
-            {closures.length > 0 ? (
-              closures.map((c) => (
+            {closuresData.items?.length > 0 ? (
+              closuresData.items.map((c) => (
                 <tr key={c.id} className="bg-white/[0.02] hover:bg-white/[0.05] transition-all group rounded-2xl">
                   <td className="py-4 pl-4 rounded-l-2xl">
                     <span className="text-xs font-black uppercase text-indigo-400">{c.local}</span>
@@ -569,6 +570,31 @@ const DubesDashboard = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls for Closures */}
+      {closuresData.total_pages > 1 && (
+        <div className="flex items-center justify-between mt-6 px-4 py-4 bg-white/5 border border-white/10 rounded-2xl">
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            Página <span className="text-white">{closuresPage}</span> de <span className="text-white">{closuresData.total_pages}</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setClosuresPage(p => Math.max(1, p - 1))}
+              disabled={closuresPage === 1}
+              className={`p-2 rounded-xl border border-white/10 transition-all ${closuresPage === 1 ? 'text-slate-600 cursor-not-allowed' : 'text-white hover:bg-white/10'}`}
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <button
+              onClick={() => setClosuresPage(p => Math.min(closuresData.total_pages, p + 1))}
+              disabled={closuresPage === closuresData.total_pages}
+              className={`p-2 rounded-xl border border-white/10 transition-all ${closuresPage === closuresData.total_pages ? 'text-slate-600 cursor-not-allowed' : 'text-white hover:bg-white/10'}`}
+            >
+              <ArrowRight size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 

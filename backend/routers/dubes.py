@@ -225,6 +225,8 @@ def get_closures(
     start_date: Optional[str] = None, 
     end_date: Optional[str] = None, 
     local_id: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 20,
     db: Session = Depends(get_db)
 ):
     query = db.query(models.ClosingCash).options(
@@ -239,17 +241,24 @@ def get_closures(
     if local_id and local_id != "all":
         query = query.filter(models.ClosingCash.LocalId == local_id)
 
-    closures = query.order_by(models.ClosingCash.ClosingDate.desc()).all()
+    total_count = query.count()
+    closures = query.order_by(models.ClosingCash.ClosingDate.desc()).offset((page - 1) * page_size).limit(page_size).all()
 
-    return [{
-        "id": getattr(c, "Id", "N/A"),
-        "date": c.ClosingDate.strftime("%Y-%m-%d %H:%M") if hasattr(c, "ClosingDate") and c.ClosingDate and hasattr(c.ClosingDate, "strftime") else str(getattr(c, "ClosingDate", "N/A")),
-        "local": c.local.Name if getattr(c, "local", None) else "Desconocido",
-        "employee": f"{c.employee.Name} {c.employee.LastName or ''}".strip() if getattr(c, "employee", None) else "Sistema",
-        "expected": round(float(getattr(c, "CalculatedCash", 0) or 0), 2),
-        "counted": round(float(getattr(c, "FinalCash", 0) or 0), 2),
-        "difference": round(float(getattr(c, "Inbalance", 0) or 0), 2),
-        "total_diff": round(float(getattr(c, "Inbalance", 0) or 0), 2),
-        "sales": round(float(getattr(c, "TotalSalesAmount", 0) or 0), 2),
-        "tickets": int(getattr(c, "Tickets", 0) or 0)
-    } for c in closures]
+    return {
+        "total": total_count,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": (total_count + page_size - 1) // page_size,
+        "items": [{
+            "id": getattr(c, "Id", "N/A"),
+            "date": c.ClosingDate.strftime("%Y-%m-%d %H:%M") if hasattr(c, "ClosingDate") and c.ClosingDate and hasattr(c.ClosingDate, "strftime") else str(getattr(c, "ClosingDate", "N/A")),
+            "local": c.local.Name if getattr(c, "local", None) else "Desconocido",
+            "employee": f"{c.employee.Name} {c.employee.LastName or ''}".strip() if getattr(c, "employee", None) else "Sistema",
+            "expected": round(float(getattr(c, "CalculatedCash", 0) or 0), 2),
+            "counted": round(float(getattr(c, "FinalCash", 0) or 0), 2),
+            "difference": round(float(getattr(c, "Inbalance", 0) or 0), 2),
+            "total_diff": round(float(getattr(c, "Inbalance", 0) or 0), 2),
+            "sales": round(float(getattr(c, "TotalSalesAmount", 0) or 0), 2),
+            "tickets": int(getattr(c, "Tickets", 0) or 0)
+        } for c in closures]
+    }
