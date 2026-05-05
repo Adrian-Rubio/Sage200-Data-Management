@@ -44,7 +44,7 @@ def sync_tables():
                 db_pass = os.getenv("DUBES_PASSWORD", "98cxMs}xV>bDzD@Y")
                 
                 temp_params = quote_plus(
-                    f"DRIVER={{{database.DB_DRIVER}}};SERVER={server};DATABASE={db_name};UID={db_user};PWD={db_pass};Connect Timeout=2;TrustServerCertificate=yes;Encrypt=no;"
+                    f"DRIVER={{{database.DB_DRIVER}}};SERVER={server};DATABASE={db_name};UID={db_user};PWD={db_pass};Connect Timeout=3;TrustServerCertificate=yes;Encrypt=no;TDS_Version=7.1;"
                 )
                 temp_url = f"mssql+pyodbc:///?odbc_connect={temp_params}"
                 temp_engine = create_engine(temp_url)
