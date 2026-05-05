@@ -139,8 +139,7 @@ def sync_tables():
                     last_closure_date = last_closure.ClosingDate if last_closure else (datetime.datetime.now() - datetime.timedelta(days=730))
 
                     new_closures = source_db.query(models.ClosingCash).filter(
-                        models.ClosingCash.ClosingDate > last_closure_date,
-                        models.ClosingCash.IsDeleted == False
+                        models.ClosingCash.ClosingDate > last_closure_date
                     ).order_by(models.ClosingCash.ClosingDate.asc()).all()
 
                     if new_closures:

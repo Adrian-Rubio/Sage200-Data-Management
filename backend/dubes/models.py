@@ -126,7 +126,6 @@ class ClosingCash(Base):
     PosDifference = Column(Float, nullable=True)
     TotalSalesAmount = Column(Float)
     Tickets = Column(Integer)
-    IsDeleted = Column(Boolean, default=False)
 
     # Relationships
     local = relationship("Local")

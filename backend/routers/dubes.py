@@ -230,7 +230,7 @@ def get_closures(
     query = db.query(models.ClosingCash).options(
         joinedload(models.ClosingCash.local),
         joinedload(models.ClosingCash.employee)
-    ).filter(models.ClosingCash.IsDeleted == False)
+    )
 
     if start_date:
         query = query.filter(models.ClosingCash.ClosingDate >= start_date)
