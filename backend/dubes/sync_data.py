@@ -134,14 +134,14 @@ def sync_tables():
                     # 4. Sincronizar Cierres de Caja (ClosingCashes) - INCREMENTAL
                     last_closure = cache_db.query(models.ClosingCash).filter(
                         models.ClosingCash.LocalId.in_(local_ids)
-                    ).order_by(models.ClosingCash.CloseDate.desc()).first()
+                    ).order_by(models.ClosingCash.ClosingDate.desc()).first()
 
-                    last_closure_date = last_closure.CloseDate if last_closure else (datetime.datetime.now() - datetime.timedelta(days=730))
+                    last_closure_date = last_closure.ClosingDate if last_closure else (datetime.datetime.now() - datetime.timedelta(days=730))
 
                     new_closures = source_db.query(models.ClosingCash).filter(
-                        models.ClosingCash.CloseDate > last_closure_date,
+                        models.ClosingCash.ClosingDate > last_closure_date,
                         models.ClosingCash.IsDeleted == False
-                    ).order_by(models.ClosingCash.CloseDate.asc()).all()
+                    ).order_by(models.ClosingCash.ClosingDate.asc()).all()
 
                     if new_closures:
                         logger.info(f"Detectados {len(new_closures)} nuevos cierres en {local_name}.")

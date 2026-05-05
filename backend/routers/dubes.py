@@ -233,23 +233,23 @@ def get_closures(
     ).filter(models.ClosingCash.IsDeleted == False)
 
     if start_date:
-        query = query.filter(models.ClosingCash.CloseDate >= start_date)
+        query = query.filter(models.ClosingCash.ClosingDate >= start_date)
     if end_date:
-        query = query.filter(models.ClosingCash.CloseDate <= end_date + " 23:59:59")
+        query = query.filter(models.ClosingCash.ClosingDate <= end_date + " 23:59:59")
     if local_id and local_id != "all":
         query = query.filter(models.ClosingCash.LocalId == local_id)
 
-    closures = query.order_by(models.ClosingCash.CloseDate.desc()).all()
+    closures = query.order_by(models.ClosingCash.ClosingDate.desc()).all()
 
     return [{
         "id": c.Id,
-        "date": c.CloseDate.strftime("%Y-%m-%d %H:%M"),
+        "date": c.ClosingDate.strftime("%Y-%m-%d %H:%M") if c.ClosingDate else "N/A",
         "local": c.local.Name if c.local else "Desconocido",
         "employee": f"{c.employee.Name} {c.employee.LastName or ''}".strip() if c.employee else "Sistema",
-        "expected": round(c.ExpectedInCash or 0, 2),
-        "counted": round(c.CountedInCash or 0, 2),
-        "difference": round(c.CashDifference or 0, 2),
-        "total_diff": round(c.TotalDifference or 0, 2),
-        "sales": round(c.SalesAmount or 0, 2),
-        "tickets": c.TicketsNumber or 0
+        "expected": round(c.CalculatedCash or 0, 2),
+        "counted": round(c.FinalCash or 0, 2),
+        "difference": round(c.Inbalance or 0, 2),
+        "total_diff": round(c.Inbalance or 0, 2),
+        "sales": round(c.TotalSalesAmount or 0, 2),
+        "tickets": c.Tickets or 0
     } for c in closures]
