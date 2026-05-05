@@ -123,7 +123,6 @@ class ClosingCash(Base):
     CalculatedCash = Column(Float)
     FinalCash = Column(Float)
     Inbalance = Column(Float)
-    PosDifference = Column(Float, nullable=True)
     TotalSalesAmount = Column(Float)
     Tickets = Column(Integer)
 
