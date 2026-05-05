@@ -30,20 +30,27 @@ def sync_tables():
     possible_ips = ["10.0.8.2", "10.0.8.3", "10.0.8.5", "127.0.0.1"]
     
     for ip in possible_ips:
-        try:
-            temp_params = quote_plus(
-                f"DRIVER={{{database.DB_DRIVER}}};SERVER={ip}\\Misstipsi;DATABASE={database.DB_DATABASE};UID={database.DB_USER};PWD={database.DB_PASSWORD};Connect Timeout=2;TrustServerCertificate=yes;Encrypt=no;"
-            )
-            temp_url = f"mssql+pyodbc:///?odbc_connect={temp_params}"
-            temp_engine = create_engine(temp_url)
-            
-            # Verificar conexión
-            with temp_engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            
-            logger.info(f"--- Sincronizando servidor: {ip} ---")
-            
-            source_db = sessionmaker(bind=temp_engine)()
+        # Intentar con y sin instancia
+        servers = [f"{ip}\\Misstipsi", ip]
+        connected = False
+        
+        for server in servers:
+            if connected: break
+            try:
+                temp_params = quote_plus(
+                    f"DRIVER={{{database.DB_DRIVER}}};SERVER={server};DATABASE={database.DB_DATABASE};UID={database.DB_USER};PWD={database.DB_PASSWORD};Connect Timeout=2;TrustServerCertificate=yes;Encrypt=no;"
+                )
+                temp_url = f"mssql+pyodbc:///?odbc_connect={temp_params}"
+                temp_engine = create_engine(temp_url)
+                
+                # Verificar conexión
+                with temp_engine.connect() as conn:
+                    conn.execute(text("SELECT 1"))
+                
+                logger.info(f"--- Conectado con éxito a: {server} ---")
+                connected = True
+                
+                source_db = sessionmaker(bind=temp_engine)()
             cache_db = CacheSession()
             
             try:
