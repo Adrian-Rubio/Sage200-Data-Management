@@ -137,8 +137,8 @@ def sync_tables():
                 source_db.close()
                 cache_db.close()
                 
-        except Exception:
-            # Silently skip offline servers
+        except Exception as e:
+            logger.error(f"Fallo crítico al intentar conectar con {ip}: {e}")
             continue
     
     logger.info("Ciclo de sincronización completado.")
