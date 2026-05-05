@@ -242,14 +242,14 @@ def get_closures(
     closures = query.order_by(models.ClosingCash.ClosingDate.desc()).all()
 
     return [{
-        "id": c.Id,
-        "date": c.ClosingDate.strftime("%Y-%m-%d %H:%M") if c.ClosingDate else "N/A",
-        "local": c.local.Name if c.local else "Desconocido",
-        "employee": f"{c.employee.Name} {c.employee.LastName or ''}".strip() if c.employee else "Sistema",
-        "expected": round(c.CalculatedCash or 0, 2),
-        "counted": round(c.FinalCash or 0, 2),
-        "difference": round(c.Inbalance or 0, 2),
-        "total_diff": round(c.Inbalance or 0, 2),
-        "sales": round(c.TotalSalesAmount or 0, 2),
-        "tickets": c.Tickets or 0
+        "id": getattr(c, "Id", "N/A"),
+        "date": c.ClosingDate.strftime("%Y-%m-%d %H:%M") if hasattr(c, "ClosingDate") and c.ClosingDate and hasattr(c.ClosingDate, "strftime") else str(getattr(c, "ClosingDate", "N/A")),
+        "local": c.local.Name if getattr(c, "local", None) else "Desconocido",
+        "employee": f"{c.employee.Name} {c.employee.LastName or ''}".strip() if getattr(c, "employee", None) else "Sistema",
+        "expected": round(float(getattr(c, "CalculatedCash", 0) or 0), 2),
+        "counted": round(float(getattr(c, "FinalCash", 0) or 0), 2),
+        "difference": round(float(getattr(c, "Inbalance", 0) or 0), 2),
+        "total_diff": round(float(getattr(c, "Inbalance", 0) or 0), 2),
+        "sales": round(float(getattr(c, "TotalSalesAmount", 0) or 0), 2),
+        "tickets": int(getattr(c, "Tickets", 0) or 0)
     } for c in closures]
