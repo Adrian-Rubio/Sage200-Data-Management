@@ -59,16 +59,16 @@ def sync_tables():
                     
                     temp_url = f"mssql+pyodbc:///?odbc_connect={temp_params}"
                     temp_engine = create_engine(temp_url)
-                
-                # Verificar conexión
-                with temp_engine.connect() as conn:
-                    conn.execute(text("SELECT 1"))
-                
-                logger.info(f"--- Conectado con éxito a: {server} ---")
-                connected = True
-                
-                source_db = sessionmaker(bind=temp_engine)()
-                cache_db = CacheSession()
+                    
+                    # Verificar conexión
+                    with temp_engine.connect() as conn:
+                        conn.execute(text("SELECT 1"))
+                    
+                    logger.info(f"--- Conectado con éxito a: {server} ({driver}) ---")
+                    connected = True
+                    
+                    source_db = sessionmaker(bind=temp_engine)()
+                    cache_db = CacheSession()
                 
                 try:
                     # Obtener nombre del local para el log
