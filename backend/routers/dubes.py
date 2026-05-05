@@ -219,3 +219,37 @@ def get_invitation_details(start_date: Optional[str] = None, end_date: Optional[
         "time": d.sale.CheckOutDate.strftime("%H:%M") if d.sale and d.sale.CheckOutDate else "--:--",
         "table": d.sale.element.Name if d.sale and d.sale.element else "Barra"
     } for d in details]
+
+@router.get("/closures")
+def get_closures(
+    start_date: Optional[str] = None, 
+    end_date: Optional[str] = None, 
+    local_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.ClosingCash).options(
+        joinedload(models.ClosingCash.local),
+        joinedload(models.ClosingCash.employee)
+    ).filter(models.ClosingCash.IsDeleted == False)
+
+    if start_date:
+        query = query.filter(models.ClosingCash.CloseDate >= start_date)
+    if end_date:
+        query = query.filter(models.ClosingCash.CloseDate <= end_date + " 23:59:59")
+    if local_id and local_id != "all":
+        query = query.filter(models.ClosingCash.LocalId == local_id)
+
+    closures = query.order_by(models.ClosingCash.CloseDate.desc()).all()
+
+    return [{
+        "id": c.Id,
+        "date": c.CloseDate.strftime("%Y-%m-%d %H:%M"),
+        "local": c.local.Name if c.local else "Desconocido",
+        "employee": f"{c.employee.Name} {c.employee.LastName or ''}".strip() if c.employee else "Sistema",
+        "expected": round(c.ExpectedInCash or 0, 2),
+        "counted": round(c.CountedInCash or 0, 2),
+        "difference": round(c.CashDifference or 0, 2),
+        "total_diff": round(c.TotalDifference or 0, 2),
+        "sales": round(c.SalesAmount or 0, 2),
+        "tickets": c.TicketsNumber or 0
+    } for c in closures]

@@ -226,6 +226,7 @@ const DubesDashboard = () => {
   const [hourly, setHourly] = useState([]);
   const [ticketsData, setTicketsData] = useState({ data: [], pagination: {} });
   const [invitationsDetails, setInvitationsDetails] = useState([]);
+  const [closures, setClosures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showInvitationsModal, setShowInvitationsModal] = useState(false);
@@ -276,12 +277,13 @@ const DubesDashboard = () => {
     setLoading(true);
     try {
       const { start, end } = getDateParams(dateRange);
-      const [kpiRes, trendRes, hourRes, ticketRes, invRes] = await Promise.all([
+      const [kpiRes, trendRes, hourRes, ticketRes, invRes, closureRes] = await Promise.all([
         dashboardService.getKpiSummary(start, end, selectedLocal),
         dashboardService.getRevenueTrends(start, end, selectedLocal),
         dashboardService.getHourlyDistribution(start, end, selectedLocal),
         dashboardService.getRecentTickets(currentPage, ticketsLimit, start, end, selectedLocal),
-        dashboardService.getInvitationDetails(start, end, selectedLocal)
+        dashboardService.getInvitationDetails(start, end, selectedLocal),
+        dashboardService.getClosures(start, end, selectedLocal)
       ]);
       setKpis(kpiRes.data);
       const trendData = trendRes.data.labels?.map((label, idx) => ({
@@ -297,6 +299,7 @@ const DubesDashboard = () => {
       setHourly(hourlyData);
       setTicketsData(ticketRes.data || { data: [], pagination: {} });
       setInvitationsDetails(invRes.data || []);
+      setClosures(closureRes.data || []);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -513,6 +516,62 @@ const DubesDashboard = () => {
     );
   };
 
+  const renderClosures = () => (
+    <div className="bg-[#172035]/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6 h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex justify-between items-center mb-10">
+        <div>
+          <h3 className="text-lg font-black uppercase tracking-tighter flex items-center gap-3">
+            <LayoutDashboard size={20} className="text-indigo-400" />
+            Cierres de Caja
+          </h3>
+          <p className="text-xs text-slate-400 font-black uppercase tracking-wider mt-1">
+            Resumen de cierres y descuadres registrados
+          </p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full text-left border-separate border-spacing-y-2">
+          <thead>
+            <tr className="text-slate-400 text-xs font-black uppercase tracking-wider">
+              <th className="pb-4 pl-4">Local</th>
+              <th className="pb-4">Fecha Cierre</th>
+              <th className="pb-4">Responsable</th>
+              <th className="pb-4 text-right">Tickets</th>
+              <th className="pb-4 text-right">Total Sistema</th>
+              <th className="pb-4 text-right pr-6">Descuadre</th>
+            </tr>
+          </thead>
+          <tbody>
+            {closures.length > 0 ? (
+              closures.map((c) => (
+                <tr key={c.id} className="bg-white/[0.02] hover:bg-white/[0.05] transition-all group rounded-2xl">
+                  <td className="py-4 pl-4 rounded-l-2xl">
+                    <span className="text-xs font-black uppercase text-indigo-400">{c.local}</span>
+                  </td>
+                  <td className="py-4 text-slate-200 text-xs font-black">{c.date}</td>
+                  <td className="py-4 text-slate-400 text-xs font-black uppercase">{c.employee}</td>
+                  <td className="py-4 text-right text-xs font-black">{c.tickets}</td>
+                  <td className="py-4 text-right font-black text-white">{formatEuro(c.sales)}</td>
+                  <td className={`py-4 text-right pr-6 font-black rounded-r-2xl ${
+                    c.difference === 0 ? 'text-emerald-400' : 
+                    c.difference < 0 ? 'text-rose-500' : 'text-amber-400'
+                  }`}>
+                    {formatEuro(c.difference)}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="py-24 text-center text-slate-400 text-sm font-black uppercase tracking-wider italic">No hay cierres registrados</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#0b0f1a] text-slate-200 flex flex-col relative ">
       {/* Top Navbar */}
@@ -553,7 +612,8 @@ const DubesDashboard = () => {
             {[
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
               { id: 'hours', label: 'Horarios', icon: Clock },
-              { id: 'tickets', label: 'Tickets', icon: Receipt }
+              { id: 'tickets', label: 'Tickets', icon: Receipt },
+              { id: 'closures', label: 'Cierres', icon: FileText }
             ].map((item) => (
               <button 
                 key={item.id} onClick={() => setActiveTab(item.id)} 
@@ -613,6 +673,7 @@ const DubesDashboard = () => {
             {activeTab === 'dashboard' && renderDashboard()}
             {activeTab === 'hours' && renderHours()}
             {activeTab === 'tickets' && renderTickets()}
+            {activeTab === 'closures' && renderClosures()}
           </div>
         )}
       </main>

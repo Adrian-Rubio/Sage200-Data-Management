@@ -112,9 +112,23 @@ def sync_tables():
                             logger.info(f"Sincronizados {total_new} tickets...")
                     
                     cache_db.commit()
-                    logger.info(f"Sincronización finalizada para {local_name}. Total {total_new} nuevas ventas.")
-                else:
-                    logger.info(f"Base de datos de {local_name} ya actualizada.")
+                # 4. Sincronizar Cierres de Caja (ClosingCashes) - INCREMENTAL
+                last_closure = cache_db.query(models.ClosingCash).filter(
+                    models.ClosingCash.LocalId.in_(local_ids)
+                ).order_by(models.ClosingCash.CloseDate.desc()).first()
+
+                last_closure_date = last_closure.CloseDate if last_closure else (datetime.datetime.now() - datetime.timedelta(days=730))
+
+                new_closures = source_db.query(models.ClosingCash).filter(
+                    models.ClosingCash.CloseDate > last_closure_date,
+                    models.ClosingCash.IsDeleted == False
+                ).order_by(models.ClosingCash.CloseDate.asc()).all()
+
+                if new_closures:
+                    logger.info(f"Detectados {len(new_closures)} nuevos cierres en {local_name}.")
+                    for closure in new_closures:
+                        cache_db.merge(closure)
+                    cache_db.commit()
 
             except Exception as e:
                 logger.error(f"Error sincronizando {ip}: {e}")

@@ -111,3 +111,25 @@ class Employee(Base):
 
     # Relationships
     sales = relationship("Sale", back_populates="waiter")
+    closures = relationship("ClosingCash", back_populates="employee")
+
+class ClosingCash(Base):
+    __tablename__ = "ClosingCashes"
+
+    Id = Column(String, primary_key=True, index=True)
+    LocalId = Column(String, ForeignKey("Locals.Id"), nullable=True)
+    EmployeeId = Column(String, ForeignKey("Staff.Id"), nullable=True)
+    CloseDate = Column(DateTime)
+    ExpectedInCash = Column(Float)
+    CountedInCash = Column(Float)
+    CashDifference = Column(Float)
+    PosDifference = Column(Float)
+    TotalDifference = Column(Float)
+    SalesAmount = Column(Float)
+    Total = Column(Float)
+    TicketsNumber = Column(Integer)
+    IsDeleted = Column(Boolean, default=False)
+
+    # Relationships
+    local = relationship("Local")
+    employee = relationship("Employee", back_populates="closures")
