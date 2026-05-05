@@ -1,5 +1,6 @@
 import datetime
 import time
+import os
 import logging
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, joinedload, sessionmaker
@@ -17,6 +18,13 @@ models.Base.metadata.create_all(bind=cache_engine)
 
 def sync_tables():
     logger.info("Iniciando ciclo de sincronización multi-local...")
+    
+    # Parche para permitir protocolos SSL antiguos (TLS 1.0/1.1) en servidores Linux modernos
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    openssl_conf = os.path.join(base_dir, "openssl_permissive.cnf")
+    if os.path.exists(openssl_conf):
+        os.environ["OPENSSL_CONF"] = openssl_conf
+        logger.info(f"Cargada configuración de OpenSSL permisiva: {openssl_conf}")
     
     # Lista de IPs conocidas para Jardín, Gulah y otros
     possible_ips = ["10.0.8.2", "10.0.8.3", "10.0.8.5", "127.0.0.1"]
