@@ -38,8 +38,13 @@ def sync_tables():
             if connected: break
             temp_engine = None
             try:
+                # Usar credenciales específicas para Misstipsi
+                db_name = os.getenv("DUBES_DATABASE", "MisstipsiPro")
+                db_user = os.getenv("DUBES_USER", "TpvReadOnly")
+                db_pass = os.getenv("DUBES_PASSWORD", "98cxMs}xV>bDzD@Y")
+                
                 temp_params = quote_plus(
-                    f"DRIVER={{{database.DB_DRIVER}}};SERVER={server};DATABASE={database.DB_DATABASE};UID={database.DB_USER};PWD={database.DB_PASSWORD};Connect Timeout=2;TrustServerCertificate=yes;Encrypt=no;"
+                    f"DRIVER={{{database.DB_DRIVER}}};SERVER={server};DATABASE={db_name};UID={db_user};PWD={db_pass};Connect Timeout=2;TrustServerCertificate=yes;Encrypt=no;"
                 )
                 temp_url = f"mssql+pyodbc:///?odbc_connect={temp_params}"
                 temp_engine = create_engine(temp_url)
