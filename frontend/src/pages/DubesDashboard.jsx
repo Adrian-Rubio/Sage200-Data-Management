@@ -300,7 +300,16 @@ const DubesDashboard = () => {
       setHourly(hourlyData);
       setTicketsData(ticketRes.data || { data: [], pagination: {} });
       setInvitationsDetails(invRes.data || []);
-      setClosuresData(closureRes.data || { items: [], total: 0, total_pages: 0 });
+      
+      // Manejar tanto el formato nuevo (objeto con items) como el antiguo (array)
+      const cData = closureRes.data;
+      if (cData && cData.items) {
+        setClosuresData(cData);
+      } else if (Array.isArray(cData)) {
+        setClosuresData({ items: cData, total: cData.length, total_pages: 1 });
+      } else {
+        setClosuresData({ items: [], total: 0, total_pages: 0 });
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
