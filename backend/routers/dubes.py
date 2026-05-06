@@ -210,15 +210,18 @@ def get_invitation_details(
     db: Session = Depends(get_db)
 ):
     s_bound, e_bound = parse_date_filter(start_date, end_date)
+    # Filtro estricto: Solo invitaciones reales marcadas por el sistema
     details = filter_date_range(db.query(models.SaleDetail).join(models.Sale), s_bound, e_bound, local_id).filter(
-        (models.SaleDetail.Invitation == True) | (models.SaleDetail.Total <= 0)
+        models.SaleDetail.Invitation == True
     ).all()
+    
     return [{
         "id": d.Id, 
         "description": d.Description, 
         "amount": float(d.Amount or 0), 
         "unitPrice": float(d.UnitPrice or 0), 
         "total": float(d.Total or 0),
+        "type": "Modificación" if (d.UnitPrice == 0 or d.ArticleId is None) else "Producto",
         "concept": d.Observation if d.Observation else "Sin especificar",
         "orderNumber": d.sale.OrderNumber if d.sale else "N/A", 
         "date": d.sale.CheckOutDate.strftime("%d/%m/%Y") if d.sale and d.sale.CheckOutDate else "--",

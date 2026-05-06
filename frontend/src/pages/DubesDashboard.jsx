@@ -775,6 +775,7 @@ const DubesDashboard = () => {
                 <tr className="text-slate-400 text-xs font-black uppercase tracking-wider">
                   <th className="pb-4 pl-4">Fecha/Hora</th>
                   <th className="pb-4">Artículo</th>
+                  <th className="pb-4">Tipo</th>
                   <th className="pb-4">Concepto</th>
                   <th className="pb-4">Responsable</th>
                   <th className="pb-4 text-center">Mesa</th>
@@ -789,6 +790,11 @@ const DubesDashboard = () => {
                     </td>
                     <td className="py-4">
                        <span className="font-black text-slate-200 text-xs">{item.description}</span>
+                    </td>
+                    <td className="py-4">
+                       <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${item.type === 'Producto' ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10'}`}>
+                        {item.type}
+                       </span>
                     </td>
                     <td className="py-4">
                        <span className={`px-2 py-1 rounded text-[10px] font-black tracking-wide border ${item.concept !== 'Sin especificar' ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400' : 'bg-white/5 text-slate-500 border-white/10 italic'}`}>
