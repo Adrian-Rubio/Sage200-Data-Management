@@ -3,7 +3,7 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ComposedChart, Legend 
 } from 'recharts';
 import { 
-  LayoutDashboard, TrendingUp, Clock, Receipt, Users, DollarSign, ArrowUpRight, ArrowDownRight, Menu, X, ChevronRight, Gift, Calendar, Search, FileText, ArrowRight, ArrowLeft, ArrowRightLeft
+  LayoutDashboard, TrendingUp, Clock, Receipt, Users, DollarSign, ArrowUpRight, ArrowDownRight, Menu, X, ChevronRight, Gift, Calendar, Search, FileText, ArrowRight, ArrowLeft, ArrowRightLeft, ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { dashboardService } from '../services/dubesApi';
 
@@ -228,6 +228,7 @@ const DubesDashboard = () => {
   const [invitationsDetails, setInvitationsDetails] = useState([]);
   const [closuresData, setClosuresData] = useState({ items: [], total: 0, total_pages: 0 });
   const [cashflowsData, setCashflowsData] = useState([]);
+  const [cashflowSort, setCashflowSort] = useState({ field: 'date', direction: 'desc' });
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showInvitationsModal, setShowInvitationsModal] = useState(false);
@@ -611,64 +612,107 @@ const DubesDashboard = () => {
     </div>
   );
 
-  const renderCashflows = () => (
-    <div className="bg-[#172035]/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6 h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex justify-between items-center mb-10">
-        <div>
-          <h3 className="text-lg font-black uppercase tracking-tighter flex items-center gap-3">
-            <ArrowRightLeft size={20} className="text-indigo-400" />
-            Movimientos de Caja
-          </h3>
-          <p className="text-xs text-slate-400 font-black uppercase tracking-wider mt-1">
-            Entradas, salidas e ingresos registrados
-          </p>
+  const handleCashflowSort = (field) => {
+    setCashflowSort(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'desc' ? 'asc' : 'desc'
+    }));
+  };
+
+  const getSortedCashflows = () => {
+    return [...cashflowsData].sort((a, b) => {
+      let valA = a[cashflowSort.field] || '';
+      let valB = b[cashflowSort.field] || '';
+      
+      if (cashflowSort.field === 'amount') {
+        valA = Number(valA);
+        valB = Number(valB);
+      }
+      
+      if (valA < valB) return cashflowSort.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return cashflowSort.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const SortIcon = ({ field }) => {
+    if (cashflowSort.field !== field) return <ArrowUpDown size={12} className="opacity-20" />;
+    return cashflowSort.direction === 'desc' ? <ArrowDown size={12} /> : <ArrowUp size={12} />;
+  };
+
+  const renderCashflows = () => {
+    const sortedData = getSortedCashflows();
+    return (
+      <div className="bg-[#172035]/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6 h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex justify-between items-center mb-10">
+          <div>
+            <h3 className="text-lg font-black uppercase tracking-tighter flex items-center gap-3">
+              <ArrowRightLeft size={20} className="text-indigo-400" />
+              Movimientos de Caja
+            </h3>
+            <p className="text-xs text-slate-400 font-black uppercase tracking-wider mt-1">
+              Entradas, salidas e ingresos registrados
+            </p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto flex-1">
+          <table className="w-full text-left border-separate border-spacing-y-2">
+            <thead>
+              <tr className="text-slate-400 text-xs font-black uppercase tracking-wider">
+                <th className="pb-4 pl-4 cursor-pointer hover:text-white transition-colors" onClick={() => handleCashflowSort('local')}>
+                  <div className="flex items-center gap-2">
+                    Local <SortIcon field="local" />
+                  </div>
+                </th>
+                <th className="pb-4 cursor-pointer hover:text-white transition-colors" onClick={() => handleCashflowSort('date')}>
+                  <div className="flex items-center gap-2">
+                    Fecha/Hora <SortIcon field="date" />
+                  </div>
+                </th>
+                <th className="pb-4">Concepto</th>
+                <th className="pb-4">Responsable</th>
+                <th className="pb-4 text-right pr-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleCashflowSort('amount')}>
+                  <div className="flex items-center justify-end gap-2">
+                    Importe <SortIcon field="amount" />
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedData.length > 0 ? (
+                sortedData.map((cf) => (
+                  <tr key={cf.id} className="bg-white/[0.02] hover:bg-white/[0.05] transition-all group rounded-2xl">
+                    <td className="py-4 pl-4 rounded-l-2xl">
+                      <span className="text-xs font-black uppercase text-indigo-400">{cf.local}</span>
+                    </td>
+                    <td className="py-4 text-slate-200 text-xs font-black">{cf.date}</td>
+                    <td className="py-4">
+                      <span className={`px-3 py-1 rounded-lg text-xs font-black tracking-wide border ${
+                        cf.subject.toLowerCase().includes('ingreso') 
+                        ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' 
+                        : 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400'
+                      }`}>
+                        {cf.subject}
+                      </span>
+                    </td>
+                    <td className="py-4 text-slate-400 text-xs font-black uppercase">{cf.responsible}</td>
+                    <td className={`py-4 text-right pr-6 font-black rounded-r-2xl ${cf.amount < 0 ? 'text-rose-500' : 'text-emerald-400'}`}>
+                      {formatEuro(cf.amount)}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="py-24 text-center text-slate-400 text-sm font-black uppercase tracking-wider italic">No hay movimientos registrados</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
-
-      <div className="overflow-x-auto flex-1">
-        <table className="w-full text-left border-separate border-spacing-y-2">
-          <thead>
-            <tr className="text-slate-400 text-xs font-black uppercase tracking-wider">
-              <th className="pb-4 pl-4">Local</th>
-              <th className="pb-4">Fecha/Hora</th>
-              <th className="pb-4">Concepto</th>
-              <th className="pb-4">Responsable</th>
-              <th className="pb-4 text-right pr-6">Importe</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cashflowsData.length > 0 ? (
-              cashflowsData.map((cf) => (
-                <tr key={cf.id} className="bg-white/[0.02] hover:bg-white/[0.05] transition-all group rounded-2xl">
-                  <td className="py-4 pl-4 rounded-l-2xl">
-                    <span className="text-xs font-black uppercase text-indigo-400">{cf.local}</span>
-                  </td>
-                  <td className="py-4 text-slate-200 text-xs font-black">{cf.date}</td>
-                  <td className="py-4">
-                    <span className={`px-3 py-1 rounded-lg text-xs font-black tracking-wide border ${
-                      cf.subject.toLowerCase().includes('ingreso') 
-                      ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' 
-                      : 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400'
-                    }`}>
-                      {cf.subject}
-                    </span>
-                  </td>
-                  <td className="py-4 text-slate-400 text-xs font-black uppercase">{cf.responsible}</td>
-                  <td className={`py-4 text-right pr-6 font-black rounded-r-2xl ${cf.amount < 0 ? 'text-rose-500' : 'text-emerald-400'}`}>
-                    {formatEuro(cf.amount)}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="5" className="py-24 text-center text-slate-400 text-sm font-black uppercase tracking-wider italic">No hay movimientos registrados</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#0b0f1a] text-slate-200 flex flex-col relative ">
