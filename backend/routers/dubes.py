@@ -221,8 +221,10 @@ def get_invitation_details(
         "total": float(d.Total or 0),
         "concept": d.Observation if d.Observation else "Sin especificar",
         "orderNumber": d.sale.OrderNumber if d.sale else "N/A", 
+        "date": d.sale.CheckOutDate.strftime("%d/%m/%Y") if d.sale and d.sale.CheckOutDate else "--",
         "time": d.sale.CheckOutDate.strftime("%H:%M") if d.sale and d.sale.CheckOutDate else "--:--",
-        "table": d.sale.element.Name if d.sale and d.sale.element else "Barra"
+        "table": d.sale.element.Name if d.sale and d.sale.element else "Barra",
+        "waiter": f"{d.sale.waiter.Name} {d.sale.waiter.LastName or ''}".strip() if d.sale and d.sale.waiter else "Sin asignar"
     } for d in details]
 
 @router.get("/closures")

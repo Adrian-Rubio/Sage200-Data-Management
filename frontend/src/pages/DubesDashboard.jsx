@@ -231,7 +231,9 @@ const DubesDashboard = () => {
   const [cashflowSort, setCashflowSort] = useState({ field: 'date', direction: 'desc' });
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [showInvitationsModal, setShowInvitationsModal] = useState(false);
+  
+  // Invitations analytical states
+  const [invStats, setInvStats] = useState({ totalAmount: 0, totalCount: 0, topArticle: '--', topWaiter: '--', reasonDistribution: [] });
   
   // Local/Restaurant states
   const [locals, setLocals] = useState([]);
@@ -304,6 +306,9 @@ const DubesDashboard = () => {
       setTicketsData(ticketRes.data || { data: [], pagination: {} });
       setInvitationsDetails(invRes.data || []);
       
+      // Calcular métricas de invitaciones
+      calculateInvitationStats(invRes.data || []);
+      
       // Manejar tanto el formato nuevo (objeto con items) como el antiguo (array)
       const cData = closureRes.data;
       if (cData && cData.items) {
@@ -370,6 +375,36 @@ const DubesDashboard = () => {
     };
   };
 
+  const calculateInvitationStats = (data) => {
+    if (!data || data.length === 0) {
+      setInvStats({ totalAmount: 0, totalCount: 0, topArticle: '--', topWaiter: '--', reasonDistribution: [] });
+      return;
+    }
+
+    const totalAmount = data.reduce((acc, curr) => acc + (curr.unitPrice * curr.amount), 0);
+    const totalCount = data.length;
+
+    // Artículos
+    const articleCounts = {};
+    data.forEach(d => { articleCounts[d.description] = (articleCounts[d.description] || 0) + 1; });
+    const topArticle = Object.entries(articleCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '--';
+
+    // Camareros
+    const waiterAmounts = {};
+    data.forEach(d => { waiterAmounts[d.waiter] = (waiterAmounts[d.waiter] || 0) + (d.unitPrice * d.amount); });
+    const topWaiter = Object.entries(waiterAmounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '--';
+
+    // Razones
+    const reasons = {};
+    data.forEach(d => { reasons[d.concept] = (reasons[d.concept] || 0) + 1; });
+    const reasonDistribution = Object.entries(reasons)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
+    setInvStats({ totalAmount, totalCount, topArticle, topWaiter, reasonDistribution });
+  };
+
   const hrStats = getHourlyStats();
 
   const renderDashboard = () => (
@@ -381,8 +416,8 @@ const DubesDashboard = () => {
         <Card title="Tk. Medio (Mesa)" value={formatEuro(kpis?.avg_ticket_table)} subValue="Promedio por ticket" icon={Receipt} />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2 bg-[#172035]/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6 h-[450px]">
+      <div className="grid grid-cols-1 gap-8">
+        <div className="bg-[#172035]/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6 h-[500px]">
           <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-8 flex items-center gap-3">
             <TrendingUp size={14} className="text-indigo-400" />
             Evolución de Ventas
@@ -402,25 +437,6 @@ const DubesDashboard = () => {
               <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={5} fillOpacity={1} fill="url(#colorRev)" />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
-
-        <div className="bg-[#172035]/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6 bg-gradient-to-br from-primary/40 to-background border-indigo-500/30 relative overflow-hidden group shadow-[0_20px_50px_rgba(255,50,50,0.15)] flex flex-col justify-center">
-          <div className="relative z-10">
-            <div className="bg-white/10 w-10 h-10 rounded-xl flex items-center justify-center mb-6 text-white border border-white/20 shadow-2xl backdrop-blur-md">
-              <Gift size={20} />
-            </div>
-            <h3 className="text-3xl font-black tracking-tighter mb-1 leading-none">{formatEuro(kpis?.total_invitations)}</h3>
-            <p className="text-xs text-slate-300 font-black mb-6 uppercase tracking-wider">Total en Invitaciones</p>
-            <button 
-              onClick={() => setShowInvitationsModal(true)}
-              className="w-full bg-white text-black py-4 rounded-xl font-black text-xs uppercase tracking-wider shadow-2xl hover:bg-indigo-600 hover:text-white hover:scale-105 transition-all duration-300"
-            >
-              Ver Desglose
-            </button>
-          </div>
-          <div className="absolute -right-16 -bottom-16 opacity-[0.07] group-hover:rotate-12 group-hover:scale-110 transition-transform duration-1000">
-            <DollarSign size={240} />
-          </div>
         </div>
       </div>
     </div>
@@ -714,6 +730,88 @@ const DubesDashboard = () => {
     );
   };
 
+  const renderInvitations = () => (
+    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <Card title="Impacto Invitaciones" value={formatEuro(invStats.totalAmount)} subValue={`${invStats.totalCount} artículos regalados`} icon={Gift} />
+        <Card title="Producto Top" value={invStats.topArticle} subValue="Más invitado (unidades)" icon={Receipt} />
+        <Card title="Camarero Top" value={invStats.topWaiter} subValue="Mayor importe invitado" icon={Users} />
+        <Card title="Concepto Principal" value={invStats.reasonDistribution[0]?.name || '--'} subValue="Motivo más frecuente" icon={TrendingUp} />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="xl:col-span-1 bg-[#172035]/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-10 flex items-center gap-3">
+            <TrendingUp size={14} className="text-indigo-400" />
+            Distribución por Motivo
+          </h3>
+          <div className="space-y-6">
+            {invStats.reasonDistribution.map((item, idx) => (
+              <div key={idx} className="flex flex-col gap-2">
+                <div className="flex justify-between text-xs font-black uppercase tracking-wider">
+                  <span className="text-slate-200">{item.name}</span>
+                  <span className="text-indigo-400">{item.value} veces</span>
+                </div>
+                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 transition-all duration-1000" 
+                    style={{ width: `${(item.value / invStats.totalCount) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+            {invStats.reasonDistribution.length === 0 && <p className="text-center text-slate-500 text-xs py-10 uppercase font-black">Sin motivos registrados</p>}
+          </div>
+        </div>
+
+        <div className="xl:col-span-2 bg-[#172035]/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6 overflow-hidden flex flex-col">
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-8 flex items-center gap-3">
+            <FileText size={14} className="text-indigo-400" />
+            Desglose Detallado
+          </h3>
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full text-left border-separate border-spacing-y-2">
+              <thead>
+                <tr className="text-slate-400 text-xs font-black uppercase tracking-wider">
+                  <th className="pb-4 pl-4">Fecha/Hora</th>
+                  <th className="pb-4">Artículo</th>
+                  <th className="pb-4">Concepto</th>
+                  <th className="pb-4">Responsable</th>
+                  <th className="pb-4 text-center">Mesa</th>
+                  <th className="pb-4 text-right pr-6">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invitationsDetails.map((item, idx) => (
+                  <tr key={idx} className="bg-white/[0.02] hover:bg-white/[0.05] transition-all group rounded-2xl">
+                    <td className="py-4 pl-4 rounded-l-2xl text-[10px] font-black text-slate-400">
+                      {item.date} {item.time}
+                    </td>
+                    <td className="py-4">
+                       <span className="font-black text-slate-200 text-xs">{item.description}</span>
+                    </td>
+                    <td className="py-4">
+                       <span className={`px-2 py-1 rounded text-[10px] font-black tracking-wide border ${item.concept !== 'Sin especificar' ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400' : 'bg-white/5 text-slate-500 border-white/10 italic'}`}>
+                        {item.concept}
+                       </span>
+                    </td>
+                    <td className="py-4 text-xs font-black text-slate-400 uppercase">{item.waiter}</td>
+                    <td className="py-4 text-center">
+                       <span className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20">{item.table}</span>
+                    </td>
+                    <td className="py-4 text-right pr-6 font-black text-white rounded-r-2xl text-xs">
+                      {formatEuro(item.unitPrice)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#0b0f1a] text-slate-200 flex flex-col relative ">
       {/* Top Navbar */}
@@ -753,6 +851,7 @@ const DubesDashboard = () => {
           <div className="hidden xl:flex items-center gap-2">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+              { id: 'invitations', label: 'Invitaciones', icon: Gift },
               { id: 'hours', label: 'Horarios', icon: Clock },
               { id: 'tickets', label: 'Tickets', icon: Receipt },
               { id: 'closures', label: 'Cierres', icon: FileText },
@@ -814,6 +913,7 @@ const DubesDashboard = () => {
         ) : (
           <div className="h-full">
             {activeTab === 'dashboard' && renderDashboard()}
+            {activeTab === 'invitations' && renderInvitations()}
             {activeTab === 'hours' && renderHours()}
             {activeTab === 'tickets' && renderTickets()}
             {activeTab === 'closures' && renderClosures()}
