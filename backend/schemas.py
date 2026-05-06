@@ -30,6 +30,7 @@ class UserBase(BaseModel):
     user_type: str = "CENVAL"
     data_filters: Optional[str] = None
     is_active: bool = True
+    must_change_password: Optional[bool] = False
 
 class UserCreate(UserBase):
     password: Optional[str] = None
@@ -45,6 +46,9 @@ class UserResponse(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class PasswordChange(BaseModel):
+    password: str
 
 class TokenData(BaseModel):
     username: Optional[str] = None

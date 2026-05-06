@@ -38,3 +38,7 @@ export const getCurrentUser = () => {
 };
 
 export const getToken = () => localStorage.getItem('token');
+
+export const changePassword = async (newPassword) => {
+    return await api.post('/auth/change-password', { password: newPassword });
+};

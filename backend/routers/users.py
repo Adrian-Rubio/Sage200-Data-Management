@@ -54,7 +54,8 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
             "user_type": user.user_type,
             "permissions": perms,
             "sales_rep_id": user.sales_rep_id,
-            "data_filters": user.data_filters
+            "data_filters": user.data_filters,
+            "must_change_password": user.must_change_password
         }, 
         expires_delta=access_token_expires
     )
@@ -112,7 +113,8 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db), admin: 
         sales_rep_id=user.sales_rep_id,
         user_type=user.user_type,
         data_filters=user.data_filters,
-        is_active=user.is_active
+        is_active=user.is_active,
+        must_change_password=user.must_change_password
     )
     db.add(db_user)
     db.commit()
@@ -160,6 +162,7 @@ def update_user(user_id: int, user_update: schemas.UserCreate, db: Session = Dep
     db_user.user_type = user_update.user_type
     db_user.data_filters = user_update.data_filters
     db_user.is_active = user_update.is_active
+    db_user.must_change_password = user_update.must_change_password
     
     db.commit()
     db.refresh(db_user)
@@ -205,3 +208,14 @@ def delete_role(role_id: int, db: Session = Depends(get_db), admin: models.User 
 @router.get("/users/me", response_model=schemas.UserResponse)
 def read_users_me(current_user: models.User = Depends(auth.get_current_active_user)):
     return current_user
+
+@router.post("/change-password")
+def change_password(data: schemas.PasswordChange, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    # In this case we only care about the password
+    if not data.password:
+        raise HTTPException(status_code=400, detail="Password is required")
+    
+    current_user.hashed_password = auth.get_password_hash(data.password)
+    current_user.must_change_password = False
+    db.commit()
+    return {"message": "Contraseña actualizada correctamente"}

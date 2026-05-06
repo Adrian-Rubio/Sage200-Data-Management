@@ -44,6 +44,7 @@ class User(Base):
     data_filters = Column(String(1000), nullable=True)
 
     is_active = Column(Boolean, default=True)
+    must_change_password = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class ModuleSetting(Base):

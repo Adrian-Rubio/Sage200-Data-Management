@@ -170,7 +170,7 @@ export default function Temporal() {
     return (
 
         <div className="p-6 max-w-[1720px] mx-auto min-h-screen bg-[#f8fafc] dark:bg-slate-950 text-gray-800 dark:text-slate-200 font-sans transition-colors">
-            <PageHeader moduleName="Análisis ABC (Pareto)" showRefresh={false}>
+            <PageHeader moduleName="Análisis de Rotación (ABC)" showRefresh={false}>
                 <div className="flex gap-3">
                     <button
                         onClick={fetchData}

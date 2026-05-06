@@ -77,6 +77,8 @@ app.include_router(budgets.router, prefix="/api", tags=["budgets"])
 app.include_router(marketing.router, prefix="/api/marketing", tags=["Marketing"])
 app.include_router(dubes.router, prefix="/api/dubes", tags=["Dubes"])
 app.include_router(config.router)
+from routers import home
+app.include_router(home.router, prefix="/api/home", tags=["Home"])
 
 @app.get("/")
 def read_root():

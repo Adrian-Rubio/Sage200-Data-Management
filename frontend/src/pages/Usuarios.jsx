@@ -29,7 +29,8 @@ export default function Usuarios() {
         sales_rep_id: '',
         user_type: 'CENVAL',
         data_filters: '',
-        is_active: true
+        is_active: true,
+        must_change_password: false
     });
 
     const [roleFormData, setRoleFormData] = useState({
@@ -129,7 +130,8 @@ export default function Usuarios() {
             sales_rep_id: user.sales_rep_id || '',
             user_type: user.user_type || 'CENVAL',
             data_filters: user.data_filters || '',
-            is_active: user.is_active
+            is_active: user.is_active,
+            must_change_password: user.must_change_password || false
         });
         setIsUserModalOpen(true);
     };
@@ -239,8 +241,8 @@ export default function Usuarios() {
         setIsRoleModalOpen(false);
         setIsEditMode(false);
         setEditingId(null);
-        setUserFormData({ username: '', email: '', password: '', role: 'comercial', role_id: '', sales_rep_id: '', user_type: 'CENVAL', data_filters: '', is_active: true });
         setRoleFormData({ name: '', description: '', can_view_ventas: false, can_view_compras: false, can_view_produccion: false, can_view_finanzas: false, can_view_almacen: false, can_view_inventario: false, can_manage_users: false });
+        setUserFormData({ username: '', email: '', password: '', role: 'comercial', role_id: '', sales_rep_id: '', user_type: 'CENVAL', data_filters: '', is_active: true, must_change_password: false });
     };
 
     const formatDate = (dateStr) => {
@@ -363,9 +365,15 @@ export default function Usuarios() {
                             </div>
                             <InputField label="Filtros de Datos (JSON)" name="data_filters" value={userFormData.data_filters} onChange={handleUserInputChange} placeholder='{"allowed_vendors": ["V001"]}' />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <input type="checkbox" name="is_active" checked={userFormData.is_active} onChange={handleUserInputChange} className="w-4 h-4 rounded text-indigo-600 dark:text-indigo-500 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900" />
-                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors">Usuario Activo</span>
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                                <input type="checkbox" name="is_active" checked={userFormData.is_active} onChange={handleUserInputChange} className="w-4 h-4 rounded text-indigo-600 dark:text-indigo-500 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900" />
+                                <span className="text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors">Usuario Activo</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input type="checkbox" name="must_change_password" checked={userFormData.must_change_password} onChange={handleUserInputChange} className="w-4 h-4 rounded text-amber-600 dark:text-amber-500 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900" />
+                                <span className="text-sm font-bold text-amber-700 dark:text-amber-500 transition-colors">Forzar cambio de contraseña (próximo login)</span>
+                            </div>
                         </div>
                         <div className="pt-4 flex gap-3">
                             <button type="submit" disabled={formLoading} className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold shadow-lg">
@@ -440,6 +448,11 @@ function UsersTable({ users, roles, formatDate, onEdit, onDelete }) {
                             </td>
                             <td className="px-6 py-4 text-slate-400 dark:text-slate-500 text-xs transition-colors">{formatDate(user.created_at)}</td>
                             <td className="px-6 py-4 text-right space-x-2">
+                                {user.must_change_password && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-700 border border-amber-200 uppercase mr-2" title="Debe cambiar contraseña">
+                                        🗝️ Reset
+                                    </span>
+                                )}
                                 <button onClick={() => onEdit(user)} className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-bold p-1 transition-colors">Editar</button>
                                 <button onClick={() => onDelete(user)} className="text-red-600 dark:text-red-500 hover:text-red-900 dark:hover:text-red-400 font-bold p-1 transition-colors">Borrar</button>
                             </td>

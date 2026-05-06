@@ -609,4 +609,14 @@ export const getCashflows = async (start, end, localId) => {
     }
 };
 
+export const fetchHomeSummary = async () => {
+    try {
+        const response = await api.get('/home/summary');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching home summary:", error);
+        throw error;
+    }
+};
+
 export default api;

@@ -2,11 +2,28 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import useAuthStore from '../store/authStore';
 import configApi from '../services/configApi';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
+import { KpiCard } from '../components/dashboard/KpiCard';
+import { fetchHomeSummary } from '../services/api';
 
 export default function Home() {
     const { user, logoutUser } = useAuthStore();
     const [moduleSettings, setModuleSettings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [homeSummary, setHomeSummary] = useState(null);
+
+    const isManagement = (() => {
+        const role = (user?.role_name || user?.role || '').toLowerCase();
+        return role.includes('admin') || role.includes('direcci') || role.includes('direccion');
+    })();
+
+    // Real-time clock for Executive Dashboard
+    const [currentTime, setCurrentTime] = useState(new Date());
+    useEffect(() => {
+        if (!isManagement) return;
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, [isManagement]);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -15,13 +32,24 @@ export default function Home() {
                 setModuleSettings(settings);
             } catch (err) {
                 console.warn("Could not fetch module settings, using defaults:", err);
-                // No bloqueamos al usuario si falla la config global, usamos valores por defecto (todo activo)
-            } finally {
-                setLoading(false);
             }
         };
+
+        const loadHomeData = async () => {
+            if (isManagement) {
+                try {
+                    const summary = await fetchHomeSummary();
+                    setHomeSummary(summary);
+                } catch (err) {
+                    console.error("Error loading home summary:", err);
+                }
+            }
+            setLoading(false);
+        };
+
         fetchSettings();
-    }, []);
+        loadHomeData();
+    }, [isManagement]);
 
     // Definimos los módulos del sistema con los colores exactos de tu diseño
     const allModules = [
@@ -105,10 +133,10 @@ export default function Home() {
         const isManagement = userRole.includes('admin') || userRole.includes('direcci') || userRole.includes('direccion');
 
         // Lógica de permisos:
-        // 1. Restauración: Solo admin/dirección
+        // 1. Restauración & Almacén: Solo admin/dirección
         // 2. Otros: Sus permisos específicos o ser admin
         let hasPermission = false;
-        if (mod.name === 'Restauración') {
+        if (mod.name === 'Restauración' || mod.name === 'Almacén') {
             hasPermission = isManagement;
         } else {
             hasPermission = user?.permissions?.[mod.permission] || (user?.role === 'admin') || (mod.permission === 'admin' && user?.role === 'admin');
@@ -119,6 +147,7 @@ export default function Home() {
         const isGloballyActive = setting ? setting.is_active : true;
 
         // Default permissions for specific modules if not defined (Ventas, Compras, Inventario)
+        // Almacén is EXCLUDED from default permissions for commercials
         const isDefault = mod.permission === 'ventas' || mod.permission === 'compras' || mod.permission === 'inventario';
         const finalHasPermission = hasPermission || (!user?.permissions && isDefault);
 
@@ -129,6 +158,201 @@ export default function Home() {
         return (
             <div className="w-full min-h-screen bg-slate-900 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-indigo-500"></div>
+            </div>
+        );
+    }
+
+
+    if (isManagement) {
+        return (
+            <div className="p-6 md:p-10 min-h-full animate-fadeIn space-y-8">
+                {/* Welcome Header */}
+                <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                            <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
+                            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
+                                Centro de Mando
+                            </h1>
+                        </div>
+                        <p className="text-slate-500 dark:text-slate-400 font-bold text-sm flex items-center gap-2 uppercase tracking-widest">
+                            Bienvenido de nuevo, <span className="text-blue-600">{user?.RazonSocial?.split(' ')[0]}</span>
+                        </p>
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-xl mt-2">
+                            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                            <p className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest">
+                                Periodo: 1 al {new Date().getDate()} de {homeSummary?.month_name || '...'}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 px-6 py-3 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4">
+                        <div className="text-right">
+                            <div className="text-xl font-black text-slate-800 dark:text-white tracking-tighter leading-none">
+                                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                {currentTime.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
+                            </div>
+                        </div>
+                        <div className="w-px h-8 bg-slate-200 dark:bg-slate-700" />
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">Sesión Activa</span>
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{user?.role_obj?.name || user?.role}</span>
+                        </div>
+                    </div>
+                </header>
+
+                {/* Main KPI Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <KpiCard 
+                        title="VENTAS INDUSTRIAL" 
+                        value={homeSummary?.kpis?.ventas_cenval || 0} 
+                        subtext="Facturación Mes Actual"
+                    />
+                    <KpiCard 
+                        title="VENTAS RESTAURACIÓN" 
+                        value={homeSummary?.kpis?.ventas_restauracion || 0} 
+                        subtext="Acumulado Dubes"
+                    />
+                    <KpiCard 
+                        title="VENTAS SARATUR" 
+                        value={homeSummary?.kpis?.ventas_saratur || 0} 
+                        subtext="Facturación Mes Actual"
+                    />
+                    <KpiCard 
+                        title="CARTERA PENDIENTE" 
+                        value={homeSummary?.kpis?.cartera || 0} 
+                        subtext="Pedidos por servir"
+                        isWarning={homeSummary?.kpis?.cartera > 500000}
+                    />
+                </div>
+
+                {/* Secondary Operational Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Nº Pedidos</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-black text-slate-800 dark:text-white">{homeSummary?.kpis?.stats?.pedidos || 0}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Mes</span>
+                        </div>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Pedidos Preparados</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-black text-slate-800 dark:text-white">{homeSummary?.kpis?.stats?.preparados || 0}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Almacén</span>
+                        </div>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Clientes Únicos</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-black text-slate-800 dark:text-white">{homeSummary?.kpis?.stats?.clientes_unicos || 0}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Activos</span>
+                        </div>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center border-l-4 border-l-blue-500">
+                        <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Clientes Nuevos</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-black text-slate-800 dark:text-white">{homeSummary?.kpis?.stats?.clientes_nuevos || 0}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Este Mes</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Bottom Section: Alerts, Budget & Purchases */}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-grow pb-4">
+                    {/* Alerts Panel */}
+                    <div className="lg:col-span-1 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-h-[350px]">
+                        <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-800/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Alertas del Mes</h3>
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        </div>
+                        <div className="p-4 space-y-3 overflow-y-auto">
+                            {homeSummary?.alerts?.length > 0 ? (
+                                homeSummary.alerts.map((alert) => (
+                                    <div key={alert.id} className={`p-4 rounded-2xl border ${
+                                        alert.type === 'warning' 
+                                            ? 'bg-amber-50/50 border-amber-100 dark:bg-amber-900/10 dark:border-amber-900/30 text-amber-800 dark:text-amber-400' 
+                                            : 'bg-emerald-50/50 border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400'
+                                    } flex gap-3 items-start`}>
+                                        <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${alert.type === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                        <div>
+                                            <div className="text-[10px] font-black uppercase tracking-wider mb-0.5">{alert.title}</div>
+                                            <div className="text-[11px] font-medium leading-tight">{alert.message}</div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 py-10">
+                                    <svg className="w-8 h-8 mb-2 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <p className="text-xs font-bold uppercase tracking-widest">Sin alertas pendientes</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Budget Compliance Card (Compact) */}
+                    <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm p-6 flex flex-col items-center justify-center min-h-[350px]">
+                        <div className="w-full max-w-lg text-center">
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Cumplimiento Presupuesto • {homeSummary?.month_name}</h3>
+                            
+                            <div className="mb-1">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Facturación Bruta</span>
+                            </div>
+                            <div className="text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">
+                                {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(homeSummary?.kpis?.budget?.bruto || 0)}
+                            </div>
+
+                            <div className="relative w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full mb-3 overflow-hidden">
+                                <div 
+                                    className="absolute top-0 left-0 h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out"
+                                    style={{ width: `${Math.min(homeSummary?.kpis?.budget?.cumplimiento || 0, 100)}%` }}
+                                />
+                            </div>
+
+                            <div className="flex justify-between items-center mb-6">
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    OBJ: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(homeSummary?.kpis?.budget?.objetivo || 0)}
+                                </div>
+                                <div className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                                    {homeSummary?.kpis?.budget?.cumplimiento?.toFixed(1)}%
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-slate-50 dark:border-slate-800/50 flex justify-center gap-6">
+                                <div className="text-center">
+                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Abonos</div>
+                                    <div className="text-xs font-bold text-rose-500">
+                                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(homeSummary?.kpis?.budget?.abonos || 0)}
+                                    </div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Neto</div>
+                                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(homeSummary?.kpis?.budget?.neto || 0)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                {/* Purchases Card */}
+                <div className="lg:col-span-1 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm p-6 flex flex-col items-center justify-center min-h-[350px] text-center">
+                    <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center mb-6 text-rose-600">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                    </div>
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Compras del Mes</h3>
+                    <div className="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
+                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(homeSummary?.kpis?.compras || 0)}
+                    </div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Gastado</div>
+                </div>
+            </div>
+
+                {/* Footer Helper */}
+                <div className="flex justify-center items-center gap-3 text-slate-400 dark:text-slate-600 pt-4">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Navega usando el menú lateral</span>
+                </div>
             </div>
         );
     }
@@ -147,26 +371,6 @@ export default function Home() {
         >
             {/* Header con logout */}
             <div className="absolute top-6 right-6 flex items-center gap-4 bg-[#2a2e35]/90 p-3 rounded-xl shadow-lg border border-white/10 backdrop-blur-sm z-50">
-                {(() => {
-                    const role = (user?.role_name || user?.role || '').toLowerCase();
-                    return role.includes('admin') || role.includes('direcci') || role.includes('direccion');
-                })() && (
-
-                        <>
-                            <Link
-                                to="/temporal"
-                                className="text-gray-400 hover:text-indigo-400 transition-colors text-[11px] font-bold uppercase tracking-wider border-r border-white/10 pr-4"
-                            >
-                                Temporal (ABC)
-                            </Link>
-                            <Link
-                                to="/cierre-mes"
-                                className="text-gray-400 hover:text-emerald-400 transition-colors text-[11px] font-bold uppercase tracking-wider border-r border-white/10 pr-4"
-                            >
-                                Cierre de mes
-                            </Link>
-                        </>
-                    )}
                 <span className="text-gray-300 font-medium text-sm px-2">
                     Hola, <span className="text-white font-bold">{user?.username}</span> ({user?.role_obj?.name || user?.role})
                 </span>
@@ -197,23 +401,6 @@ export default function Home() {
                 ))}
 
             </div>
-
-            {/* Floating Button for Entregas KPI (Direccion/Admin) */}
-            {(() => {
-                const role = (user?.role_name || user?.role || '').toLowerCase();
-                return role.includes('admin') || role.includes('direcci') || role.includes('direccion');
-            })() && (
-                <Link
-                    to="/entregas-tiempo"
-                    className="fixed bottom-8 right-8 bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-110 z-50 group border-2 border-white/20"
-                    title="KPI Entregas a Tiempo"
-                >
-                    <img src="/pedidos.png" alt="KPI" className="w-8 h-8 object-contain" />
-                    <span className="absolute right-full mr-4 bg-indigo-900/90 text-white text-[10px] px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-bold uppercase tracking-wider border border-white/10 backdrop-blur-sm">
-                        KPI Entregas a Tiempo
-                    </span>
-                </Link>
-            )}
         </div>
     );
 }
