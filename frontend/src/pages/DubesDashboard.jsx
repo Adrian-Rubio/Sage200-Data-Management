@@ -922,11 +922,6 @@ const DubesDashboard = () => {
         )}
       </main>
 
-      <InvitationsModal 
-        isOpen={showInvitationsModal} 
-        invitations={invitationsDetails} 
-        onClose={() => setShowInvitationsModal(false)} 
-      />
 
       <TicketModal 
         ticket={selectedTicket} 
