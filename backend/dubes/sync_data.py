@@ -159,6 +159,24 @@ def sync_tables():
                                 cache_db.merge(closure)
                             cache_db.commit()
 
+                        # 5. Sincronizar Movimientos de Caja (CashFlowOut) - INCREMENTAL
+                        last_cf = cache_db.query(models.CashFlowOut).filter(
+                            models.CashFlowOut.LocalId.in_(local_ids)
+                        ).order_by(models.CashFlowOut.CreationDate.desc()).first()
+
+                        last_cf_date = last_cf.CreationDate if last_cf else (datetime.datetime.now() - datetime.timedelta(days=730))
+
+                        new_cfs = source_db.query(models.CashFlowOut).filter(
+                            models.CashFlowOut.CreationDate > last_cf_date,
+                            models.CashFlowOut.IsDeleted == False
+                        ).order_by(models.CashFlowOut.CreationDate.asc()).all()
+
+                        if new_cfs:
+                            logger.info(f"Detectados {len(new_cfs)} nuevos movimientos de caja en {local_name}.")
+                            for cf in new_cfs:
+                                cache_db.merge(cf)
+                            cache_db.commit()
+
                     except Exception as e:
                         logger.error(f"Error sincronizando {ip}: {e}")
                         cache_db.rollback()

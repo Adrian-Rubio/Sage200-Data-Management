@@ -597,4 +597,16 @@ export const fetchSupplierArticles = async (vendorCode, page = 1, query = '') =>
     }
 };
 
+export const getCashflows = async (start, end, localId) => {
+    try {
+        let url = `/cashflows?start_date=${start}&end_date=${end}`;
+        if (localId && localId !== 'all') url += `&local_id=${localId}`;
+        const response = await api.get(url);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching cashflows:", error);
+        throw error;
+    }
+};
+
 export default api;

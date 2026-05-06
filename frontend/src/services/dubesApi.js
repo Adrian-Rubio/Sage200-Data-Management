@@ -37,6 +37,12 @@ export const dashboardService = {
     if (start) url += `start_date=${start}&end_date=${end}&`;
     if (localId && localId !== 'all') url += `local_id=${localId}`;
     return api.get(url);
+  },
+  getCashflows: (start, end, localId) => {
+    let url = '/api/dubes/cashflows?';
+    if (start) url += `start_date=${start}&end_date=${end}&`;
+    if (localId && localId !== 'all') url += `local_id=${localId}`;
+    return api.get(url);
   }
 };
 

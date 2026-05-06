@@ -262,3 +262,36 @@ def get_closures(
             "tickets": int(getattr(c, "Tickets", 0) or 0)
         } for c in closures]
     }
+
+@router.get("/cashflows")
+def get_cashflows(
+    start_date: Optional[str] = None, 
+    end_date: Optional[str] = None, 
+    local_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    s_bound, e_bound = parse_date_filter(start_date, end_date)
+    
+    query = db.query(models.CashFlowOut).options(
+        joinedload(models.CashFlowOut.staff),
+        joinedload(models.CashFlowOut.local)
+    ).filter(
+        models.CashFlowOut.Date >= s_bound,
+        models.CashFlowOut.Date < e_bound,
+        models.CashFlowOut.IsDeleted == False
+    )
+    
+    if local_id and local_id != "all":
+        query = query.filter(models.CashFlowOut.LocalId == local_id)
+        
+    results = query.order_by(models.CashFlowOut.Date.desc()).all()
+    
+    return [{
+        "id": cf.Id,
+        "local": cf.local.Name if cf.local else "Desconocido",
+        "date": cf.Date.strftime("%Y-%m-%d %H:%M") if cf.Date else "N/A",
+        "amount": round(cf.CashFlowOutAmount or 0, 2) if cf.CashFlowOutAmount else -round(cf.CashFlowInAmount or 0, 2),
+        "subject": cf.Subject or "Sin concepto",
+        "responsible": f"{cf.staff.Name} {cf.staff.LastName or ''}".strip() if cf.staff else "Sistema",
+        "ticketNumber": cf.NumTicket
+    } for cf in results]

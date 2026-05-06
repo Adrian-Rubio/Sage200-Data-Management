@@ -112,6 +112,7 @@ class Employee(Base):
     # Relationships
     sales = relationship("Sale", back_populates="waiter")
     closures = relationship("ClosingCash", back_populates="employee")
+    cash_flows = relationship("CashFlowOut", back_populates="staff")
 
 class ClosingCash(Base):
     __tablename__ = "ClosingCashes"
@@ -129,3 +130,24 @@ class ClosingCash(Base):
     # Relationships
     local = relationship("Local")
     employee = relationship("Employee")
+
+class CashFlowOut(Base):
+    __tablename__ = "CashFlowOut"
+    Id = Column(String, primary_key=True, index=True)
+    LocalId = Column(String, ForeignKey("Locals.Id"), nullable=True)
+    StaffId = Column(String, ForeignKey("Staff.Id"), nullable=True)
+    ClosingCashId = Column(String)
+    CashFlowOutAmount = Column(Float)
+    CashFlowInAmount = Column(Float)
+    Date = Column(DateTime)
+    Subject = Column(String) # Concepto
+    ProviderId = Column(String)
+    IsDeleted = Column(Boolean, default=False)
+    NumTicket = Column(String)
+    CreationDate = Column(DateTime)
+    ModificationDate = Column(DateTime)
+    PaymentMethodId = Column(String)
+
+    # Relationships
+    local = relationship("Local")
+    staff = relationship("Employee", back_populates="cash_flows")
