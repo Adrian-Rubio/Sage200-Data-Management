@@ -5,6 +5,13 @@ from dotenv import load_dotenv
 # Cargar variables de entorno si existen
 load_dotenv()
 
+# Parche para permitir protocolos SSL antiguos (TLS 1.0/1.1)
+base_dir = os.path.dirname(os.path.abspath(__file__))
+openssl_conf = os.path.join(base_dir, "openssl_permissive.cnf")
+if os.path.exists(openssl_conf):
+    os.environ["OPENSSL_CONF"] = openssl_conf
+    print(f"Configuración OpenSSL cargada: {openssl_conf}")
+
 # Datos de El Jardín
 server = "10.0.8.2"
 db = "MisstipsiPro"
