@@ -48,9 +48,9 @@ def sync_tables():
                     db_pass = os.getenv("DUBES_PASSWORD", "98cxMs}xV>bDzD@Y")
                     
                     if driver == "FreeTDS":
-                        # FreeTDS usa una cadena ligeramente distinta
+                        # FreeTDS usa una cadena ligeramente distinta. Forzamos TDS 7.0 para máxima compatibilidad con servidores antiguos.
                         temp_params = quote_plus(
-                            f"DRIVER={{FreeTDS}};SERVER={server.split('\\')[0]};PORT=1433;DATABASE={db_name};UID={db_user};PWD={db_pass};TDS_Version=7.1;"
+                            f"DRIVER={{FreeTDS}};SERVER={server.split('\\')[0]};PORT=1433;DATABASE={db_name};UID={db_user};PWD={db_pass};TDS_Version=7.0;"
                         )
                     else:
                         temp_params = quote_plus(
