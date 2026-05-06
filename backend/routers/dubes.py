@@ -203,9 +203,14 @@ def get_recent_tickets(
     return {"data": result, "pagination": {"page": page, "limit": limit, "total_items": total_items, "total_pages": total_pages}}
 
 @router.get("/invitations/details")
-def get_invitation_details(start_date: Optional[str] = None, end_date: Optional[str] = None, db: Session = Depends(get_db)):
+def get_invitation_details(
+    start_date: Optional[str] = None, 
+    end_date: Optional[str] = None, 
+    local_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     s_bound, e_bound = parse_date_filter(start_date, end_date)
-    details = filter_date_range(db.query(models.SaleDetail).join(models.Sale), s_bound, e_bound).filter(
+    details = filter_date_range(db.query(models.SaleDetail).join(models.Sale), s_bound, e_bound, local_id).filter(
         (models.SaleDetail.Invitation == True) | (models.SaleDetail.Total <= 0)
     ).all()
     return [{
