@@ -29,7 +29,12 @@ for driver in drivers:
         print(f"\nProbando: {s} | Driver: {driver}")
         try:
             # Construir cadena de conexión
-            conn_str = f"DRIVER={{{driver}}};SERVER={s};DATABASE={db};UID={user};PWD={password};Timeout=5;TrustServerCertificate=yes;Encrypt=no;"
+            if driver == "FreeTDS":
+                # Para FreeTDS en Linux, a veces es mejor pasar el puerto y la versión de TDS
+                server_only = s.split('\\')[0]
+                conn_str = f"DRIVER={{FreeTDS}};SERVER={server_only};PORT=1433;DATABASE={db};UID={user};PWD={password};TDS_Version=7.0;Timeout=5;"
+            else:
+                conn_str = f"DRIVER={{{driver}}};SERVER={s};DATABASE={db};UID={user};PWD={password};Timeout=5;TrustServerCertificate=yes;Encrypt=no;"
             
             conn = pyodbc.connect(conn_str)
             print(">>> ¡CONECTADO CON ÉXITO! <<<")
