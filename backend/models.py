@@ -53,3 +53,33 @@ class ModuleSetting(Base):
     name = Column(String(50), unique=True, index=True, nullable=False)
     is_active = Column(Boolean, default=True)
     last_modified = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class PurchaseTracking(Base):
+    __tablename__ = "purchase_tracking"
+    
+    # Primary key based on Sage order identification
+    codigo_empresa = Column(Integer, primary_key=True)
+    ejercicio_pedido = Column(Integer, primary_key=True)
+    serie_pedido = Column(String(10), primary_key=True)
+    numero_pedido = Column(Integer, primary_key=True)
+    
+    # Tracking fields
+    incoterm = Column(String(100))
+    medio_transporte = Column(String(50)) # AIR, OCEAN, LAND
+    agencia_transporte = Column(String(255))
+    ref_envio = Column(String(255)) # Booking ref
+    bultos = Column(Integer)
+    volumen = Column(String(50))
+    peso = Column(String(50))
+    
+    # Dates
+    fecha_establecida_inicial = Column(DateTime)
+    fecha_real_proveedor = Column(DateTime)
+    fecha_recogida_real = Column(DateTime)
+    fecha_salida_origen = Column(DateTime)
+    fecha_llegada_espana = Column(DateTime)
+    fecha_llegada_nosotros = Column(DateTime)
+    fecha_recepcion_almacen = Column(DateTime)
+    
+    anotaciones = Column(String(2000))
+    last_modified = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

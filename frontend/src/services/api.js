@@ -619,4 +619,45 @@ export const fetchHomeSummary = async () => {
     }
 };
 
+// --- Purchases Cenvalsa ---
+export const fetchCenvalsaPurchases = async (params) => {
+    try {
+        const response = await api.get('/purchases-cenvalsa/orders', { params });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching Cenvalsa purchases:", error);
+        throw error;
+    }
+};
+
+export const updateCenvalsaTracking = async (data) => {
+    try {
+        const response = await api.post('/purchases-cenvalsa/tracking', data);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating Cenvalsa tracking:", error);
+        throw error;
+    }
+};
+
+export const fetchCenvalsaAlbaranes = async (ejercicio, serie, numero) => {
+    try {
+        const response = await api.get('/purchases-cenvalsa/albaranes', { params: { ejercicio, serie, numero } });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching Cenvalsa albaranes:", error);
+        throw error;
+    }
+};
+
+export const fetchCenvalsaFacturas = async (ejercicio, serie, numero) => {
+    try {
+        const response = await api.get('/purchases-cenvalsa/facturas', { params: { ejercicio, serie, numero } });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching Cenvalsa facturas:", error);
+        throw error;
+    }
+};
+
 export default api;

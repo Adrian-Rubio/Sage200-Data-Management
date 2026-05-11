@@ -1,19 +1,9 @@
-import sys
-sys.path.append('.')
-from database import engine
 from sqlalchemy import text
-import pandas as pd
+from database import engine
 
-query = """
-SELECT TABLE_NAME 
-FROM INFORMATION_SCHEMA.TABLES 
-WHERE TABLE_NAME LIKE 'CabeceraAlbaran%'
-ORDER BY TABLE_NAME
-"""
-
-try:
-    df = pd.read_sql(text(query), engine)
-    print("Found Tables/Views:")
-    print(df)
-except Exception as e:
-    print(f"Error: {e}")
+with engine.connect() as conn:
+    res = conn.execute(text("SELECT name FROM sys.tables ORDER BY name"))
+    tables = [r[0] for r in res]
+    for t in tables:
+        if 'Fact' in t or 'Alb' in t:
+            print(t)

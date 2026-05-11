@@ -9,6 +9,7 @@ import PedidosPendientesPBIX from './pages/PedidosPendientesPBIX';
 import ComingSoon from './pages/ComingSoon';
 import Login from './pages/Login';
 import Compras from './pages/Compras';
+import ComprasCenvalsa from './pages/ComprasCenvalsa';
 import PedidosCompra from './pages/PedidosCompra';
 import Aprovisionamiento from './pages/Aprovisionamiento';
 import Usuarios from './pages/Usuarios';
@@ -50,7 +51,8 @@ function App() {
           <Route path="/comparison" element={<Comparison />} />
           <Route path="/pending-orders" element={<PendingOrders />} />
           <Route path="/pedidos-pendientes-pbix" element={<PedidosPendientesPBIX />} />
-          <Route path="/compras" element={<Compras />} />
+          <Route path="/compras" element={<ComprasCenvalsa />} />
+          <Route path="/compras-old" element={<Compras />} />
           <Route path="/compras/pedidos-pendientes" element={<PedidosCompra />} />
           <Route path="/compras/prevision-aprovisionamiento" element={<Aprovisionamiento />} />
           <Route path="/usuarios" element={<Usuarios />} />
