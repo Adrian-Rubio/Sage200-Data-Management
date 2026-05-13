@@ -3,7 +3,7 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ComposedChart, Legend 
 } from 'recharts';
 import { 
-  LayoutDashboard, TrendingUp, Clock, Receipt, Users, DollarSign, ArrowUpRight, ArrowDownRight, Menu, X, ChevronRight, Gift, Calendar, Search, FileText, ArrowRight, ArrowLeft, ArrowRightLeft, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw
+  LayoutDashboard, TrendingUp, Clock, Receipt, Users, DollarSign, ArrowUpRight, ArrowDownRight, Menu, X, ChevronRight, Gift, Calendar, Search, FileText, ArrowRight, ArrowLeft, ArrowRightLeft, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Sparkles, Info
 } from 'lucide-react';
 import { dashboardService } from '../services/dubesApi';
 import { PageHeader } from '../components/common/PageHeader';
@@ -28,9 +28,16 @@ const formatDateToES = (dateStr) => {
 
 const TicketModal = ({ ticket, onClose }) => {
   if (!ticket) return null;
+  const isEvent = ticket.amount >= 400 || ticket.items?.some(i => i.description.toLowerCase().includes('menú') || i.description.toLowerCase().includes('menu') || i.description.toLowerCase().includes('coctel') || i.description.toLowerCase().includes('boda'));
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+        {isEvent && (
+          <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-2 text-black font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-inner">
+            <Sparkles size={14} className="animate-spin" />
+            <span>Ticket de Gran Evento / Celebración Registrado</span>
+          </div>
+        )}
         <div className="p-6 border-b border-white/10 bg-white/[0.02] flex justify-between items-start">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -38,7 +45,10 @@ const TicketModal = ({ ticket, onClose }) => {
                 <Receipt size={28} />
               </div>
               <div>
-                <h3 className="text-3xl font-black tracking-tighter uppercase leading-none">ORDEN #{ticket.number}</h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-3xl font-black tracking-tighter uppercase leading-none">ORDEN #{ticket.number}</h3>
+                  {isEvent && <span className="bg-amber-500/20 text-amber-500 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded-full font-black uppercase">Evento 🎉</span>}
+                </div>
                 <p className="text-xs text-slate-400 font-black uppercase tracking-wider mt-1">ID: {ticket.id}</p>
               </div>
             </div>
@@ -389,6 +399,17 @@ const DubesDashboard = () => {
 
   const renderDashboard = () => (
     <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {selectedLocal === 'all' && (
+        <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl p-4 flex items-start gap-3">
+          <Info size={20} className="text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
+          <div className="flex flex-col">
+            <span className="text-xs font-black text-indigo-950 dark:text-indigo-300 uppercase tracking-wider">Vista Agregada Multi-Restaurante</span>
+            <span className="text-xs text-indigo-700 dark:text-indigo-400 font-medium mt-0.5">
+              Estás visualizando la suma global de facturación de todos los locales sincronizados. Los picos elevados en fines de semana suelen incluir grandes eventos, bodas y menús de celebración de El Jardín de Arturo Soria. Utiliza el selector superior para analizar un local individual.
+            </span>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <KpiCard title="Ingresos Brutos" value={kpis?.today_revenue} subtext={dateRange === 'today' ? `Ayer: ${formatEuro(kpis?.yesterday_revenue)}` : 'Periodo Filtrado'} />
         <KpiCard title="Nº Clientes" value={kpis?.total_guests_today} subtext="Comensales Totales" />
@@ -505,21 +526,31 @@ const DubesDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-              {tks.map((t) => (
-                <tr key={t.id} className="hover:bg-white/[0.03] transition-all group cursor-pointer" onClick={() => setSelectedTicket(t)}>
-                  <td className="py-4 pl-4">
-                    <span className="bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 px-3 py-1 rounded-lg font-black text-xs border border-indigo-500/30 group-hover:bg-indigo-600 group-hover:text-white transition-all uppercase">{t.table}</span>
-                  </td>
-                  <td className="py-4 text-slate-400 text-xs font-black">{t.time}</td>
-                  <td className="py-4 text-slate-400 text-xs font-mono">REF_{t.number}</td>
-                  <td className="py-4 font-black text-right pr-12 text-lg tracking-tighter group-hover:text-indigo-400 transition-colors">{formatEuro(t.amount)}</td>
-                  <td className="py-4 text-center">
-                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all mx-auto">
-                      <FileText size={14}/>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {tks.map((t) => {
+                const isEvt = t.amount >= 400 || t.items?.some(i => i.description.toLowerCase().includes('menú') || i.description.toLowerCase().includes('menu') || i.description.toLowerCase().includes('coctel') || i.description.toLowerCase().includes('boda'));
+                return (
+                  <tr key={t.id} className="hover:bg-white/[0.03] transition-all group cursor-pointer" onClick={() => setSelectedTicket(t)}>
+                    <td className="py-4 pl-4">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 px-3 py-1 rounded-lg font-black text-xs group-hover:bg-indigo-600 group-hover:text-white transition-all uppercase">{t.table}</span>
+                        {isEvt && (
+                          <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider flex items-center gap-1">
+                            <Sparkles size={10} /> Evento
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-4 text-slate-400 text-xs font-black">{t.time}</td>
+                    <td className="py-4 text-slate-400 text-xs font-mono">REF_{t.number}</td>
+                    <td className="py-4 font-black text-right pr-12 text-lg tracking-tighter group-hover:text-indigo-400 transition-colors">{formatEuro(t.amount)}</td>
+                    <td className="py-4 text-center">
+                      <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all mx-auto">
+                        <FileText size={14}/>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
