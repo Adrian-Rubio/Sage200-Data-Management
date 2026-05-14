@@ -20,6 +20,50 @@ class Role(Base):
     
     users = relationship("User", back_populates="role_obj")
 
+class Department(Base):
+    __tablename__ = "dashboard_departments"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, index=True, nullable=False)
+    
+    divisions = relationship("Division", back_populates="department")
+    users = relationship("User", back_populates="department")
+    positions = relationship("JobPosition", back_populates="department")
+
+class Division(Base):
+    __tablename__ = "dashboard_divisions"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), index=True, nullable=False)
+    department_id = Column(Integer, ForeignKey("dashboard_departments.id"))
+    
+    department = relationship("Department", back_populates="divisions")
+    users = relationship("User", back_populates="division")
+
+class JobPosition(Base):
+    __tablename__ = "dashboard_positions"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), index=True, nullable=False)
+    department_id = Column(Integer, ForeignKey("dashboard_departments.id"))
+    
+    # Permissions (mirrored from Role but will be the new standard)
+    can_view_ventas = Column(Boolean, default=False)
+    can_view_compras = Column(Boolean, default=False)
+    can_view_produccion = Column(Boolean, default=False)
+    can_view_finanzas = Column(Boolean, default=False)
+    can_view_almacen = Column(Boolean, default=False)
+    can_view_inventario = Column(Boolean, default=False)
+    can_manage_users = Column(Boolean, default=False)
+    
+    # New permissions mentioned in plan
+    can_view_rrhh = Column(Boolean, default=False)
+    can_view_calidad = Column(Boolean, default=False)
+    
+    # Hierarchy flags
+    is_responsable = Column(Boolean, default=False)
+    is_asistente = Column(Boolean, default=False)
+    
+    department = relationship("Department", back_populates="positions")
+    users = relationship("User", back_populates="position")
+
 class User(Base):
     __tablename__ = "dashboard_users"
 
@@ -31,9 +75,18 @@ class User(Base):
     # Legacy role string - keeping for now
     role = Column(String(20), default="comercial", nullable=False)
     
-    # Dynamic role relationship
+    # Dynamic role relationship (Legacy/Legacy compatible)
     role_id = Column(Integer, ForeignKey("dashboard_roles.id"), nullable=True)
     role_obj = relationship("Role", back_populates="users")
+    
+    # New Hierarchical structure
+    department_id = Column(Integer, ForeignKey("dashboard_departments.id"), nullable=True)
+    division_id = Column(Integer, ForeignKey("dashboard_divisions.id"), nullable=True)
+    position_id = Column(Integer, ForeignKey("dashboard_positions.id"), nullable=True)
+    
+    department = relationship("Department", back_populates="users")
+    division = relationship("Division", back_populates="users")
+    position = relationship("JobPosition", back_populates="users")
     
     # Optional field to link a dashboard user to a specific Sage200 sales representative
     sales_rep_id = Column(String(50), nullable=True)

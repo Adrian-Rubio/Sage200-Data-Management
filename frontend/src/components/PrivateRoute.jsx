@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-import ExecutiveLayout from './ExecutiveLayout';
+import MainLayout from './MainLayout';
 import ForcePasswordChange from './ForcePasswordChange';
 
 const PrivateRoute = () => {
@@ -15,18 +15,11 @@ const PrivateRoute = () => {
         return <ForcePasswordChange />;
     }
 
-    const role = (user?.role_name || user?.role || '').toLowerCase();
-    const isManagement = role.includes('admin') || role.includes('direcci') || role.includes('direccion');
-
-    if (isManagement) {
-        return (
-            <ExecutiveLayout>
-                <Outlet />
-            </ExecutiveLayout>
-        );
-    }
-
-    return <Outlet />;
+    return (
+        <MainLayout>
+            <Outlet />
+        </MainLayout>
+    );
 };
 
 export default PrivateRoute;

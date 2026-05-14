@@ -23,16 +23,43 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
         raise HTTPException(status_code=400, detail="Inactive user")
 
     # Compute permissions for the token
-    if user.user_type in ["DISTRIBUIDOR", "SOCIO"]:
+    # Priority 1: New Position-based structure
+    if user.position:
+        perms = {
+            "ventas": user.position.can_view_ventas,
+            "compras": user.position.can_view_compras,
+            "produccion": user.position.can_view_produccion,
+            "finanzas": user.position.can_view_finanzas,
+            "almacen": user.position.can_view_almacen,
+            "inventario": user.position.can_view_inventario,
+            "rrhh": user.position.can_view_rrhh,
+            "calidad": user.position.can_view_calidad,
+            "admin": user.position.can_manage_users
+        }
+        role_name = user.position.name
+        is_responsable = user.position.is_responsable
+        is_asistente = user.position.is_asistente
+    # Priority 2: Legacy user types
+    elif user.user_type in ["DISTRIBUIDOR", "SOCIO"]:
         perms = {
             "ventas": False, "compras": False, "produccion": False, 
-            "finanzas": False, "almacen": False, "inventario": True, "admin": False
+            "finanzas": False, "almacen": False, "inventario": True, "admin": False,
+            "rrhh": False, "calidad": False
         }
+        role_name = user.user_type
+        is_responsable = False
+        is_asistente = False
+    # Priority 3: Legacy Admin
     elif user.role == "admin" or (user.role_obj and user.role_obj.name == "admin"):
         perms = {
             "ventas": True, "compras": True, "produccion": True, 
-            "finanzas": True, "almacen": True, "inventario": True, "admin": True
+            "finanzas": True, "almacen": True, "inventario": True, "admin": True,
+            "rrhh": True, "calidad": True
         }
+        role_name = "Administrador"
+        is_responsable = True
+        is_asistente = False
+    # Priority 4: Legacy Role
     else:
         perms = {
             "ventas": user.role_obj.can_view_ventas if user.role_obj else True,
@@ -41,8 +68,12 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
             "finanzas": user.role_obj.can_view_finanzas if user.role_obj else False,
             "almacen": user.role_obj.can_view_almacen if user.role_obj else False,
             "inventario": user.role_obj.can_view_inventario if user.role_obj else True,
-            "admin": user.role_obj.can_manage_users if user.role_obj else False
+            "admin": user.role_obj.can_manage_users if user.role_obj else False,
+            "rrhh": False, "calidad": False
         }
+        role_name = user.role_obj.name if user.role_obj else user.role
+        is_responsable = False
+        is_asistente = False
 
     access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
@@ -50,7 +81,11 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
             "sub": user.username, 
             "role": user.role, 
             "role_id": user.role_id,
-            "role_name": user.role_obj.name if user.role_obj else user.role,
+            "role_name": role_name,
+            "department": user.department.name if user.department else None,
+            "division": user.division.name if user.division else None,
+            "is_responsable": is_responsable,
+            "is_asistente": is_asistente,
             "user_type": user.user_type,
             "permissions": perms,
             "sales_rep_id": user.sales_rep_id,
@@ -114,7 +149,10 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db), admin: 
         user_type=user.user_type,
         data_filters=user.data_filters,
         is_active=user.is_active,
-        must_change_password=user.must_change_password
+        must_change_password=user.must_change_password,
+        department_id=user.department_id,
+        division_id=user.division_id,
+        position_id=user.position_id
     )
     db.add(db_user)
     db.commit()
@@ -163,6 +201,9 @@ def update_user(user_id: int, user_update: schemas.UserCreate, db: Session = Dep
     db_user.data_filters = user_update.data_filters
     db_user.is_active = user_update.is_active
     db_user.must_change_password = user_update.must_change_password
+    db_user.department_id = user_update.department_id
+    db_user.division_id = user_update.division_id
+    db_user.position_id = user_update.position_id
     
     db.commit()
     db.refresh(db_user)
@@ -219,3 +260,40 @@ def change_password(data: schemas.PasswordChange, db: Session = Depends(get_db),
     current_user.must_change_password = False
     db.commit()
     return {"message": "Contraseña actualizada correctamente"}
+
+# Hierarchical structure endpoints
+@router.get("/departments", response_model=List[schemas.Department])
+def list_departments(db: Session = Depends(get_db), admin: models.User = Depends(check_admin_role)):
+    return db.query(models.Department).all()
+
+@router.post("/departments", response_model=schemas.Department)
+def create_department(dept: schemas.DepartmentBase, db: Session = Depends(get_db), admin: models.User = Depends(check_admin_role)):
+    db_dept = models.Department(**dept.dict())
+    db.add(db_dept)
+    db.commit()
+    db.refresh(db_dept)
+    return db_dept
+
+@router.get("/divisions", response_model=List[schemas.Division])
+def list_divisions(db: Session = Depends(get_db), admin: models.User = Depends(check_admin_role)):
+    return db.query(models.Division).all()
+
+@router.post("/divisions", response_model=schemas.Division)
+def create_division(div: schemas.DivisionBase, db: Session = Depends(get_db), admin: models.User = Depends(check_admin_role)):
+    db_div = models.Division(**div.dict())
+    db.add(db_div)
+    db.commit()
+    db.refresh(db_div)
+    return db_div
+
+@router.get("/positions", response_model=List[schemas.JobPosition])
+def list_positions(db: Session = Depends(get_db), admin: models.User = Depends(check_admin_role)):
+    return db.query(models.JobPosition).all()
+
+@router.post("/positions", response_model=schemas.JobPosition)
+def create_position(pos: schemas.JobPositionBase, db: Session = Depends(get_db), admin: models.User = Depends(check_admin_role)):
+    db_pos = models.JobPosition(**pos.dict())
+    db.add(db_pos)
+    db.commit()
+    db.refresh(db_pos)
+    return db_pos

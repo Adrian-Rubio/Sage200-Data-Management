@@ -23,9 +23,22 @@ export default function Comparison() {
     const [error, setError] = useState(null);
     const [options, setOptions] = useState(filterOptions || { companies: [], reps: [], clients: [], series: [] });
 
-    const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || user?.role_obj?.name === 'admin' || user?.role_obj?.can_manage_users;
+    const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || user?.is_responsable || user?.department === 'Dirección';
     const isRestrictedToRep = !hasManagePermission && !!user?.sales_rep_id;
     const initialSalesRepId = isRestrictedToRep ? user?.sales_rep_id?.toUpperCase() : null;
+
+    // Bloqueo explícito para asistentes
+    if (user?.is_asistente) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-10">
+                <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-2xl flex items-center justify-center mb-6">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v3m0-3h3m-3 0H9m12 1a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-900 dark:text-white mb-2">Acceso Restringido</h2>
+                <p className="text-slate-500 max-w-md mx-auto">Como asistente, no dispones de permisos para visualizar comparativas de ventas.</p>
+            </div>
+        );
+    }
 
     // Filters
     const [filters, setFilters] = useState({

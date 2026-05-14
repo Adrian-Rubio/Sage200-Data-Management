@@ -14,7 +14,8 @@ export default function Home() {
 
     const isManagement = (() => {
         const role = (user?.role_name || user?.role || '').toLowerCase();
-        return role.includes('admin') || role.includes('direcci') || role.includes('direccion');
+        const dept = (user?.department || '').toLowerCase();
+        return role.includes('admin') || role.includes('direcci') || role.includes('direccion') || dept.includes('direcci');
     })();
 
     // Real-time clock for Executive Dashboard

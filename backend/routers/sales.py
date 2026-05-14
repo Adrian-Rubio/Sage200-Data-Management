@@ -80,13 +80,34 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
                 current_allowed_reps = []
 
         # RBAC
-        has_manage_permission = (current_user.role == "admin") or (
-            current_user.role_obj and current_user.role_obj.name == "admin"
-        ) or (
-            current_user.role_obj and current_user.role_obj.can_manage_users
-        )
-        if not has_manage_permission and current_user.sales_rep_id:
-            current_allowed_reps = [rep for rep in current_allowed_reps if rep == current_user.sales_rep_id.upper()]
+        is_admin = (current_user.role == "admin") or (current_user.position and current_user.position.can_manage_users)
+        is_direction = (current_user.department and current_user.department.name == "Dirección")
+        
+        if is_admin or is_direction:
+            # Full access to all reps
+            current_allowed_reps = all_reps
+        elif current_user.position:
+            # New Position-based logic
+            if current_user.position.is_asistente:
+                raise HTTPException(status_code=403, detail="Acceso denegado: Los asistentes no tienen permiso para ver ventas.")
+            
+            if current_user.position.is_responsable and current_user.division:
+                # Responsable sees all reps in their division
+                current_allowed_reps = divisions.get(current_user.division.name, [])
+            elif current_user.sales_rep_id:
+                # Comercial sees only themselves
+                current_allowed_reps = [current_user.sales_rep_id.upper()]
+            else:
+                current_allowed_reps = []
+        else:
+            # Legacy RBAC
+            has_manage_permission = (current_user.role == "admin") or (
+                current_user.role_obj and current_user.role_obj.name == "admin"
+            ) or (
+                current_user.role_obj and current_user.role_obj.can_manage_users
+            )
+            if not has_manage_permission and current_user.sales_rep_id:
+                current_allowed_reps = [rep for rep in current_allowed_reps if rep == current_user.sales_rep_id.upper()]
 
         # Shared filter strings and params
         common_where = ""
@@ -429,13 +450,31 @@ def get_paginated_invoices(filters: InvoiceFilters, db: Session = Depends(get_db
         if filters.division:
             current_allowed_reps = divisions.get(filters.division, [])
 
-        has_manage_permission = (current_user.role == "admin") or (
-            current_user.role_obj and current_user.role_obj.name == "admin"
-        ) or (
-            current_user.role_obj and current_user.role_obj.can_manage_users
-        )
-        if not has_manage_permission and current_user.sales_rep_id:
-            current_allowed_reps = [rep for rep in current_allowed_reps if rep == current_user.sales_rep_id.upper()]
+        # RBAC
+        is_admin = (current_user.role == "admin") or (current_user.position and current_user.position.can_manage_users)
+        is_direction = (current_user.department and current_user.department.name == "Dirección")
+        
+        if is_admin or is_direction:
+            current_allowed_reps = all_reps
+        elif current_user.position:
+            if current_user.position.is_asistente:
+                raise HTTPException(status_code=403, detail="Acceso denegado")
+            
+            if current_user.position.is_responsable and current_user.division:
+                current_allowed_reps = divisions.get(current_user.division.name, [])
+            elif current_user.sales_rep_id:
+                current_allowed_reps = [current_user.sales_rep_id.upper()]
+            else:
+                current_allowed_reps = []
+        else:
+            # Legacy RBAC
+            has_manage_permission = (current_user.role == "admin") or (
+                current_user.role_obj and current_user.role_obj.name == "admin"
+            ) or (
+                current_user.role_obj and current_user.role_obj.can_manage_users
+            )
+            if not has_manage_permission and current_user.sales_rep_id:
+                current_allowed_reps = [rep for rep in current_allowed_reps if rep == current_user.sales_rep_id.upper()]
 
         # Build query
         params = {'company_id': '2'} # Fixed to 2 as per user request for 2025+
@@ -542,14 +581,34 @@ def get_sales_comparison(filters: ComparisonFilters, db: Session = Depends(get_d
              current_allowed_reps = [r for r in current_allowed_reps if r == filters.sales_rep_id]
 
         # Consider an admin if string role="admin" OR the user's role_obj is admin.
-        has_manage_permission = (current_user.role == "admin") or (
-            current_user.role_obj and current_user.role_obj.name == "admin"
-        ) or (
-            current_user.role_obj and current_user.role_obj.can_manage_users
-        )
-        if not has_manage_permission and current_user.sales_rep_id:
-            current_allowed_reps = [r for r in current_allowed_reps if r == current_user.sales_rep_id.upper()]
-            filters.sales_rep_id = current_user.sales_rep_id.upper()
+        # RBAC
+        is_admin = (current_user.role == "admin") or (current_user.position and current_user.position.can_manage_users)
+        is_direction = (current_user.department and current_user.department.name == "Dirección")
+        
+        if is_admin or is_direction:
+            # Full access, no change to current_allowed_reps needed
+            pass
+        elif current_user.position:
+            if current_user.position.is_asistente:
+                raise HTTPException(status_code=403, detail="Acceso denegado")
+            
+            if current_user.position.is_responsable and current_user.division:
+                current_allowed_reps = [r for r in current_allowed_reps if r in divisions.get(current_user.division.name, [])]
+            elif current_user.sales_rep_id:
+                current_allowed_reps = [r for r in current_allowed_reps if r == current_user.sales_rep_id.upper()]
+                filters.sales_rep_id = current_user.sales_rep_id.upper()
+            else:
+                current_allowed_reps = []
+        else:
+            # Legacy logic
+            has_manage_permission = (current_user.role == "admin") or (
+                current_user.role_obj and current_user.role_obj.name == "admin"
+            ) or (
+                current_user.role_obj and current_user.role_obj.can_manage_users
+            )
+            if not has_manage_permission and current_user.sales_rep_id:
+                current_allowed_reps = [r for r in current_allowed_reps if r == current_user.sales_rep_id.upper()]
+                filters.sales_rep_id = current_user.sales_rep_id.upper()
 
         if not current_allowed_reps:
             return {"comparison": []}

@@ -131,6 +131,67 @@ export const deleteRole = async (roleId) => {
     }
 };
 
+// --- Hierarchical Structure ---
+export const fetchDepartments = async () => {
+    try {
+        const response = await api.get('/auth/departments');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching departments:", error);
+        throw error;
+    }
+};
+
+export const createDepartment = async (deptData) => {
+    try {
+        const response = await api.post('/auth/departments', deptData);
+        return response.data;
+    } catch (error) {
+        console.error("Error creating department:", error);
+        throw error;
+    }
+};
+
+export const fetchDivisions = async () => {
+    try {
+        const response = await api.get('/auth/divisions');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching divisions:", error);
+        throw error;
+    }
+};
+
+export const createDivision = async (divData) => {
+    try {
+        const response = await api.post('/auth/divisions', divData);
+        return response.data;
+    } catch (error) {
+        console.error("Error creating division:", error);
+        throw error;
+    }
+};
+
+export const fetchPositions = async () => {
+    try {
+        const response = await api.get('/auth/positions');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching positions:", error);
+        throw error;
+    }
+};
+
+export const createPosition = async (posData) => {
+    try {
+        const response = await api.post('/auth/positions', posData);
+        return response.data;
+    } catch (error) {
+        console.error("Error creating position:", error);
+        throw error;
+    }
+};
+
 // --- Filters ---
 export const fetchFilterOptions = async () => {
     try {
