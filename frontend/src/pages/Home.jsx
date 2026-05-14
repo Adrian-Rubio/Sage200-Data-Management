@@ -363,14 +363,6 @@ export default function Home() {
     return (
         <div
             className="w-full min-h-screen relative flex flex-col items-center justify-center p-6 gap-8"
-            style={{
-                margin: 0,
-                padding: 0,
-                backgroundImage: "url('/bg-industrial.png')",
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat'
-            }}
         >
             {/* User Profile Card */}
             <div className="bg-[#2a2e35]/80 backdrop-blur-md rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 flex flex-col items-center text-center max-w-sm w-full animate-fadeIn z-10 relative">
