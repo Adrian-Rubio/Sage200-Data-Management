@@ -308,7 +308,7 @@ def get_cashflows(
         "id": cf.Id,
         "local": cf.local.Name if cf.local else "Desconocido",
         "date": cf.Date.strftime("%Y-%m-%d %H:%M") if cf.Date else "N/A",
-        "amount": round(cf.CashFlowOutAmount or 0, 2) if cf.CashFlowOutAmount else -round(cf.CashFlowInAmount or 0, 2),
+        "amount": round(cf.CashFlowInAmount or 0, 2) if (cf.CashFlowInAmount and cf.CashFlowInAmount > 0) else -round(cf.CashFlowOutAmount or 0, 2),
         "subject": cf.Subject or "Sin concepto",
         "responsible": f"{cf.staff.Name} {cf.staff.LastName or ''}".strip() if cf.staff else "Sistema",
         "ticketNumber": cf.NumTicket

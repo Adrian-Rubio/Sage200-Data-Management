@@ -106,9 +106,11 @@ def sync_tables():
                         ).order_by(models.Sale.CheckOutDate.desc()).first()
                         
                         last_date = last_sale.CheckOutDate if last_sale else (datetime.datetime.now() - datetime.timedelta(days=730))
+                        # Margen de seguridad de 1 día para evitar huecos por sincronización de relojes
+                        sync_start_date = last_date - datetime.timedelta(days=1)
                         
                         new_sales_query = source_db.query(models.Sale).options(joinedload(models.Sale.lines)).filter(
-                            models.Sale.CheckOutDate > last_date,
+                            models.Sale.CheckOutDate >= sync_start_date,
                             models.Sale.IsDeleted == False
                         ).order_by(models.Sale.CheckOutDate.asc())
 
@@ -148,9 +150,10 @@ def sync_tables():
                         ).order_by(models.ClosingCash.ClosingDate.desc()).first()
 
                         last_closure_date = last_closure.ClosingDate if last_closure else (datetime.datetime.now() - datetime.timedelta(days=730))
+                        sync_start_closure = last_closure_date - datetime.timedelta(days=1)
 
                         new_closures = source_db.query(models.ClosingCash).filter(
-                            models.ClosingCash.ClosingDate > last_closure_date
+                            models.ClosingCash.ClosingDate >= sync_start_closure
                         ).order_by(models.ClosingCash.ClosingDate.asc()).all()
 
                         if new_closures:
@@ -165,9 +168,10 @@ def sync_tables():
                         ).order_by(models.CashFlowOut.CreationDate.desc()).first()
 
                         last_cf_date = last_cf.CreationDate if last_cf else (datetime.datetime.now() - datetime.timedelta(days=730))
+                        sync_start_cf = last_cf_date - datetime.timedelta(days=1)
 
                         new_cfs = source_db.query(models.CashFlowOut).filter(
-                            models.CashFlowOut.CreationDate > last_cf_date,
+                            models.CashFlowOut.CreationDate >= sync_start_cf,
                             models.CashFlowOut.IsDeleted == False
                         ).order_by(models.CashFlowOut.CreationDate.asc()).all()
 
