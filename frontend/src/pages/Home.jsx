@@ -358,9 +358,11 @@ export default function Home() {
         );
     }
 
+    const activeModules = modules.filter(m => !m.disabled && !m.globallyInactive);
+
     return (
         <div
-            className="w-full min-h-screen relative flex flex-col items-center justify-center"
+            className="w-full min-h-screen relative flex flex-col items-center justify-center p-6 gap-8"
             style={{
                 margin: 0,
                 padding: 0,
@@ -370,38 +372,64 @@ export default function Home() {
                 backgroundRepeat: 'no-repeat'
             }}
         >
-            {/* Header con logout */}
-            <div className="absolute top-6 right-6 flex items-center gap-4 bg-[#2a2e35]/90 p-3 rounded-xl shadow-lg border border-white/10 backdrop-blur-sm z-50">
-                <span className="text-gray-300 font-medium text-sm px-2">
-                    Hola, <span className="text-white font-bold">{user?.username}</span> ({user?.role_obj?.name || user?.role})
-                </span>
-                <button
-                    onClick={logoutUser}
-                    className="bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white px-4 py-2 rounded-lg shadow-sm font-medium transition-all text-sm"
-                >
-                    Cerrar Sesión
-                </button>
+            {/* User Profile Card */}
+            <div className="bg-[#2a2e35]/80 backdrop-blur-md rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 flex flex-col items-center text-center max-w-sm w-full animate-fadeIn z-10 relative">
+                <div className="w-24 h-24 bg-blue-500/20 rounded-full flex items-center justify-center mb-4 border-2 border-blue-500/50 shadow-inner">
+                    <svg className="w-12 h-12 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-1">
+                    {user?.sub || user?.username || 'Usuario'}
+                </h2>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
+                        {user?.role_name || user?.role || 'Personal'}
+                    </span>
+                </div>
+                
+                <div className="w-full space-y-3">
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                        <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <div className="text-left flex-1 min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Correo Electrónico</p>
+                            <p className="text-sm font-medium text-slate-200 truncate">{user?.email || 'Sin correo registrado'}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                        <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <div className="text-left flex-1 min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Departamento</p>
+                            <p className="text-sm font-medium text-slate-200 truncate">{user?.department || 'No asignado'}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Main Navigation Container */}
-            <div className="bg-[#2a2e35]/80 backdrop-blur-md rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-wrap justify-center gap-6 max-w-[95%] border border-white/10">
-
-                {modules.filter(m => !m.disabled && !m.globallyInactive).map((mod) => (
-                    <Link
-                        key={mod.name}
-                        to={mod.path}
-                        className={`flex flex-col items-center justify-center w-[160px] h-[160px] ${mod.color} ${mod.hover} text-white rounded-[1.5rem] transition-all hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)] border border-white/10`}
-                    >
-                        <div className="transform group-hover:scale-110 transition-transform">
-                            {mod.icon}
-                        </div>
-                        <span className="text-[13px] font-bold tracking-widest uppercase">
-                            {mod.name}
-                        </span>
-                    </Link>
-                ))}
-
-            </div>
+            {activeModules.length > 0 && (
+                <div className="bg-[#2a2e35]/80 backdrop-blur-md rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-wrap justify-center gap-6 max-w-[95%] border border-white/10 z-10 relative">
+                    {activeModules.map((mod) => (
+                        <Link
+                            key={mod.name}
+                            to={mod.path}
+                            className={`flex flex-col items-center justify-center w-[160px] h-[160px] ${mod.color} ${mod.hover} text-white rounded-[1.5rem] transition-all hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)] border border-white/10`}
+                        >
+                            <div className="transform group-hover:scale-110 transition-transform">
+                                {mod.icon}
+                            </div>
+                            <span className="text-[13px] font-bold tracking-widest uppercase">
+                                {mod.name}
+                            </span>
+                        </Link>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
