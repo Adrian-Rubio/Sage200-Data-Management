@@ -598,7 +598,7 @@ const DubesDashboard = () => {
           <thead>
             <tr className="text-slate-400 text-[10px] font-black uppercase tracking-widest">
               <th className="pb-4 pl-4">Local</th>
-              <th className="pb-4">Fecha Cierre</th>
+              <th className="pb-4">Día de Negocio / Hora</th>
               <th className="pb-4">Responsable</th>
               <th className="pb-4 text-right">Tickets</th>
               <th className="pb-4 text-right">Total Sistema</th>
@@ -612,7 +612,16 @@ const DubesDashboard = () => {
                   <td className="py-4 pl-4 rounded-l-2xl">
                     <span className="text-xs font-black uppercase text-slate-500">{c.local}</span>
                   </td>
-                  <td className="py-4 text-slate-600 text-xs font-black">{c.date}</td>
+                  <td className="py-4">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                        {c.businessDate ? formatDateToES(c.businessDate) : 'N/A'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium italic">
+                        {c.date.split(' ')[1]} (Real: {c.date.split(' ')[0]})
+                      </span>
+                    </div>
+                  </td>
                   <td className="py-4 text-slate-400 text-xs font-black uppercase">{c.employee}</td>
                   <td className="py-4 text-right text-xs font-black">{c.tickets}</td>
                   <td className="py-4 text-right font-black text-slate-900">{formatEuro(c.sales)}</td>

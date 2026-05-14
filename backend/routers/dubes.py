@@ -20,6 +20,13 @@ def get_business_day_bounds(date: datetime.date):
     end_time = start_time + datetime.timedelta(days=1)
     return start_time, end_time
 
+def get_business_date(dt: datetime.datetime):
+    if not dt: return None
+    # Si es antes de las 6 AM, pertenece al día anterior
+    if dt.hour < 6:
+        return (dt - datetime.timedelta(days=1)).date()
+    return dt.date()
+
 def parse_date_filter(start_date: Optional[str] = None, end_date: Optional[str] = None):
     now = datetime.datetime.now()
     if not start_date or not end_date:
@@ -247,15 +254,16 @@ def get_closures(
     page_size: int = 20,
     db: Session = Depends(get_db)
 ):
+    s_bound, e_bound = parse_date_filter(start_date, end_date)
+    
     query = db.query(models.ClosingCash).options(
         joinedload(models.ClosingCash.local),
         joinedload(models.ClosingCash.employee)
+    ).filter(
+        models.ClosingCash.ClosingDate >= s_bound,
+        models.ClosingCash.ClosingDate < e_bound
     )
 
-    if start_date:
-        query = query.filter(models.ClosingCash.ClosingDate >= start_date)
-    if end_date:
-        query = query.filter(models.ClosingCash.ClosingDate <= end_date + " 23:59:59")
     if local_id and local_id != "all":
         query = query.filter(models.ClosingCash.LocalId == local_id)
 
@@ -270,6 +278,7 @@ def get_closures(
         "items": [{
             "id": getattr(c, "Id", "N/A"),
             "date": c.ClosingDate.strftime("%Y-%m-%d %H:%M") if hasattr(c, "ClosingDate") and c.ClosingDate and hasattr(c.ClosingDate, "strftime") else str(getattr(c, "ClosingDate", "N/A")),
+            "businessDate": get_business_date(c.ClosingDate).strftime("%Y-%m-%d") if hasattr(c, "ClosingDate") and c.ClosingDate else "N/A",
             "local": c.local.Name if getattr(c, "local", None) else "Desconocido",
             "employee": f"{c.employee.Name} {c.employee.LastName or ''}".strip() if getattr(c, "employee", None) else "Sistema",
             "expected": round(float(getattr(c, "CalculatedCash", 0) or 0), 2),
