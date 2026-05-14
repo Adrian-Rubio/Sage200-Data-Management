@@ -7,9 +7,9 @@ from datetime import timedelta
 import models, schemas, auth
 from database import get_db
 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter()
 
-@router.post("/login", response_model=schemas.Token)
+@router.post("/auth/login", response_model=schemas.Token)
 def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == form_data.username).first()
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
@@ -250,7 +250,7 @@ def delete_role(role_id: int, db: Session = Depends(get_db), admin: models.User 
 def read_users_me(current_user: models.User = Depends(auth.get_current_active_user)):
     return current_user
 
-@router.post("/change-password")
+@router.post("/auth/change-password")
 def change_password(data: schemas.PasswordChange, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     # In this case we only care about the password
     if not data.password:
