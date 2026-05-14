@@ -48,7 +48,8 @@ export const dashboardService = {
     if (start) url += `start_date=${start}&end_date=${end}&`;
     if (localId && localId !== 'all') url += `local_id=${localId}`;
     return api.get(url);
-  }
+  },
+  syncData: () => api.post('/api/dubes/sync')
 };
 
 export default api;

@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import Optional, List
 import datetime
-from dubes import models, database_cache
+from dubes import models, database_cache, sync_data
 
 router = APIRouter()
 
@@ -49,6 +49,14 @@ def filter_date_range(query, start, end, local_id: Optional[str] = None):
     return query
 
 # --- ROUTES ---
+
+@router.post("/sync")
+def trigger_sync(background_tasks: BackgroundTasks):
+    """
+    Triggers a synchronization with the external MissTipsi databases in the background.
+    """
+    background_tasks.add_task(sync_data.sync_tables)
+    return {"status": "sync_started", "message": "La sincronización ha comenzado en segundo plano."}
 
 @router.get("/locals")
 def get_locals(db: Session = Depends(get_db)):

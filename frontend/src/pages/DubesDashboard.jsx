@@ -219,8 +219,9 @@ const DubesDashboard = () => {
   const [closuresData, setClosuresData] = useState({ items: [], total: 0, total_pages: 0 });
   const [cashflowsData, setCashflowsData] = useState([]);
   const [cashflowSort, setCashflowSort] = useState({ field: 'date', direction: 'desc' });
-  const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
   
   // Invitations analytical states
   const [invStats, setInvStats] = useState({ totalAmount: 0, totalCount: 0, topArticle: '--', topWaiter: '--', reasonDistribution: [] });
@@ -314,6 +315,25 @@ const DubesDashboard = () => {
       console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setSyncMessage('Iniciando sincronización con el servidor TPV...');
+    try {
+      await dashboardService.syncData();
+      setSyncMessage('Sincronización iniciada en segundo plano. Los datos aparecerán en unos momentos.');
+      // Refrescar datos locales después de un breve delay para dar tiempo a que empiece la sincronización
+      setTimeout(() => {
+        fetchData();
+        setSyncing(false);
+        setTimeout(() => setSyncMessage(''), 5000);
+      }, 3000);
+    } catch (error) {
+      console.error("Error triggering sync:", error);
+      setSyncMessage('Error al conectar con el servidor de sincronización.');
+      setSyncing(false);
     }
   };
 
@@ -833,6 +853,22 @@ const DubesDashboard = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col relative font-sans scale-[0.98] origin-top transition-all duration-500">
       <div className="p-4 md:p-6">
         <PageHeader moduleName="Restauración" showRefresh={false}>
+          <div className="flex items-center gap-2 mr-2">
+            {syncMessage && (
+              <span className="text-[10px] font-black uppercase text-indigo-500 animate-pulse bg-indigo-50 dark:bg-indigo-950/50 px-3 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
+                {syncMessage}
+              </span>
+            )}
+            <button 
+              onClick={handleSync} 
+              disabled={syncing}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-black text-[10px] uppercase transition-all shadow-sm ${syncing ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-700 active:scale-95'}`}
+              title="Sincronizar datos reales desde los TPVs de los locales"
+            >
+              <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+              {syncing ? 'Sincronizando...' : 'Actualizar Datos TPV'}
+            </button>
+          </div>
           <button onClick={fetchData} className="bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 p-2 rounded-lg shadow-sm border border-slate-100 dark:border-slate-800 hover:bg-slate-50 transition-colors">
             <RefreshCw size={18} />
           </button>
