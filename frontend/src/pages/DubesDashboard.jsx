@@ -219,6 +219,7 @@ const DubesDashboard = () => {
   const [closuresData, setClosuresData] = useState({ items: [], total: 0, total_pages: 0 });
   const [cashflowsData, setCashflowsData] = useState([]);
   const [cashflowSort, setCashflowSort] = useState({ field: 'date', direction: 'desc' });
+  const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
