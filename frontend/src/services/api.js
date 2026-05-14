@@ -134,7 +134,7 @@ export const deleteRole = async (roleId) => {
 // --- Hierarchical Structure ---
 export const fetchDepartments = async () => {
     try {
-        const response = await api.get('/auth/departments');
+        const response = await api.get('/departments');
         return response.data;
     } catch (error) {
         console.error("Error fetching departments:", error);
@@ -144,7 +144,7 @@ export const fetchDepartments = async () => {
 
 export const createDepartment = async (deptData) => {
     try {
-        const response = await api.post('/auth/departments', deptData);
+        const response = await api.post('/departments', deptData);
         return response.data;
     } catch (error) {
         console.error("Error creating department:", error);
@@ -154,7 +154,7 @@ export const createDepartment = async (deptData) => {
 
 export const fetchDivisions = async () => {
     try {
-        const response = await api.get('/auth/divisions');
+        const response = await api.get('/divisions');
         return response.data;
     } catch (error) {
         console.error("Error fetching divisions:", error);
@@ -164,7 +164,7 @@ export const fetchDivisions = async () => {
 
 export const createDivision = async (divData) => {
     try {
-        const response = await api.post('/auth/divisions', divData);
+        const response = await api.post('/divisions', divData);
         return response.data;
     } catch (error) {
         console.error("Error creating division:", error);
@@ -174,7 +174,7 @@ export const createDivision = async (divData) => {
 
 export const fetchPositions = async () => {
     try {
-        const response = await api.get('/auth/positions');
+        const response = await api.get('/positions');
         return response.data;
     } catch (error) {
         console.error("Error fetching positions:", error);
@@ -184,7 +184,7 @@ export const fetchPositions = async () => {
 
 export const createPosition = async (posData) => {
     try {
-        const response = await api.post('/auth/positions', posData);
+        const response = await api.post('/positions', posData);
         return response.data;
     } catch (error) {
         console.error("Error creating position:", error);
