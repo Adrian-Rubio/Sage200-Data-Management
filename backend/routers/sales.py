@@ -185,10 +185,11 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
                 p_where += " AND k.CodigoCliente = :client_id"
             
             p_query = f"""
-                SELECT k.ImporteLiquido, c.RazonSocial, com.Comisionista 
+                SELECT l.ImporteLiquido, c.RazonSocial, com.Comisionista 
                 FROM CabeceraAlbaranCliente k 
+                JOIN LineasAlbaranCliente l ON k.NumeroAlbaran = l.NumeroAlbaran AND k.CodigoEmpresa = l.CodigoEmpresa AND k.SerieAlbaran = l.SerieAlbaran AND k.EjercicioAlbaran = l.EjercicioAlbaran
                 JOIN Clientes c ON k.CodigoCliente = c.CodigoCliente AND k.CodigoEmpresa = c.CodigoEmpresa 
-                JOIN Comisionistas com ON k.CodigoComisionista = com.CodigoComisionista AND k.CodigoEmpresa = com.CodigoEmpresa
+                JOIN Comisionistas com ON l.CodigoComisionista = com.CodigoComisionista AND l.CodigoEmpresa = com.CodigoEmpresa
                 {p_where}
             """
             
