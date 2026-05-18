@@ -34,12 +34,14 @@ def map_division(fam):
 @router.post("/monthly-close")
 def get_monthly_close(filters: MonthlyCloseFilters, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     def check_is_authorized(u):
+        is_it_dept = u.department and u.department.name.lower() in ["departamento de it", "it"]
+        is_finanzas = u.position and u.position.can_view_finanzas
         r_name = str(u.role).lower()
         ro_name = str(u.role_obj.name).lower() if u.role_obj else ""
         
-        is_adm = "admin" in r_name or "admin" in ro_name
+        is_adm = "admin" in r_name or "admin" in ro_name or (u.position and u.position.can_manage_users)
         is_dir = "direcci" in r_name or "direcci" in ro_name or "direccion" in r_name or "direccion" in ro_name
-        return is_adm or is_dir
+        return is_adm or is_dir or is_it_dept or is_finanzas
 
     if not check_is_authorized(current_user):
         raise HTTPException(status_code=403, detail="Not authorized for this report")
@@ -337,9 +339,13 @@ def get_abc_analysis(
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
     def check_is_authorized(u):
+        is_it_dept = u.department and u.department.name.lower() in ["departamento de it", "it"]
+        is_almacen = u.position and u.position.can_view_almacen
         r_name = str(u.role).lower()
         ro_name = str(u.role_obj.name).lower() if u.role_obj else ""
-        return "admin" in r_name or "direcci" in r_name or "direccion" in r_name or "admin" in ro_name
+        is_adm = "admin" in r_name or "admin" in ro_name or (u.position and u.position.can_manage_users)
+        is_dir = "direcci" in r_name or "direcci" in ro_name or "direccion" in r_name or "direccion" in ro_name
+        return is_adm or is_dir or is_it_dept or is_almacen
 
     if not check_is_authorized(current_user):
         raise HTTPException(status_code=403, detail="Not authorized for this report")

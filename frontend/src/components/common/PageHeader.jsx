@@ -8,7 +8,7 @@ export function PageHeader({ moduleName, showRefresh = true, onRefresh, children
     const { theme, toggleTheme } = useThemeStore();
 
     return (
-        <div className="flex justify-between items-center mb-6 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 animate-fadeIn transition-colors">
+        <div className="flex justify-between items-center mb-6 bg-white dark:bg-slate-900 p-4 pr-4 md:pr-[220px] rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 animate-fadeIn transition-colors">
             <div className="flex items-center gap-4">
                 <div className="flex flex-col">
                     <h1 className="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">

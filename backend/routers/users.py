@@ -26,6 +26,12 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
     # Priority 1: New Position-based structure
     if user.position:
         is_it_dept = user.department and user.department.name.lower() in ["departamento de it", "it"]
+        is_true_admin = (
+            user.username == "adrian.rubio" 
+            or "administrador" in user.position.name.lower()
+            or "admin" in user.position.name.lower()
+            or user.role == "admin"
+        )
         perms = {
             "ventas": True if is_it_dept else user.position.can_view_ventas,
             "compras": True if is_it_dept else user.position.can_view_compras,
@@ -35,7 +41,7 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
             "inventario": True if is_it_dept else user.position.can_view_inventario,
             "rrhh": True if is_it_dept else user.position.can_view_rrhh,
             "calidad": True if is_it_dept else user.position.can_view_calidad,
-            "admin": True if is_it_dept else user.position.can_manage_users
+            "admin": True if is_true_admin else user.position.can_manage_users
         }
         role_name = user.position.name
         is_responsable = True if is_it_dept else user.position.is_responsable

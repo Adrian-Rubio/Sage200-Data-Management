@@ -33,14 +33,14 @@ export default function Dashboard() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [showGeoMap, setShowGeoMap] = useState(false);
 
-    const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || user?.is_responsable || user?.department === 'Dirección';
+    const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || user?.is_responsable || user?.department === 'Dirección' || user?.department === 'Departamento de IT' || user?.department === 'IT';
     
     // Un usuario solo está restringido a su comercial si NO tiene permisos de admin/responsable Y SÍ tiene un sales_rep_id asignado
     const isRestrictedToRep = !hasManagePermission && !!user?.sales_rep_id;
     const initialSalesRepId = isRestrictedToRep ? user?.sales_rep_id?.toUpperCase() : null;
 
     // Bloqueo explícito para asistentes en el Dashboard de Ventas
-    if (user?.is_asistente) {
+    if (user?.is_asistente && !hasManagePermission) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-10">
                 <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-2xl flex items-center justify-center mb-6">
