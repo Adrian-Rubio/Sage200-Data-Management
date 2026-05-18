@@ -3,7 +3,7 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Legend, Cell
 } from 'recharts';
 import { 
-  Building2, Users, Receipt, DollarSign, Calendar, Search, ArrowRight, RefreshCw, Landmark, Home as HomeIcon
+  Building2, Users, Receipt, DollarSign, Calendar, Search, ArrowRight, RefreshCw, Landmark, Home as HomeIcon, Percent
 } from 'lucide-react';
 import { fetchSaraturDashboard } from '../services/saraturApi';
 import { PageHeader } from '../components/common/PageHeader';
@@ -115,7 +115,7 @@ const Saratur = () => {
       ) : (
         <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
             <KpiCard 
               title="Ingresos Totales" 
               value={data?.kpis?.revenue} 
@@ -127,6 +127,14 @@ const Saratur = () => {
               value={data?.kpis?.base_imponible} 
               subtext="Ingresos antes de impuestos"
               icon={<Landmark size={20} />}
+            />
+            <KpiCard 
+              title="Porcentaje Ocupación" 
+              value={data?.kpis?.occupancy_rate} 
+              isPercentage={true}
+              subtext="Uso medio de los 21 aptos."
+              icon={<Percent size={20} />}
+              tooltip="Porcentaje medio de ocupación de las 21 unidades físicas disponibles en Saratur durante el periodo seleccionado"
             />
             <KpiCard 
               title="Huéspedes / Clientes" 

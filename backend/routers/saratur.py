@@ -82,7 +82,8 @@ def get_saratur_dashboard(filters: SaraturFilters, db: Session = Depends(get_db)
                     "base_imponible": 0.0,
                     "clients": 0,
                     "bookings": 0,
-                    "avg_booking": 0.0
+                    "avg_booking": 0.0,
+                    "occupancy_rate": 0.0
                 },
                 "charts": {
                     "by_apartment": [],
@@ -97,6 +98,34 @@ def get_saratur_dashboard(filters: SaraturFilters, db: Session = Depends(get_db)
         df['ImporteLiquido'] = pd.to_numeric(df['ImporteLiquido'], errors='coerce').fillna(0)
         df['BaseImponible'] = pd.to_numeric(df['BaseImponible'], errors='coerce').fillna(0)
         df['FechaAlbaran'] = pd.to_datetime(df['FechaAlbaran'])
+
+        # Calculate occupancy rate
+        # Rentable physical apartments are those starting with ROMANDIE, LA COLINA, or TROPICANA
+        # and excluding technical/ipc/extra entries
+        df_real_apts = df[
+            df['CodigoArticulo'].str.upper().str.startswith(('ROMANDIE', 'LA COLINA', 'TROPICANA'))
+            & ~df['DescripcionArticulo'].str.upper().str.contains(('SUMINISTROS', 'PERSONA EXTRA', 'IPC'))
+        ]
+        
+        # Total rentable physical units
+        total_rentable_apts = 21
+        
+        # Calculate unique active months in the selected period
+        df['Periodo'] = df['FechaAlbaran'].dt.strftime('%Y-%m')
+        unique_months = df['Periodo'].unique()
+        num_months = len(unique_months) if len(unique_months) > 0 else 1
+        
+        # Monthly occupancy: for each active month, how many unique physical apartments were occupied
+        total_occupied_months = 0
+        if not df_real_apts.empty:
+            df_real_apts_with_period = df_real_apts.copy()
+            df_real_apts_with_period['Periodo'] = df_real_apts_with_period['FechaAlbaran'].dt.strftime('%Y-%m')
+            # Group by Periodo and count unique CodigoArticulo occupied
+            monthly_occupancy = df_real_apts_with_period.groupby('Periodo')['CodigoArticulo'].nunique()
+            total_occupied_months = int(monthly_occupancy.sum())
+            
+        total_capacity_months = total_rentable_apts * num_months
+        occupancy_rate = round((total_occupied_months / total_capacity_months) * 100, 2) if total_capacity_months > 0 else 0.0
 
         # Calculate KPIs
         total_revenue = float(df['ImporteLiquido'].sum())
@@ -171,7 +200,8 @@ def get_saratur_dashboard(filters: SaraturFilters, db: Session = Depends(get_db)
                 "base_imponible": total_base,
                 "clients": unique_clients,
                 "bookings": total_bookings,
-                "avg_booking": avg_booking
+                "avg_booking": avg_booking,
+                "occupancy_rate": occupancy_rate
             },
             "charts": {
                 "by_apartment": by_apartment,
