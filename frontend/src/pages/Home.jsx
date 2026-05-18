@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import useAuthStore from '../store/authStore';
 import configApi from '../services/configApi';
@@ -358,8 +357,6 @@ export default function Home() {
         );
     }
 
-    const activeModules = modules.filter(m => !m.disabled && !m.globallyInactive);
-
     return (
         <div
             className="w-full min-h-screen relative flex flex-col items-center justify-center p-6 gap-8"
@@ -403,25 +400,6 @@ export default function Home() {
                 </div>
             </div>
 
-            {/* Main Navigation Container */}
-            {activeModules.length > 0 && (
-                <div className="bg-[#2a2e35]/80 backdrop-blur-md rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-wrap justify-center gap-6 max-w-[95%] border border-white/10 z-10 relative">
-                    {activeModules.map((mod) => (
-                        <Link
-                            key={mod.name}
-                            to={mod.path}
-                            className={`flex flex-col items-center justify-center w-[160px] h-[160px] ${mod.color} ${mod.hover} text-white rounded-[1.5rem] transition-all hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)] border border-white/10`}
-                        >
-                            <div className="transform group-hover:scale-110 transition-transform">
-                                {mod.icon}
-                            </div>
-                            <span className="text-[13px] font-bold tracking-widest uppercase">
-                                {mod.name}
-                            </span>
-                        </Link>
-                    ))}
-                </div>
-            )}
         </div>
     );
 }
