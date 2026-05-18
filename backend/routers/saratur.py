@@ -104,7 +104,7 @@ def get_saratur_dashboard(filters: SaraturFilters, db: Session = Depends(get_db)
         # and excluding technical/ipc/extra entries
         df_real_apts = df[
             df['CodigoArticulo'].str.upper().str.startswith(('ROMANDIE', 'LA COLINA', 'TROPICANA'))
-            & ~df['DescripcionArticulo'].str.upper().str.contains(('SUMINISTROS', 'PERSONA EXTRA', 'IPC'))
+            & ~df['DescripcionArticulo'].str.upper().str.contains('SUMINISTROS|PERSONA EXTRA|IPC', na=False)
         ]
         
         # Total rentable physical units
