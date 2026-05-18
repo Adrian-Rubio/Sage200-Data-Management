@@ -81,7 +81,7 @@ def get_sales_dashboard(filters: DashboardFilters, db: Session = Depends(get_db)
 
         # RBAC
         is_admin = (current_user.role == "admin") or (current_user.position and current_user.position.can_manage_users)
-        is_direction = (current_user.department and current_user.department.name == "Dirección")
+        is_direction = (current_user.department and any(d in current_user.department.name.lower() for d in ["dirección", "direccion"]))
         
         if is_admin or is_direction:
             # Full access to all reps
@@ -453,7 +453,7 @@ def get_paginated_invoices(filters: InvoiceFilters, db: Session = Depends(get_db
 
         # RBAC
         is_admin = (current_user.role == "admin") or (current_user.position and current_user.position.can_manage_users)
-        is_direction = (current_user.department and current_user.department.name == "Dirección")
+        is_direction = (current_user.department and any(d in current_user.department.name.lower() for d in ["dirección", "direccion"]))
         
         if is_admin or is_direction:
             current_allowed_reps = all_reps
@@ -584,7 +584,7 @@ def get_sales_comparison(filters: ComparisonFilters, db: Session = Depends(get_d
         # Consider an admin if string role="admin" OR the user's role_obj is admin.
         # RBAC
         is_admin = (current_user.role == "admin") or (current_user.position and current_user.position.can_manage_users)
-        is_direction = (current_user.department and current_user.department.name == "Dirección")
+        is_direction = (current_user.department and any(d in current_user.department.name.lower() for d in ["dirección", "direccion"]))
         
         if is_admin or is_direction:
             # Full access, no change to current_allowed_reps needed
