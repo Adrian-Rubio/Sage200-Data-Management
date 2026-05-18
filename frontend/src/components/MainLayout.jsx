@@ -124,6 +124,29 @@ const MainLayout = ({ children }) => {
                     )}
                 </div>
 
+                {/* User Profile Section (moved from floating main layout to sidebar) */}
+                <div className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                    {isCollapsed ? (
+                        <div className="mx-auto w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-850 flex items-center justify-center shadow-sm" title={user?.sub || 'Usuario'}>
+                            <UsersIcon size={16} className="text-slate-400 dark:text-slate-500" />
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-100/50 dark:border-slate-800/60 shadow-sm">
+                            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center shrink-0">
+                                <UsersIcon size={16} className="text-slate-500 dark:text-slate-400" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-black text-slate-800 dark:text-white uppercase leading-none truncate" title={user?.sub || 'Usuario'}>
+                                    {user?.sub || 'Usuario'}
+                                </span>
+                                <span className="text-[9px] text-blue-500 font-black uppercase tracking-widest leading-none mt-1.5 truncate" title={user?.role_name || user?.role || 'Personal'}>
+                                    {user?.role_name || user?.role || 'Personal'}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 {/* Menu Items */}
                 <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
                     {menuItems.map((item) => {
@@ -206,16 +229,6 @@ const MainLayout = ({ children }) => {
             {/* Main Content */}
             <main className="flex-1 overflow-auto relative">
                 <div className="p-8">
-                    {/* User Badge - Helpful for debugging/knowing role */}
-                    <div className="absolute top-6 right-8 flex items-center gap-3 bg-white dark:bg-slate-900 px-4 py-2 rounded-full shadow-sm border border-slate-100 dark:border-slate-800 z-10">
-                        <div className="flex flex-col text-right">
-                            <span className="text-xs font-black text-slate-900 dark:text-white uppercase leading-none">{user?.sub || 'Usuario'}</span>
-                            <span className="text-[10px] text-blue-500 font-bold uppercase tracking-widest leading-none mt-1">{user?.role_name || user?.role || 'Personal'}</span>
-                        </div>
-                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                            <UsersIcon size={14} className="text-slate-400" />
-                        </div>
-                    </div>
                     {children}
                 </div>
             </main>
