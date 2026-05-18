@@ -166,27 +166,26 @@ export default function Home() {
 
     if (isManagement) {
         return (
-            <div className="p-6 md:p-10 min-h-full animate-fadeIn space-y-8">
-                {/* Welcome Header */}
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                            <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
-                            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
+            <div className="p-4 md:p-6 min-h-full animate-fadeIn space-y-4">
+                <header className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <div className="w-1 h-6 bg-blue-600 rounded-full" />
+                            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
                                 Centro de Mando
                             </h1>
                         </div>
-                        <p className="text-slate-500 dark:text-slate-400 font-bold text-sm flex items-center gap-2 uppercase tracking-widest">
+                        <p className="text-slate-500 dark:text-slate-400 font-bold text-xs flex items-center gap-2 uppercase tracking-widest">
                             Bienvenido de nuevo, <span className="text-blue-600">{user?.RazonSocial?.split(' ')[0]}</span>
                         </p>
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-xl mt-2">
-                            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                            <p className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest">
+                        <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-xl mt-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                            <p className="text-[9px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest">
                                 Periodo: 1 al {new Date().getDate()} de {homeSummary?.month_name || '...'}
                             </p>
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-slate-900 px-6 py-3 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4">
+                    <div className="bg-white dark:bg-slate-900 px-4 py-2 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-3">
                         <div className="text-right">
                             <div className="text-xl font-black text-slate-800 dark:text-white tracking-tighter leading-none">
                                 {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -229,33 +228,33 @@ export default function Home() {
                 </div>
 
                 {/* Secondary Operational Stats */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
-                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Nº Pedidos</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-slate-800 dark:text-white">{homeSummary?.kpis?.stats?.pedidos || 0}</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">Mes</span>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-3 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
+                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Nº Pedidos</span>
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-slate-800 dark:text-white">{homeSummary?.kpis?.stats?.pedidos || 0}</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Mes</span>
                         </div>
                     </div>
-                    <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
-                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Pedidos Preparados</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-slate-800 dark:text-white">{homeSummary?.kpis?.stats?.preparados || 0}</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">Almacén</span>
+                    <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-3 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
+                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Pedidos Preparados</span>
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-slate-800 dark:text-white">{homeSummary?.kpis?.stats?.preparados || 0}</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Almacén</span>
                         </div>
                     </div>
-                    <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
-                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Clientes Únicos</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-slate-800 dark:text-white">{homeSummary?.kpis?.stats?.clientes_unicos || 0}</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">Activos</span>
+                    <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-3 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
+                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Clientes Únicos</span>
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-slate-800 dark:text-white">{homeSummary?.kpis?.stats?.clientes_unicos || 0}</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Activos</span>
                         </div>
                     </div>
-                    <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center border-l-4 border-l-blue-500">
-                        <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Clientes Nuevos</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-slate-800 dark:text-white">{homeSummary?.kpis?.stats?.clientes_nuevos || 0}</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">Este Mes</span>
+                    <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-3 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col justify-center border-l-4 border-l-blue-500">
+                        <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-0.5">Clientes Nuevos</span>
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-slate-800 dark:text-white">{homeSummary?.kpis?.stats?.clientes_nuevos || 0}</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Este Mes</span>
                         </div>
                     </div>
                 </div>
@@ -269,26 +268,26 @@ export default function Home() {
                                 Venta Cruzada YTD ({new Date().getFullYear()})
                             </h3>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             {homeSummary.cross_selling.map((item) => {
                                 const isActive = activeCross?.combination === item.combination;
                                 return (
                                     <button
                                         key={item.combination}
                                         onClick={() => setActiveCross(isActive ? null : item)}
-                                        className={`p-4 rounded-3xl border transition-all duration-300 text-left flex flex-col justify-between ${isActive
+                                        className={`p-3 rounded-2xl border transition-all duration-300 text-left flex flex-col justify-between ${isActive
                                                 ? 'bg-emerald-500/10 border-emerald-500 shadow-lg shadow-emerald-500/5 dark:bg-emerald-950/20'
                                                 : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
                                             }`}
                                     >
-                                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">
+                                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1 truncate">
                                             {item.combination}
                                         </span>
-                                        <div className="flex items-baseline justify-between w-full mt-2">
-                                            <span className="text-2xl font-black text-slate-800 dark:text-white">
-                                                {item.count}
+                                        <div className="flex items-baseline justify-between w-full mt-1.5">
+                                            <span className="text-lg font-black text-slate-800 dark:text-white">
+                                                {item.percentage}% <span className="text-xs text-slate-400 dark:text-slate-500 font-bold">({item.count})</span>
                                             </span>
-                                            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                                            <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-full">
                                                 Clientes
                                             </span>
                                         </div>
