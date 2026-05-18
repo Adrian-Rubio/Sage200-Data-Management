@@ -18,6 +18,8 @@ export function KpiCard({ title, value, subtext, isWarning, isPercentage, toolti
         && title.toLowerCase() !== 'facturas' // Literal "Facturas" is a count
         && !title.toLowerCase().includes('clientes')
         && !title.toLowerCase().includes('comensales')
+        && !title.toLowerCase().includes('alquiler')
+        && !title.toLowerCase().includes('reserva')
         && !title.toLowerCase().includes('pax');
 
     const formattedValue = typeof value !== 'number'
