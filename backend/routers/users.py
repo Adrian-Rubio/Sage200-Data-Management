@@ -41,7 +41,7 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
             "inventario": True if is_it_dept else user.position.can_view_inventario,
             "rrhh": True if is_it_dept else user.position.can_view_rrhh,
             "calidad": True if is_it_dept else user.position.can_view_calidad,
-            "admin": True if is_true_admin else user.position.can_manage_users
+            "admin": True if is_true_admin else False
         }
         role_name = user.position.name
         is_responsable = True if is_it_dept else user.position.is_responsable
@@ -68,6 +68,11 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
         is_asistente = False
     # Priority 4: Legacy Role
     else:
+        is_true_admin = (
+            user.username == "adrian.rubio"
+            or user.role == "admin"
+            or (user.role_obj and user.role_obj.name == "admin")
+        )
         perms = {
             "ventas": user.role_obj.can_view_ventas if user.role_obj else True,
             "compras": user.role_obj.can_view_compras if user.role_obj else True,
@@ -75,7 +80,7 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
             "finanzas": user.role_obj.can_view_finanzas if user.role_obj else False,
             "almacen": user.role_obj.can_view_almacen if user.role_obj else False,
             "inventario": user.role_obj.can_view_inventario if user.role_obj else True,
-            "admin": user.role_obj.can_manage_users if user.role_obj else False,
+            "admin": True if is_true_admin else False,
             "rrhh": False, "calidad": False
         }
         role_name = user.role_obj.name if user.role_obj else user.role
@@ -122,15 +127,17 @@ def logout(response: Response):
 def check_admin_role(current_user: models.User = Depends(auth.get_current_active_user)):
     # Permite acceso si es el usuario "admin" original o si su cargo o rol dinámico tiene el permiso de gestión
     print("CHECKING ADMIN ROLE:", current_user.username, current_user.role, getattr(current_user.position, 'name', None))
-    has_permission = (
+    is_true_admin = (
         current_user.username == "adrian.rubio"
         or (current_user.role == "admin")
         or (current_user.role_obj and current_user.role_obj.name == "admin")
-        or (current_user.role_obj and current_user.role_obj.can_manage_users)
-        or (current_user.position and current_user.position.can_manage_users)
+        or (current_user.position and (
+            "administrador" in current_user.position.name.lower()
+            or "admin" in current_user.position.name.lower()
+        ))
     )
     
-    if not has_permission:
+    if not is_true_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Operación no permitida: Se requiere permiso de gestión de usuarios"
