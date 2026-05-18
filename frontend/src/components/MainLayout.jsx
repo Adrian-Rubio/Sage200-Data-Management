@@ -20,7 +20,7 @@ import {
     Menu,
     ChevronLeft,
     ShieldCheck,
-    Building2
+    Palmtree
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
@@ -87,7 +87,7 @@ const MainLayout = ({ children }) => {
         { 
             name: 'Saratur', 
             path: '/saratur', 
-            icon: <Building2 size={20} />, 
+            icon: <Palmtree size={20} />, 
             permission: 'saratur' 
         },
         { 
