@@ -113,12 +113,10 @@ const MainLayout = ({ children }) => {
             {/* Sidebar */}
             <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 z-50`}>
                 {/* Logo Section */}
-                <div className="h-20 flex items-center px-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                    <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center shrink-0 shadow-lg shadow-orange-500/20">
-                        <ShieldCheck className="w-5 h-5 text-white" />
-                    </div>
+                <div className="h-20 flex items-center px-5 border-b border-slate-100 dark:border-slate-800 shrink-0 gap-3">
+                    <img src="/icono.png" alt="Cenval SL Logo" className="w-9 h-9 object-contain rounded-lg" />
                     {!isCollapsed && (
-                        <span className="ml-3 font-bold text-lg text-blue-500 tracking-tight whitespace-nowrap">
+                        <span className="font-bold text-lg text-blue-500 tracking-tight whitespace-nowrap">
                             Cenval <span className="text-blue-600">SL</span>
                         </span>
                     )}
