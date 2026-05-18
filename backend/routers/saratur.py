@@ -10,7 +10,6 @@ from pydantic import BaseModel
 import numpy as np
 
 router = APIRouter(
-    prefix="/api/saratur",
     tags=["saratur"]
 )
 
