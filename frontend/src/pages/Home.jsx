@@ -205,24 +205,24 @@ export default function Home() {
 
                 {/* Main KPI Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <KpiCard 
-                        title="VENTAS INDUSTRIAL" 
-                        value={homeSummary?.kpis?.ventas_cenval || 0} 
+                    <KpiCard
+                        title="VENTAS INDUSTRIAL"
+                        value={homeSummary?.kpis?.ventas_cenval || 0}
                         subtext="Facturación Mes Actual"
                     />
-                    <KpiCard 
-                        title="VENTAS RESTAURACIÓN" 
-                        value={homeSummary?.kpis?.ventas_restauracion || 0} 
+                    <KpiCard
+                        title="VENTAS RESTAURACIÓN"
+                        value={homeSummary?.kpis?.ventas_restauracion || 0}
                         subtext="Acumulado Dubes"
                     />
-                    <KpiCard 
-                        title="VENTAS SARATUR" 
-                        value={homeSummary?.kpis?.ventas_saratur || 0} 
+                    <KpiCard
+                        title="VENTAS SARATUR"
+                        value={homeSummary?.kpis?.ventas_saratur || 0}
                         subtext="Facturación Mes Actual"
                     />
-                    <KpiCard 
-                        title="CARTERA PENDIENTE" 
-                        value={homeSummary?.kpis?.cartera || 0} 
+                    <KpiCard
+                        title="CARTERA PENDIENTE"
+                        value={homeSummary?.kpis?.cartera || 0}
                         subtext="Pedidos por servir"
                         isWarning={homeSummary?.kpis?.cartera > 500000}
                     />
@@ -276,11 +276,10 @@ export default function Home() {
                                     <button
                                         key={item.combination}
                                         onClick={() => setActiveCross(isActive ? null : item)}
-                                        className={`p-4 rounded-3xl border transition-all duration-300 text-left flex flex-col justify-between ${
-                                            isActive
+                                        className={`p-4 rounded-3xl border transition-all duration-300 text-left flex flex-col justify-between ${isActive
                                                 ? 'bg-emerald-500/10 border-emerald-500 shadow-lg shadow-emerald-500/5 dark:bg-emerald-950/20'
                                                 : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
-                                        }`}
+                                            }`}
                                     >
                                         <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">
                                             {item.combination}
@@ -310,7 +309,7 @@ export default function Home() {
                                             {activeCross.combination} ({activeCross.count})
                                         </p>
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={() => setActiveCross(null)}
                                         className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                                     >
@@ -319,7 +318,7 @@ export default function Home() {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[250px] overflow-y-auto pr-2">
                                     {activeCross.clients.map((client) => (
-                                        <div 
+                                        <div
                                             key={client.id}
                                             className="p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-800/50 flex items-center justify-between text-xs"
                                         >
@@ -348,11 +347,10 @@ export default function Home() {
                         <div className="p-4 space-y-3 overflow-y-auto">
                             {homeSummary?.alerts?.length > 0 ? (
                                 homeSummary.alerts.map((alert) => (
-                                    <div key={alert.id} className={`p-4 rounded-2xl border ${
-                                        alert.type === 'warning' 
-                                            ? 'bg-amber-50/50 border-amber-100 dark:bg-amber-900/10 dark:border-amber-900/30 text-amber-800 dark:text-amber-400' 
+                                    <div key={alert.id} className={`p-4 rounded-2xl border ${alert.type === 'warning'
+                                            ? 'bg-amber-50/50 border-amber-100 dark:bg-amber-900/10 dark:border-amber-900/30 text-amber-800 dark:text-amber-400'
                                             : 'bg-emerald-50/50 border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400'
-                                    } flex gap-3 items-start`}>
+                                        } flex gap-3 items-start`}>
                                         <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${alert.type === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
                                         <div>
                                             <div className="text-[10px] font-black uppercase tracking-wider mb-0.5">{alert.title}</div>
@@ -373,7 +371,7 @@ export default function Home() {
                     <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm p-6 flex flex-col items-center justify-center min-h-[350px]">
                         <div className="w-full max-w-lg text-center">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Cumplimiento Presupuesto • {homeSummary?.month_name}</h3>
-                            
+
                             <div className="mb-1">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Facturación Bruta</span>
                             </div>
@@ -382,7 +380,7 @@ export default function Home() {
                             </div>
 
                             <div className="relative w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full mb-3 overflow-hidden">
-                                <div 
+                                <div
                                     className="absolute top-0 left-0 h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out"
                                     style={{ width: `${Math.min(homeSummary?.kpis?.budget?.cumplimiento || 0, 100)}%` }}
                                 />
@@ -414,18 +412,18 @@ export default function Home() {
                         </div>
                     </div>
 
-                {/* Purchases Card */}
-                <div className="lg:col-span-1 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm p-6 flex flex-col items-center justify-center min-h-[350px] text-center">
-                    <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center mb-6 text-rose-600">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                    {/* Purchases Card */}
+                    <div className="lg:col-span-1 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm p-6 flex flex-col items-center justify-center min-h-[350px] text-center">
+                        <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center mb-6 text-rose-600">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                        </div>
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Compras del Mes</h3>
+                        <div className="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
+                            {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(homeSummary?.kpis?.compras || 0)}
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Gastado</div>
                     </div>
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Compras del Mes</h3>
-                    <div className="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
-                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(homeSummary?.kpis?.compras || 0)}
-                    </div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Gastado</div>
                 </div>
-            </div>
 
                 {/* Footer Helper */}
                 <div className="flex justify-center items-center gap-3 text-slate-400 dark:text-slate-600 pt-4">
@@ -455,7 +453,7 @@ export default function Home() {
                         {user?.role_name || user?.role || 'Personal'}
                     </span>
                 </div>
-                
+
                 <div className="w-full space-y-3">
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
                         <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
