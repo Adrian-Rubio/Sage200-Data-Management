@@ -133,6 +133,8 @@ def get_home_summary(db: Session = Depends(get_db), current_user: models.User = 
             client_divs = df_cross.groupby(['CodigoCliente', 'RazonSocial'])['Division'].unique().reset_index()
             client_divs['NumDivisions'] = client_divs['Division'].apply(len)
             
+            total_clients_base = len(client_divs)
+            
             cross_sell_clients = client_divs[client_divs['NumDivisions'] > 1]
             if not cross_sell_clients.empty:
                 cross_sell_clients = cross_sell_clients.copy()
@@ -143,6 +145,7 @@ def get_home_summary(db: Session = Depends(get_db), current_user: models.User = 
                     cross_selling.append({
                         "combination": comb,
                         "count": len(clients),
+                        "percentage": round(len(clients) / total_clients_base * 100, 2) if total_clients_base > 0 else 0,
                         "clients": clients
                     })
                 
