@@ -83,14 +83,14 @@ def clean_and_seed():
                     department_id=dept.id,
                     is_responsable=is_resp,
                     is_asistente=is_asist,
-                    # Default permissions based on Dept
-                    can_view_ventas=(d_name == "Departamento de Ventas" or is_resp),
-                    can_view_compras=(d_name in ["Departamento de Ventas", "Departamento de Compras y Ventas", "Departamento de Producción"] or is_resp),
-                    can_view_produccion=(d_name == "Departamento de Producción" or is_resp),
-                    can_view_finanzas=(d_name == "Departamento de Contabilidad" or is_resp),
-                    can_view_almacen=(d_name == "Departamento Logístico" or d_name == "Departamento de Producción" or is_resp),
+                    # Default permissions based on Dept (IT gets everything)
+                    can_view_ventas=(d_name == "Departamento de Ventas" or is_resp or d_name == "Departamento de IT"),
+                    can_view_compras=(d_name in ["Departamento de Ventas", "Departamento de Compras y Ventas", "Departamento de Producción"] or is_resp or d_name == "Departamento de IT"),
+                    can_view_produccion=(d_name == "Departamento de Producción" or is_resp or d_name == "Departamento de IT"),
+                    can_view_finanzas=(d_name == "Departamento de Contabilidad" or is_resp or d_name == "Departamento de IT"),
+                    can_view_almacen=(d_name == "Departamento Logístico" or d_name == "Departamento de Producción" or is_resp or d_name == "Departamento de IT"),
                     can_view_inventario=True,
-                    can_manage_users=(is_resp and d_name in ["Departamento de IT", "Departamento de RRHH"])
+                    can_manage_users=(is_resp and d_name in ["Departamento de IT", "Departamento de RRHH"]) or d_name == "Departamento de IT"
                 )
                 db.add(pos)
                 db.flush()

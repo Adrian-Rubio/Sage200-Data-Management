@@ -25,19 +25,20 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
     # Compute permissions for the token
     # Priority 1: New Position-based structure
     if user.position:
+        is_it_dept = user.department and user.department.name.lower() in ["departamento de it", "it"]
         perms = {
-            "ventas": user.position.can_view_ventas,
-            "compras": user.position.can_view_compras,
-            "produccion": user.position.can_view_produccion,
-            "finanzas": user.position.can_view_finanzas,
-            "almacen": user.position.can_view_almacen,
-            "inventario": user.position.can_view_inventario,
-            "rrhh": user.position.can_view_rrhh,
-            "calidad": user.position.can_view_calidad,
-            "admin": user.position.can_manage_users
+            "ventas": True if is_it_dept else user.position.can_view_ventas,
+            "compras": True if is_it_dept else user.position.can_view_compras,
+            "produccion": True if is_it_dept else user.position.can_view_produccion,
+            "finanzas": True if is_it_dept else user.position.can_view_finanzas,
+            "almacen": True if is_it_dept else user.position.can_view_almacen,
+            "inventario": True if is_it_dept else user.position.can_view_inventario,
+            "rrhh": True if is_it_dept else user.position.can_view_rrhh,
+            "calidad": True if is_it_dept else user.position.can_view_calidad,
+            "admin": True if is_it_dept else user.position.can_manage_users
         }
         role_name = user.position.name
-        is_responsable = user.position.is_responsable
+        is_responsable = True if is_it_dept else user.position.is_responsable
         is_asistente = user.position.is_asistente
     # Priority 2: Legacy user types
     elif user.user_type in ["DISTRIBUIDOR", "SOCIO"]:
