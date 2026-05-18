@@ -10,6 +10,7 @@ export default function Home() {
     const [moduleSettings, setModuleSettings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [homeSummary, setHomeSummary] = useState(null);
+    const [activeCross, setActiveCross] = useState(null);
 
     const isManagement = (() => {
         const role = (user?.role_name || user?.role || '').toLowerCase();
@@ -258,6 +259,83 @@ export default function Home() {
                         </div>
                     </div>
                 </div>
+
+                {/* Cross-Selling YTD Section */}
+                {isManagement && homeSummary?.cross_selling?.length > 0 && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                                Venta Cruzada YTD ({new Date().getFullYear()})
+                            </h3>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {homeSummary.cross_selling.map((item) => {
+                                const isActive = activeCross?.combination === item.combination;
+                                return (
+                                    <button
+                                        key={item.combination}
+                                        onClick={() => setActiveCross(isActive ? null : item)}
+                                        className={`p-4 rounded-3xl border transition-all duration-300 text-left flex flex-col justify-between ${
+                                            isActive
+                                                ? 'bg-emerald-500/10 border-emerald-500 shadow-lg shadow-emerald-500/5 dark:bg-emerald-950/20'
+                                                : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
+                                        }`}
+                                    >
+                                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">
+                                            {item.combination}
+                                        </span>
+                                        <div className="flex items-baseline justify-between w-full mt-2">
+                                            <span className="text-2xl font-black text-slate-800 dark:text-white">
+                                                {item.count}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                                                Clientes
+                                            </span>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Collapsible Client List */}
+                        {activeCross && (
+                            <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-emerald-100 dark:border-emerald-950/50 p-6 space-y-4 shadow-sm animate-fadeIn">
+                                <div className="flex justify-between items-center border-b border-slate-50 dark:border-slate-800/50 pb-3">
+                                    <div>
+                                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                                            Clientes en Cartera Cruzada
+                                        </h4>
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mt-1">
+                                            {activeCross.combination} ({activeCross.count})
+                                        </p>
+                                    </div>
+                                    <button 
+                                        onClick={() => setActiveCross(null)}
+                                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                                    >
+                                        Cerrar
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[250px] overflow-y-auto pr-2">
+                                    {activeCross.clients.map((client) => (
+                                        <div 
+                                            key={client.id}
+                                            className="p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-800/50 flex items-center justify-between text-xs"
+                                        >
+                                            <span className="font-bold text-slate-700 dark:text-slate-300 truncate max-w-[80%]">
+                                                {client.name}
+                                            </span>
+                                            <span className="font-black text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                                                {client.id}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Bottom Section: Alerts, Budget & Purchases */}
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-grow pb-4">

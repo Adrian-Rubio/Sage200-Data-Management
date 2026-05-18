@@ -107,6 +107,50 @@ def get_home_summary(db: Session = Depends(get_db), current_user: models.User = 
         alerts.append({"id": "pwd_change", "type": "warning", "title": "SEGURIDAD", "message": f"{pwd_count} usuarios pendientes de clave."})
     alerts.append({"id": "etl_sync", "type": "success", "title": "SISTEMA", "message": "Sincronización OK."})
 
+    # --- VENTA CRUZADA (AÑO ACTUAL) ---
+    divisions = {
+        'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
+        'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
+        'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
+    }
+    rep_to_div = {rep.upper(): div for div, reps in divisions.items() for rep in reps}
+    
+    cross_selling = []
+    try:
+        q_cross = """
+            SELECT CodigoCliente, RazonSocial, Comisionista
+            FROM Vis_AEL_DiarioFactxComercial WITH (NOLOCK)
+            WHERE CodigoEmpresa = '2' AND YEAR(FechaFactura) = :year
+            GROUP BY CodigoCliente, RazonSocial, Comisionista
+        """
+        df_cross = pd.read_sql(text(q_cross), db.bind, params={"year": current_year})
+        if not df_cross.empty:
+            df_cross['Comisionista'] = df_cross['Comisionista'].str.strip().str.upper()
+            df_cross['Division'] = df_cross['Comisionista'].map(rep_to_div).fillna('Otros')
+            df_cross = df_cross[df_cross['Division'] != 'Otros']
+            
+            # Group by client and get unique divisions
+            client_divs = df_cross.groupby(['CodigoCliente', 'RazonSocial'])['Division'].unique().reset_index()
+            client_divs['NumDivisions'] = client_divs['Division'].apply(len)
+            
+            cross_sell_clients = client_divs[client_divs['NumDivisions'] > 1]
+            if not cross_sell_clients.empty:
+                cross_sell_clients = cross_sell_clients.copy()
+                cross_sell_clients['CombKey'] = cross_sell_clients['Division'].apply(lambda x: " + ".join(sorted(x)))
+                
+                for comb, group in cross_sell_clients.groupby('CombKey'):
+                    clients = [{"id": row['CodigoCliente'].strip(), "name": row['RazonSocial'].strip()} for _, row in group.iterrows()]
+                    cross_selling.append({
+                        "combination": comb,
+                        "count": len(clients),
+                        "clients": clients
+                    })
+                
+                # Sort by count desc
+                cross_selling.sort(key=lambda x: x['count'], reverse=True)
+    except Exception as e:
+        print(f"Error calculating cross selling for home: {e}")
+
     meses = {1: "ENERO", 2: "FEBRERO", 3: "MARZO", 4: "ABRIL", 5: "MAYO", 6: "JUNIO", 7: "JULIO", 8: "AGOSTO", 9: "SEPTIEMBRE", 10: "OCTUBRE", 11: "NOVIEMBRE", 12: "DICIEMBRE"}
     
     return {
@@ -128,5 +172,7 @@ def get_home_summary(db: Session = Depends(get_db), current_user: models.User = 
             }
         },
         "alerts": alerts,
+        "cross_selling": cross_selling,
         "month_name": meses[current_month]
     }
+
