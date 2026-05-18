@@ -19,7 +19,8 @@ import {
     LogOut,
     Menu,
     ChevronLeft,
-    ShieldCheck
+    ShieldCheck,
+    Building2
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
@@ -82,6 +83,12 @@ const MainLayout = ({ children }) => {
             path: '/dubes', 
             icon: <Coffee size={20} />, 
             permission: 'ventas' 
+        },
+        { 
+            name: 'Saratur', 
+            path: '/saratur', 
+            icon: <Building2 size={20} />, 
+            permission: 'saratur' 
         },
         { 
             name: 'Rotación', 

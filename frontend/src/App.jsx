@@ -27,6 +27,7 @@ import Temporal from './pages/Temporal';
 import EntregasTiempoPBIX from './pages/EntregasTiempoPBIX';
 import Marketing from './pages/Marketing';
 import DubesDashboard from './pages/DubesDashboard';
+import Saratur from './pages/Saratur';
 
 function App() {
   const { theme } = useThemeStore();
@@ -69,6 +70,7 @@ function App() {
           <Route path="/entregas-tiempo" element={<EntregasTiempoPBIX />} />
           <Route path="/marketing" element={<Marketing />} />
           <Route path="/dubes" element={<DubesDashboard />} />
+          <Route path="/saratur" element={<Saratur />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -55,6 +55,10 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
             ),
             "rrhh": True if is_it_dept else user.position.can_view_rrhh,
             "calidad": True if is_it_dept else user.position.can_view_calidad,
+            "saratur": True if is_it_dept else (
+                is_true_admin 
+                or (user.department and any(d in user.department.name.lower() for d in ["contabilidad", "marketing", "dirección", "direccion"]))
+            ),
             "admin": True if is_true_admin else False
         }
         role_name = user.position.name
@@ -65,7 +69,7 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
         perms = {
             "ventas": False, "compras": False, "produccion": False, 
             "finanzas": False, "almacen": False, "inventario": True, "admin": False,
-            "rrhh": False, "calidad": False
+            "rrhh": False, "calidad": False, "saratur": False
         }
         role_name = user.user_type
         is_responsable = False
