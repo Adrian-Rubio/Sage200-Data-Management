@@ -38,7 +38,21 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
             "produccion": True if is_it_dept else user.position.can_view_produccion,
             "finanzas": True if is_it_dept else user.position.can_view_finanzas,
             "almacen": True if is_it_dept else user.position.can_view_almacen,
-            "inventario": True if is_it_dept else user.position.can_view_inventario,
+            "inventario": True if is_it_dept else (
+                user.position.can_view_inventario 
+                and user.department 
+                and (
+                    user.department.name.lower() in [
+                        "departamento de ventas", "ventas", 
+                        "departamento de compras y ventas", "compras y ventas", 
+                        "departamento de producción", "producción", 
+                        "departamento logístico", "logística", 
+                        "departamento de dirección", "dirección", 
+                        "departamento de it", "it"
+                    ]
+                    or user.position.is_responsable
+                )
+            ),
             "rrhh": True if is_it_dept else user.position.can_view_rrhh,
             "calidad": True if is_it_dept else user.position.can_view_calidad,
             "admin": True if is_true_admin else False

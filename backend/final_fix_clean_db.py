@@ -89,7 +89,7 @@ def clean_and_seed():
                     can_view_produccion=(d_name == "Departamento de Producción" or is_resp or d_name == "Departamento de IT"),
                     can_view_finanzas=(d_name == "Departamento de Contabilidad" or is_resp or d_name == "Departamento de IT"),
                     can_view_almacen=(d_name == "Departamento Logístico" or d_name == "Departamento de Producción" or is_resp or d_name == "Departamento de IT"),
-                    can_view_inventario=True,
+                    can_view_inventario=(d_name in ["Departamento de Ventas", "Departamento de Compras y Ventas", "Departamento de Producción", "Departamento Logístico", "Departamento de Dirección", "Departamento de IT"] or is_resp),
                     can_manage_users=(is_resp and d_name in ["Departamento de IT", "Departamento de RRHH"]) or d_name == "Departamento de IT"
                 )
                 db.add(pos)
