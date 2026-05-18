@@ -25,8 +25,7 @@ const Saratur = () => {
   // Date and filter states
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
-    d.setFullYear(d.getFullYear() - 1); // 1 year ago by default
-    return d.toISOString().split('T')[0];
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
   });
   const [endDate, setEndDate] = useState(() => {
     return new Date().toISOString().split('T')[0];
