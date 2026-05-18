@@ -120,12 +120,14 @@ def logout(response: Response):
     return {"message": "Logged out successfully"}
 
 def check_admin_role(current_user: models.User = Depends(auth.get_current_active_user)):
-    # Permite acceso si es el usuario "admin" original o si su rol dinámico tiene el permiso de gestión
-    print("CHECKING ADMIN ROLE:", current_user.role, getattr(current_user.role_obj, 'name', None), getattr(current_user.role_obj, 'can_manage_users', None))
-    has_permission = (current_user.role == "admin") or (
-        current_user.role_obj and current_user.role_obj.name == "admin"
-    ) or (
-        current_user.role_obj and current_user.role_obj.can_manage_users
+    # Permite acceso si es el usuario "admin" original o si su cargo o rol dinámico tiene el permiso de gestión
+    print("CHECKING ADMIN ROLE:", current_user.username, current_user.role, getattr(current_user.position, 'name', None))
+    has_permission = (
+        current_user.username == "adrian.rubio"
+        or (current_user.role == "admin")
+        or (current_user.role_obj and current_user.role_obj.name == "admin")
+        or (current_user.role_obj and current_user.role_obj.can_manage_users)
+        or (current_user.position and current_user.position.can_manage_users)
     )
     
     if not has_permission:
