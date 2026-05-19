@@ -159,7 +159,7 @@ export default function Dashboard() {
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
     return (
-        <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 text-slate-900 dark:text-slate-100 font-sans scale-[0.98] origin-top transition-all duration-500">
+        <div className="w-full text-slate-900 dark:text-slate-100 font-sans scale-[0.98] origin-top transition-all duration-500">
             <PageHeader moduleName="Ventas">
                 <Link 
                     to="/clientes" 

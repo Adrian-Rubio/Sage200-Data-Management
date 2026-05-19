@@ -243,7 +243,7 @@ export default function PedidosPendientesPBIX() {
     ];
 
     return (
-        <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-6 text-gray-800 dark:text-slate-200 font-sans transition-colors">
+        <div className="w-full text-slate-800 dark:text-slate-200 font-sans transition-colors">
             <PageHeader moduleName="Pedidos Pendientes (Vista PBIX)" onRefresh={loadData}>
                 <Link to="/ventas" className="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 transition font-bold text-xs h-[34px] flex items-center justify-center whitespace-nowrap">
                     Ventas

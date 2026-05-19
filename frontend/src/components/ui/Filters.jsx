@@ -2,7 +2,7 @@ import React from 'react';
 
 export function FilterBar({ children }) {
     return (
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 mb-6 flex flex-wrap gap-4 items-end transition-colors animate-fadeIn">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 mb-4 flex flex-wrap gap-4 items-end transition-colors animate-fadeIn">
             {children}
         </div>
     );

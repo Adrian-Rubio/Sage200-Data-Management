@@ -185,7 +185,7 @@ export default function Home() {
 
     if (isManagement) {
         return (
-            <div className="p-4 md:p-6 min-h-full animate-fadeIn space-y-4">
+            <div className="min-h-full animate-fadeIn space-y-4">
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-3">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">

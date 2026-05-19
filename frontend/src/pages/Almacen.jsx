@@ -211,7 +211,7 @@ export default function Almacen() {
     ];
 
     return (
-        <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-6 text-gray-800 dark:text-slate-100 font-sans transition-colors">
+        <div className="w-full text-slate-800 dark:text-slate-100 font-sans transition-colors">
             <PageHeader moduleName="Almacén" showRefresh={true} onRefresh={loadStats} />
 
             {/* Filters Row */}

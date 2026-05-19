@@ -233,7 +233,7 @@ const MainLayout = ({ children }) => {
 
             {/* Main Content */}
             <main className="flex-1 overflow-auto relative">
-                <div className="p-8">
+                <div className="p-6 pt-4">
                     {children}
                 </div>
             </main>
