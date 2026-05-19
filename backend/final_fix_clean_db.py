@@ -143,7 +143,7 @@ def clean_and_seed():
             # Direccion
             ("veronica.marino", "Departamento de Dirección", "Dirección", "Dirección"),
             ("joseluis.martin", "Departamento de Dirección", "Dirección", "Dirección"),
-            ("sara.macho", "Departamento de Dirección", "Dirección", "Gerencia"),
+            ("sara", "Departamento de Dirección", "Dirección", "Gerencia"),
             # Logistico
             ("ismael.gutierrez", "Departamento Logístico", "Logística", "Logístico"),
         ]

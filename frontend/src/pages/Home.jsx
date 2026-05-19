@@ -13,9 +13,19 @@ export default function Home() {
     const [activeCross, setActiveCross] = useState(null);
 
     const isManagement = (() => {
+        const username = (user?.sub || user?.username || '').toLowerCase();
         const role = (user?.role_name || user?.role || '').toLowerCase();
         const dept = (user?.department || '').toLowerCase();
-        return role.includes('admin') || role.includes('direcci') || role.includes('direccion') || dept.includes('direcci');
+        return (
+            username === 'joseluis.martin' ||
+            username === 'sara.macho' ||
+            username === 'sara' ||
+            username === 'adrian.rubio' ||
+            role.includes('admin') ||
+            role.includes('direc') ||
+            role.includes('geren') ||
+            dept.includes('direc')
+        );
     })();
 
     // Real-time clock for Executive Dashboard
@@ -130,8 +140,17 @@ export default function Home() {
 
     // We show all modules, but some will be "locked" if no permissions
     const modules = allModules.map(mod => {
+        const username = (user?.sub || user?.username || '').toLowerCase();
         const userRole = (user?.role_name || user?.role || '').toLowerCase();
-        const isManagement = userRole.includes('admin') || userRole.includes('direcci') || userRole.includes('direccion');
+        const isManagement = (
+            username === 'joseluis.martin' ||
+            username === 'sara.macho' ||
+            username === 'sara' ||
+            username === 'adrian.rubio' ||
+            userRole.includes('admin') ||
+            userRole.includes('direc') ||
+            userRole.includes('geren')
+        );
 
         // Lógica de permisos:
         // 1. Restauración & Almacén: Solo admin/dirección

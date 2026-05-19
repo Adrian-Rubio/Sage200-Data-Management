@@ -141,7 +141,7 @@ def seed():
             # Dirección
             {"user": "veronica.marino", "email": "veronica.marino@cenvalsa.com", "dept": "Dirección", "pos": "Dirección"},
             {"user": "joseluis.martin", "email": "joseluis.martin@cenvalsa.com", "dept": "Dirección", "pos": "Dirección"},
-            {"user": "sara.macho", "email": "sara.macho@cenvalsa.com", "dept": "Dirección", "pos": "Dirección"},
+            {"user": "sara", "email": "sara@cenval.es", "dept": "Dirección", "pos": "Dirección"},
             # Logística
             {"user": "ismael.gutierrez", "email": "ismael.gutierrez@cenvalsa.com", "dept": "Logística", "pos": "Responsable Logística"},
         ]
