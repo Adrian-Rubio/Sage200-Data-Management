@@ -17,7 +17,7 @@ export default function PedidosPendientesPBIX() {
     const [selectedEndDate, setSelectedEndDate] = useState('');
     const [carouselIndex, setCarouselIndex] = useState(0);
 
-    const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || user?.role_obj?.name === 'admin' || user?.role_obj?.can_manage_users;
+    const hasManagePermission = user?.role === 'admin' || user?.permissions?.admin || (user?.role_name || '').toLowerCase() === 'admin';
     const isRestrictedToRep = !hasManagePermission && !!user?.sales_rep_id;
     const initialSalesRepId = isRestrictedToRep ? user?.sales_rep_id?.toUpperCase() : null;
 

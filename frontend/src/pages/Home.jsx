@@ -216,7 +216,7 @@ export default function Home() {
                         <div className="w-px h-8 bg-slate-200 dark:bg-slate-700" />
                         <div className="flex flex-col">
                             <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">Sesión Activa</span>
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{user?.role_obj?.name || user?.role}</span>
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{user?.role_name || user?.role}</span>
                         </div>
                     </div>
                 </header>
