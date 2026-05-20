@@ -501,15 +501,33 @@ export const RrhhDashboard = () => {
         {/* Top Controls & Filters */}
         <div className="flex flex-col gap-4 p-5 border-t border-slate-100 dark:border-slate-800/40">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-              <Calendar size={20} />
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                <Calendar size={20} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold uppercase tracking-wider text-slate-400">Ausencias y Vacaciones</h4>
+                <p className="text-xs text-slate-500">
+                  Calendario interactivo del equipo de {user?.division || user?.department || 'la empresa'}
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-sm font-bold uppercase tracking-wider text-slate-400">Ausencias y Vacaciones</h4>
-              <p className="text-xs text-slate-500">
-                Calendario interactivo del equipo de {user?.division || user?.department || 'la empresa'}
-              </p>
+
+            {/* Leyenda de Colores Superior */}
+            <div className="flex items-center gap-4 text-[10px] sm:text-xs font-bold bg-slate-50 dark:bg-slate-850 px-3 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80 shadow-xs">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                <span className="text-slate-600 dark:text-slate-300">Vacaciones</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0" />
+                <span className="text-slate-600 dark:text-slate-300">Ausencia</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 flex-shrink-0" />
+                <span className="text-slate-600 dark:text-slate-300">Asuntos Propios</span>
+              </div>
             </div>
           </div>
 
@@ -841,35 +859,19 @@ export const RrhhDashboard = () => {
             </div>
           </div>
 
-          {/* Footer Legend */}
-          <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-50 dark:bg-slate-850/50 border-t border-slate-100 dark:border-slate-800/80">
-            <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
-              <span className="text-slate-400 flex items-center gap-1.5"><Info size={14} /> Código de colores:</span>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 rounded bg-emerald-500"></span>
-                <span>Vacaciones</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 rounded bg-rose-500"></span>
-                <span>Ausencia</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 rounded bg-amber-500"></span>
-                <span>Asuntos Propios</span>
-              </div>
-            </div>
-
-            {!isHR && (
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
+          {/* Read-only Notice */}
+          {!isHR && (
+            <div className="flex items-center justify-end p-3 bg-slate-50 dark:bg-slate-850/50 border-t border-slate-100 dark:border-slate-800/80 text-[11px] font-bold text-slate-400">
+              <span className="flex items-center gap-1.5">
                 <Lock size={12} /> Calendario en modo de sólo lectura para tu departamento
-              </div>
-            )}
-          </div>
+              </span>
+            </div>
+          )}
         </div>
       ) : (
         /* Calendario Anual de Vacaciones y Ausencias */
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 gap-2">
             {monthNames.map((monthName, monthIndex) => {
               const monthDays = getMonthDays(currentYear, monthIndex);
               
@@ -1016,7 +1018,14 @@ export const RrhhDashboard = () => {
           
           {/* Department Legend */}
           <div className="p-5 bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col gap-3">
-            <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400">Leyenda de Empleados</h5>
+            <div className="flex items-center justify-between gap-4">
+              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400">Leyenda de Empleados</h5>
+              {!isHR && (
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
+                  <Lock size={12} /> Modo de sólo lectura para tu departamento
+                </div>
+              )}
+            </div>
             <div className="flex flex-wrap gap-4">
               {employees.map(emp => {
                 const idx = employees.findIndex(e => e.id === emp.id);
