@@ -494,7 +494,9 @@ export const RrhhDashboard = () => {
             </div>
             <div>
               <h4 className="text-sm font-bold uppercase tracking-wider text-slate-400">Ausencias y Vacaciones</h4>
-              <p className="text-xs text-slate-500">Calendario interactivo del equipo</p>
+              <p className="text-xs text-slate-500">
+                Calendario interactivo del equipo de {user?.division || user?.department || 'la empresa'}
+              </p>
             </div>
           </div>
 
@@ -581,81 +583,83 @@ export const RrhhDashboard = () => {
           </div>
         </div>
 
-        {/* Filter Inputs Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-100 dark:border-slate-800/80">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <Building2 size={12} /> Empresa
-            </label>
-            <select
-              value={selectedCompany}
-              onChange={(e) => {
-                setSelectedCompany(e.target.value);
-                setSelectedEmployee('');
-              }}
-              disabled={!isHR}
-              className="px-3 py-2 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60"
-            >
-              {isHR && <option value="">Todas las empresas</option>}
-              {companies.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
+        {/* Filter Inputs Row (Only visible to HR managers / admins) */}
+        {isHR && (
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                <Building2 size={12} /> Empresa
+              </label>
+              <select
+                value={selectedCompany}
+                onChange={(e) => {
+                  setSelectedCompany(e.target.value);
+                  setSelectedEmployee('');
+                }}
+                disabled={!isHR}
+                className="px-3 py-2 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60"
+              >
+                {isHR && <option value="">Todas las empresas</option>}
+                {companies.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <Users size={12} /> Departamento
-            </label>
-            <select
-              value={selectedDepartment}
-              onChange={(e) => {
-                setSelectedDepartment(e.target.value);
-                setSelectedEmployee('');
-              }}
-              disabled={!isHR}
-              className="px-3 py-2 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60"
-            >
-              {isHR && <option value="">Todos los departamentos</option>}
-              {departments.map(d => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
-          </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                <Users size={12} /> Departamento
+              </label>
+              <select
+                value={selectedDepartment}
+                onChange={(e) => {
+                  setSelectedDepartment(e.target.value);
+                  setSelectedEmployee('');
+                }}
+                disabled={!isHR}
+                className="px-3 py-2 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60"
+              >
+                {isHR && <option value="">Todos los departamentos</option>}
+                {departments.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <Users size={12} /> Empleado
-            </label>
-            <select
-              value={selectedEmployee}
-              onChange={(e) => setSelectedEmployee(e.target.value)}
-              className="px-3 py-2 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            >
-              <option value="">Todos los empleados</option>
-              {employees.map(e => (
-                <option key={e.id} value={e.id}>{formatUsername(e.username)}</option>
-              ))}
-            </select>
-          </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                <Users size={12} /> Empleado
+              </label>
+              <select
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+                className="px-3 py-2 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              >
+                <option value="">Todos los empleados</option>
+                {employees.map(e => (
+                  <option key={e.id} value={e.id}>{formatUsername(e.username)}</option>
+                ))}
+              </select>
+            </div>
 
-          {/* Tipo de ausencia filter */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <Filter size={12} /> Tipo
-            </label>
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="px-3 py-2 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            >
-              <option value="">Todos los tipos</option>
-              {VACATION_TYPES.map(t => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
+            {/* Tipo de ausencia filter */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                <Filter size={12} /> Tipo
+              </label>
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="px-3 py-2 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              >
+                <option value="">Todos los tipos</option>
+                {VACATION_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Main Grid View */}
@@ -850,8 +854,8 @@ export const RrhhDashboard = () => {
         </div>
       ) : (
         /* Calendario Anual de Vacaciones y Ausencias */
-        <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {monthNames.map((monthName, monthIndex) => {
               const monthDays = getMonthDays(currentYear, monthIndex);
               
@@ -872,14 +876,14 @@ export const RrhhDashboard = () => {
               ];
               
               return (
-                <div key={monthIndex} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
-                  {/* Month Name Header */}
-                  <div className={`px-4 py-2.5 text-center font-bold text-sm tracking-wide ${monthHeaderColors[monthIndex]}`}>
+                <div key={monthIndex} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+                   {/* Month Name Header */}
+                   <div className={`px-3 py-1.5 text-center font-bold text-xs tracking-wide ${monthHeaderColors[monthIndex]}`}>
                     {monthName}
                   </div>
                   
                   {/* Weekdays header */}
-                  <div className="grid grid-cols-7 text-center bg-slate-50 dark:bg-slate-850/50 py-1.5 border-b border-slate-100 dark:border-slate-800 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                  <div className="grid grid-cols-7 text-center bg-slate-50 dark:bg-slate-850/50 py-1 border-b border-slate-100 dark:border-slate-800 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
                     <span>L</span>
                     <span>M</span>
                     <span>X</span>
@@ -890,7 +894,7 @@ export const RrhhDashboard = () => {
                   </div>
                   
                   {/* Days grid */}
-                  <div className="grid grid-cols-7 gap-1 p-2 flex-grow">
+                  <div className="grid grid-cols-7 gap-0.5 p-1.5 flex-grow">
                     {monthDays.map((cell, cellIdx) => {
                       if (!cell.day) {
                         return <div key={`empty-${cellIdx}`} className="aspect-square" />;
@@ -929,7 +933,7 @@ export const RrhhDashboard = () => {
                       return (
                         <div 
                           key={`day-${cell.day}`}
-                          className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs font-semibold relative group transition-all select-none ${cellClass} ${weekendClass}`}
+                          className={`aspect-square rounded-md flex flex-col items-center justify-center text-[10px] md:text-xs font-bold relative group transition-all select-none ${cellClass} ${weekendClass}`}
                         >
                           <span className={dayAbsences.length > 1 ? 'mb-0.5' : ''}>{cell.day}</span>
                           

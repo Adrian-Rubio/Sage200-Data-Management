@@ -44,8 +44,13 @@ def get_vacations(
     
     # Apply RBAC restrictions
     if not is_rrhh_or_admin(current_user):
-        # Regular users can ONLY view their own vacations and the vacations of members of their same department
-        if current_user.department_id:
+        # Regular users can ONLY view vacations of their same division (if assigned) or department
+        if current_user.division_id:
+            query = query.filter(
+                models.User.company_id == current_user.company_id,
+                models.User.division_id == current_user.division_id
+            )
+        elif current_user.department_id:
             query = query.filter(
                 models.User.company_id == current_user.company_id,
                 models.User.department_id == current_user.department_id
@@ -203,8 +208,13 @@ def get_employees(
     query = db.query(models.User).filter(models.User.is_active == True)
     
     if not is_rrhh_or_admin(current_user):
-        # Regular users can only see users in their same department
-        if current_user.department_id:
+        # Regular users can only see users in their same division (if assigned) or department
+        if current_user.division_id:
+            query = query.filter(
+                models.User.company_id == current_user.company_id,
+                models.User.division_id == current_user.division_id
+            )
+        elif current_user.department_id:
             query = query.filter(
                 models.User.company_id == current_user.company_id,
                 models.User.department_id == current_user.department_id
