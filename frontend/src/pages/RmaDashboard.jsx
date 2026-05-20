@@ -81,11 +81,24 @@ export default function RmaDashboard() {
         });
     }, [data, filters]);
 
+    const formatErrorType = (type) => {
+        const mapping = {
+            "Error preparacion": "Error preparación",
+            "Error administrativo": "Error administrativo",
+            "Error produccion": "Error producción",
+            "Error cliente": "Error cliente",
+            "Error proveedor": "Error proveedor",
+            "Error comercial": "Error comercial"
+        };
+        return mapping[type] || type;
+    };
+
     // Error Frequency for Chart
     const errorChartData = useMemo(() => {
         const counts = {};
         filteredData.forEach(item => {
-            const type = item["Tipo error"] || "Sin clasificar";
+            const rawType = item["Tipo error"] || "Sin clasificar";
+            const type = formatErrorType(rawType);
             counts[type] = (counts[type] || 0) + 1;
         });
         return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
@@ -94,8 +107,10 @@ export default function RmaDashboard() {
     const getErrorColor = (tipoError) => {
         const mapping = {
             "Error preparacion": "#3b82f6",
+            "Error preparación": "#3b82f6",
             "Error administrativo": "#eab308",
             "Error produccion": "#a855f7",
+            "Error producción": "#a855f7",
             "Error cliente": "#22c55e",
             "Error proveedor": "#f97316",
             "Error comercial": "#ef4444"
@@ -106,8 +121,10 @@ export default function RmaDashboard() {
     const getBadgeStyle = (tipoError) => {
         const mapping = {
             "Error preparacion": "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/50",
+            "Error preparación": "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/50",
             "Error administrativo": "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800/50",
             "Error produccion": "bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800/50",
+            "Error producción": "bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800/50",
             "Error cliente": "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800/50",
             "Error proveedor": "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800/50",
             "Error comercial": "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800/50"
@@ -149,7 +166,7 @@ export default function RmaDashboard() {
                         <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 transition-colors">Tipo de Error</label>
                         <select name="errorType" value={filters.errorType} onChange={handleFilterChange} className="w-full rounded border-slate-200 dark:border-slate-700 text-xs p-2 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none">
                             <option value="">Todos los errores</option>
-                            {errorTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                            {errorTypes.map(t => <option key={t} value={t}>{formatErrorType(t)}</option>)}
                         </select>
                     </div>
                     <div>
@@ -219,7 +236,7 @@ export default function RmaDashboard() {
                                         <td className="px-4 py-3">
                                             {item["Tipo error"] ? (
                                                 <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors ${getBadgeStyle(item["Tipo error"])}`}>
-                                                    {item["Tipo error"]}
+                                                    {formatErrorType(item["Tipo error"])}
                                                 </span>
                                             ) : <span className="text-slate-300 dark:text-slate-600 italic transition-colors">No clasificado</span>}
                                         </td>

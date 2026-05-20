@@ -285,7 +285,7 @@ export default function Home() {
                         <div className="flex items-center gap-2">
                             <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
                             <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                                Venta Cruzada YTD ({new Date().getFullYear()})
+                                Venta Cruzada YTD ({new Date().getFullYear()} / {new Date().getFullYear() - 1})
                             </h3>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -303,12 +303,11 @@ export default function Home() {
                                         <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1 truncate">
                                             {item.combination}
                                         </span>
-                                        <div className="flex items-baseline justify-between w-full mt-1.5">
-                                            <span className="text-lg font-black text-slate-800 dark:text-white">
-                                                {item.percentage}% <span className="text-xs text-slate-400 dark:text-slate-500 font-bold">({item.count})</span>
-                                            </span>
-                                            <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-full">
-                                                Clientes
+                                        <div className="flex flex-col mt-1.5">
+                                            <span className="text-xs sm:text-[13px] font-black text-slate-800 dark:text-white leading-tight">
+                                                {item.current_percentage}% <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">({item.current_count})</span>
+                                                <span className="mx-1 text-slate-300 dark:text-slate-700">/</span>
+                                                <span className="font-bold text-slate-500 dark:text-slate-400">{item.prev_percentage}%</span> <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">({item.prev_count})</span>
                                             </span>
                                         </div>
                                     </button>
@@ -318,14 +317,14 @@ export default function Home() {
 
                         {/* Collapsible Client List */}
                         {activeCross && (
-                            <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-emerald-100 dark:border-emerald-950/50 p-6 space-y-4 shadow-sm animate-fadeIn">
+                            <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-emerald-100 dark:border-emerald-950/50 p-6 space-y-5 shadow-sm animate-fadeIn">
                                 <div className="flex justify-between items-center border-b border-slate-50 dark:border-slate-800/50 pb-3">
                                     <div>
                                         <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
                                             Clientes en Cartera Cruzada
                                         </h4>
                                         <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mt-1">
-                                            {activeCross.combination} ({activeCross.count})
+                                            {activeCross.combination}
                                         </p>
                                     </div>
                                     <button
@@ -335,20 +334,82 @@ export default function Home() {
                                         Cerrar
                                     </button>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[250px] overflow-y-auto pr-2">
-                                    {activeCross.clients.map((client) => (
-                                        <div
-                                            key={client.id}
-                                            className="p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-800/50 flex items-center justify-between text-xs"
-                                        >
-                                            <span className="font-bold text-slate-700 dark:text-slate-300 truncate max-w-[80%]">
-                                                {client.name}
-                                            </span>
-                                            <span className="font-black text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-100 dark:border-slate-800">
-                                                {client.id}
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {/* Mantenidos */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                                                Se mantienen ({activeCross.clients_maintained?.length || 0})
                                             </span>
                                         </div>
-                                    ))}
+                                        <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {activeCross.clients_maintained?.length > 0 ? (
+                                                activeCross.clients_maintained.map((client) => (
+                                                    <div key={client.id} className="p-2.5 rounded-xl bg-emerald-50/30 dark:bg-emerald-950/10 border border-emerald-100/50 dark:border-emerald-900/20 flex items-center justify-between text-xs transition-all hover:scale-[1.01]">
+                                                        <span className="font-bold text-slate-700 dark:text-slate-300 truncate max-w-[70%]" title={client.name}>
+                                                            {client.name}
+                                                        </span>
+                                                        <span className="font-mono text-[9px] font-black text-emerald-600 dark:text-emerald-400 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-emerald-100/80 dark:border-emerald-900/40">
+                                                            {client.id}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-xs text-slate-400 dark:text-slate-500 italic py-2">Ningún cliente</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Nuevos */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
+                                                Nuevos ({activeCross.clients_new?.length || 0})
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {activeCross.clients_new?.length > 0 ? (
+                                                activeCross.clients_new.map((client) => (
+                                                    <div key={client.id} className="p-2.5 rounded-xl bg-blue-50/30 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 flex items-center justify-between text-xs transition-all hover:scale-[1.01]">
+                                                        <span className="font-bold text-slate-700 dark:text-slate-300 truncate max-w-[70%]" title={client.name}>
+                                                            {client.name}
+                                                        </span>
+                                                        <span className="font-mono text-[9px] font-black text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-blue-100/80 dark:border-blue-900/40">
+                                                            {client.id}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-xs text-slate-400 dark:text-slate-500 italic py-2">Ningún cliente</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Ya no están */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                                                Ya no están ({activeCross.clients_no_longer?.length || 0})
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {activeCross.clients_no_longer?.length > 0 ? (
+                                                activeCross.clients_no_longer.map((client) => (
+                                                    <div key={client.id} className="p-2.5 rounded-xl bg-slate-100/40 dark:bg-slate-800/10 border border-slate-200/40 dark:border-slate-800/30 flex items-center justify-between text-xs transition-all hover:scale-[1.01] opacity-75">
+                                                        <span className="font-bold text-slate-500 dark:text-slate-400 line-through truncate max-w-[70%]" title={client.name}>
+                                                            {client.name}
+                                                        </span>
+                                                        <span className="font-mono text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800">
+                                                            {client.id}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-xs text-slate-400 dark:text-slate-500 italic py-2">Ningún cliente</p>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}

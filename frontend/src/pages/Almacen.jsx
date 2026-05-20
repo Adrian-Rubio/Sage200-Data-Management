@@ -254,7 +254,7 @@ export default function Almacen() {
                     {/* Row 1: KPI Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <KpiCard title="Pedidos Preparados" value={data?.kpis?.total_pedidos || 0} subtext="Total en el periodo" />
-                        <KpiCard title="Nº Líneas" value={data?.kpis?.total_lineas || 0} subtext="Lineas acumuladas" isWarning={true} />
+                        <KpiCard title="Nº Líneas" value={data?.kpis?.total_lineas || 0} subtext="Líneas acumuladas" isWarning={true} />
                         <KpiCard title="Unidades" value={data?.kpis?.total_unidades || 0} subtext="Unidades totales" />
                     </div>
 

@@ -156,43 +156,108 @@ def get_home_summary(db: Session = Depends(get_db), current_user: models.User = 
     except Exception as e:
         print(f"Error calculating margin for home summary: {e}")
 
-    # --- VENTA CRUZADA (AÑO ACTUAL) ---
+    # --- VENTA CRUZADA (COMPARATIVA YTD ACTUAL vs ANTERIOR) ---
     cross_selling = []
     try:
+        prev_year = current_year - 1
+        try:
+            prev_date_limit = current_date.replace(year=prev_year)
+        except ValueError:
+            prev_date_limit = current_date.replace(year=prev_year, day=28)
+
         q_cross = """
-            SELECT CodigoCliente, RazonSocial, Comisionista
+            SELECT CodigoCliente, RazonSocial, Comisionista, FechaFactura
             FROM Vis_AEL_DiarioFactxComercial WITH (NOLOCK)
-            WHERE CodigoEmpresa = '2' AND YEAR(FechaFactura) = :year
-            GROUP BY CodigoCliente, RazonSocial, Comisionista
+            WHERE CodigoEmpresa = '2'
+              AND (
+                (FechaFactura >= :current_ytd_start AND FechaFactura <= :current_date)
+                OR
+                (FechaFactura >= :prev_ytd_start AND FechaFactura <= :prev_date_limit)
+              )
         """
-        df_cross = pd.read_sql(text(q_cross), db.bind, params={"year": current_year})
+        
+        params = {
+            "current_ytd_start": f"{current_year}-01-01",
+            "current_date": current_date,
+            "prev_ytd_start": f"{prev_year}-01-01",
+            "prev_date_limit": prev_date_limit
+        }
+        
+        df_cross = pd.read_sql(text(q_cross), db.bind, params=params)
         if not df_cross.empty:
             df_cross['Comisionista'] = df_cross['Comisionista'].str.strip().str.upper()
             df_cross['Division'] = df_cross['Comisionista'].map(rep_to_div).fillna('Otros')
             df_cross = df_cross[df_cross['Division'] != 'Otros']
             
-            # Group by client and get unique divisions
-            client_divs = df_cross.groupby(['CodigoCliente', 'RazonSocial'])['Division'].unique().reset_index()
-            client_divs['NumDivisions'] = client_divs['Division'].apply(len)
+            df_cross['FechaFactura'] = pd.to_datetime(df_cross['FechaFactura'])
             
-            total_clients_base = len(client_divs)
+            df_curr = df_cross[df_cross['FechaFactura'].dt.year == current_year]
+            df_prev = df_cross[df_cross['FechaFactura'].dt.year == prev_year]
             
-            cross_sell_clients = client_divs[client_divs['NumDivisions'] > 1]
-            if not cross_sell_clients.empty:
-                cross_sell_clients = cross_sell_clients.copy()
-                cross_sell_clients['CombKey'] = cross_sell_clients['Division'].apply(lambda x: " + ".join(sorted(x)))
+            def get_cross_sell_data(df_period):
+                if df_period.empty:
+                    return set(), {}, 0
+                client_divs = df_period.groupby(['CodigoCliente', 'RazonSocial'])['Division'].unique().reset_index()
+                client_divs['NumDivisions'] = client_divs['Division'].apply(len)
+                total_clients = len(client_divs)
+                cross_sell_clients = client_divs[client_divs['NumDivisions'] > 1]
                 
-                for comb, group in cross_sell_clients.groupby('CombKey'):
-                    clients = [{"id": row['CodigoCliente'].strip(), "name": row['RazonSocial'].strip()} for _, row in group.iterrows()]
-                    cross_selling.append({
-                        "combination": comb,
-                        "count": len(clients),
-                        "percentage": round(len(clients) / total_clients_base * 100, 2) if total_clients_base > 0 else 0,
-                        "clients": clients
-                    })
+                combinations_map = {}
+                if not cross_sell_clients.empty:
+                    cross_sell_clients = cross_sell_clients.copy()
+                    cross_sell_clients['CombKey'] = cross_sell_clients['Division'].apply(lambda x: " + ".join(sorted(x)))
+                    for comb, group in cross_sell_clients.groupby('CombKey'):
+                        combinations_map[comb] = {
+                            "count": len(group),
+                            "clients": {row['CodigoCliente'].strip(): row['RazonSocial'].strip() for _, row in group.iterrows()}
+                        }
+                return set(combinations_map.keys()), combinations_map, total_clients
+
+            curr_combs, curr_map, curr_total = get_cross_sell_data(df_curr)
+            prev_combs, prev_map, prev_total = get_cross_sell_data(df_prev)
+            
+            all_combinations = curr_combs.union(prev_combs)
+            
+            for comb in all_combinations:
+                curr_data = curr_map.get(comb, {"count": 0, "clients": {}})
+                prev_data = prev_map.get(comb, {"count": 0, "clients": {}})
                 
-                # Sort by count desc
-                cross_selling.sort(key=lambda x: x['count'], reverse=True)
+                curr_count = curr_data["count"]
+                prev_count = prev_data["count"]
+                
+                curr_pct = round(curr_count / curr_total * 100, 2) if curr_total > 0 else 0
+                prev_pct = round(prev_count / prev_total * 100, 2) if prev_total > 0 else 0
+                
+                curr_clients = curr_data["clients"]
+                prev_clients = prev_data["clients"]
+                
+                curr_ids = set(curr_clients.keys())
+                prev_ids = set(prev_clients.keys())
+                
+                maintained_ids = curr_ids.intersection(prev_ids)
+                new_ids = curr_ids.difference(prev_ids)
+                no_longer_ids = prev_ids.difference(curr_ids)
+                
+                def format_clients(id_set, src1, src2):
+                    res = []
+                    for cid in id_set:
+                        name = src1.get(cid) or src2.get(cid) or ""
+                        res.append({"id": cid, "name": name})
+                    return sorted(res, key=lambda x: x["name"])
+                
+                cross_selling.append({
+                    "combination": comb,
+                    "current_count": curr_count,
+                    "current_percentage": curr_pct,
+                    "prev_count": prev_count,
+                    "prev_percentage": prev_pct,
+                    "clients_maintained": format_clients(maintained_ids, curr_clients, prev_clients),
+                    "clients_new": format_clients(new_ids, curr_clients, prev_clients),
+                    "clients_no_longer": format_clients(no_longer_ids, curr_clients, prev_clients)
+                })
+            
+            # Sort by current count desc
+            cross_selling.sort(key=lambda x: x['current_count'], reverse=True)
     except Exception as e:
         print(f"Error calculating cross selling for home: {e}")
 
