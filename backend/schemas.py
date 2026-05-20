@@ -126,6 +126,7 @@ class VacationBase(BaseModel):
     end_date: datetime
     type: str = "Vacaciones"
     notes: Optional[str] = None
+    duration_minutes: Optional[int] = None  # Solo para 'Asuntos Propios'
 
 class VacationCreate(VacationBase):
     pass
@@ -135,6 +136,7 @@ class VacationUpdate(BaseModel):
     end_date: Optional[datetime] = None
     type: Optional[str] = None
     notes: Optional[str] = None
+    duration_minutes: Optional[int] = None
 
 class UserSimpleResponse(BaseModel):
     id: int
@@ -151,6 +153,7 @@ class VacationResponse(BaseModel):
     end_date: datetime
     type: str
     notes: Optional[str] = None
+    duration_minutes: Optional[int] = None
     created_at: datetime
     user: Optional[UserSimpleResponse] = None
     class Config:

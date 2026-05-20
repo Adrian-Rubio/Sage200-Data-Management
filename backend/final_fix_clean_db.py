@@ -7,6 +7,15 @@ def clean_and_seed():
     db = SessionLocal()
     try:
         print("Limpiando base de datos jerárquica...")
+
+        # Migración: añadir columna duration_minutes si no existe (SQL Server)
+        try:
+            db.execute(text("ALTER TABLE dashboard_vacations ADD duration_minutes INT NULL"))
+            db.commit()
+            print("Migración: columna duration_minutes añadida.")
+        except Exception:
+            pass  # La columna ya existe
+
         
         # Eliminar usuarios no deseados y sus vacaciones asociadas
         unwanted_usernames = [

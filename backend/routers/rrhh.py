@@ -88,7 +88,8 @@ def create_vacation(
         start_date=vacation.start_date,
         end_date=vacation.end_date,
         type=vacation.type,
-        notes=vacation.notes
+        notes=vacation.notes,
+        duration_minutes=vacation.duration_minutes if vacation.type == 'Asuntos Propios' else None
     )
     db.add(db_vacation)
     db.commit()
@@ -123,6 +124,11 @@ def update_vacation(
         db_vacation.type = vacation_update.type
     if vacation_update.notes is not None:
         db_vacation.notes = vacation_update.notes
+    if vacation_update.duration_minutes is not None:
+        db_vacation.duration_minutes = vacation_update.duration_minutes
+    # Clear duration_minutes if type changes away from Asuntos Propios
+    if vacation_update.type and vacation_update.type != 'Asuntos Propios':
+        db_vacation.duration_minutes = None
         
     db.commit()
     db.refresh(db_vacation)

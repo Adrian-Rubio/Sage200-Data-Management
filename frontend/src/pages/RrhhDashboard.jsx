@@ -47,11 +47,38 @@ const countWorkingDays = (startIso, endIso) => {
   return count;
 };
 
-// Compute Asuntos Propios hours used for an employee in a given year
-const computeAPHours = (empVacations, year) => {
+// Compute Asuntos Propios minutes used for an employee in a given year
+// Uses duration_minutes from the record if available, falls back to working days * 8h * 60min
+const computeAPMinutes = (empVacations, year) => {
   return empVacations
     .filter(v => v.type === 'Asuntos Propios' && new Date(v.start_date).getFullYear() === year)
-    .reduce((sum, v) => sum + countWorkingDays(v.start_date, v.end_date) * 8, 0);
+    .reduce((sum, v) => {
+      if (v.duration_minutes != null) return sum + v.duration_minutes;
+      return sum + countWorkingDays(v.start_date, v.end_date) * 8 * 60;
+    }, 0);
+};
+
+// Compute vacation days used for an employee in a given year
+const computeVacationDays = (empVacations, year) => {
+  return empVacations
+    .filter(v => v.type === 'Vacaciones' && new Date(v.start_date).getFullYear() === year)
+    .reduce((sum, v) => sum + countWorkingDays(v.start_date, v.end_date), 0);
+};
+
+// Vacation day limits per company (matching by name)
+const getVacationLimit = (companyName) => {
+  if (!companyName) return 23;
+  const name = companyName.toUpperCase();
+  if (name.includes('INDUSTRIAL')) return 22;
+  return 23; // CENVAL and SARATUR
+};
+
+// Format minutes as "Xh Ym"
+const formatMinutes = (totalMinutes) => {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
 };
 
 const nameMap = {
@@ -147,6 +174,8 @@ export const RrhhDashboard = () => {
   const [formEndDate, setFormEndDate] = useState('');
   const [formType, setFormType] = useState('Vacaciones');
   const [formNotes, setFormNotes] = useState('');
+  const [formAPHours, setFormAPHours] = useState(0);     // solo para Asuntos Propios
+  const [formAPMinutes, setFormAPMinutes] = useState(0); // solo para Asuntos Propios
 
   // Fetch filter metadata on mount
   useEffect(() => {
@@ -297,6 +326,13 @@ export const RrhhDashboard = () => {
       setFormEndDate(existingVacation.end_date.split('T')[0]);
       setFormType(existingVacation.type);
       setFormNotes(existingVacation.notes || '');
+      if (existingVacation.type === 'Asuntos Propios' && existingVacation.duration_minutes != null) {
+        setFormAPHours(Math.floor(existingVacation.duration_minutes / 60));
+        setFormAPMinutes(existingVacation.duration_minutes % 60);
+      } else {
+        setFormAPHours(0);
+        setFormAPMinutes(0);
+      }
       setIsModalOpen(true);
     } else {
       // Create mode
@@ -307,6 +343,8 @@ export const RrhhDashboard = () => {
       setFormEndDate(selectedDateStr);
       setFormType('Vacaciones');
       setFormNotes('');
+      setFormAPHours(0);
+      setFormAPMinutes(0);
       setIsModalOpen(true);
     }
   };
@@ -319,6 +357,8 @@ export const RrhhDashboard = () => {
     setFormEndDate(formatDateString(currentYear, currentMonth, 1));
     setFormType('Vacaciones');
     setFormNotes('');
+    setFormAPHours(0);
+    setFormAPMinutes(0);
     setIsModalOpen(true);
   };
 
@@ -346,12 +386,22 @@ export const RrhhDashboard = () => {
       return;
     }
 
+    const totalMinutes = formType === 'Asuntos Propios'
+      ? (parseInt(formAPHours) || 0) * 60 + (parseInt(formAPMinutes) || 0)
+      : null;
+
+    if (formType === 'Asuntos Propios' && (!totalMinutes || totalMinutes <= 0)) {
+      alert("Indique la duración en horas y minutos para Asuntos Propios.");
+      return;
+    }
+
     const payload = {
       user_id: parseInt(formEmployeeId),
       start_date: new Date(formStartDate).toISOString(),
       end_date: new Date(formEndDate).toISOString(),
       type: formType,
-      notes: formNotes
+      notes: formNotes,
+      duration_minutes: totalMinutes
     };
 
     try {
@@ -577,11 +627,18 @@ export const RrhhDashboard = () => {
                   ? allEmpVacations.filter(v => v.type === selectedType)
                   : allEmpVacations;
 
-                // Asuntos Propios counter
-                const apHoursUsed = computeAPHours(allEmpVacations, currentYear);
-                const apLimit = 8;
-                const apPct = Math.min((apHoursUsed / apLimit) * 100, 100);
-                const apColor = apHoursUsed > apLimit ? 'bg-rose-500' : apHoursUsed === apLimit ? 'bg-amber-500' : 'bg-emerald-500';
+                // AP counter (in minutes, limit = 480 = 8h)
+                const apMinutesUsed = computeAPMinutes(allEmpVacations, currentYear);
+                const apLimit = 480;
+                const apPct = Math.min((apMinutesUsed / apLimit) * 100, 100);
+                const apColor = apMinutesUsed > apLimit ? 'bg-rose-500' : apMinutesUsed === apLimit ? 'bg-amber-500' : 'bg-emerald-500';
+
+                // Vacation days counter
+                const vacDaysUsed = computeVacationDays(allEmpVacations, currentYear);
+                const empCompany = companies.find(c => c.id === emp.company_id);
+                const vacLimit = getVacationLimit(empCompany?.name);
+                const vacPct = Math.min((vacDaysUsed / vacLimit) * 100, 100);
+                const vacColor = vacDaysUsed > vacLimit ? 'bg-rose-500' : vacDaysUsed >= vacLimit ? 'bg-amber-500' : 'bg-indigo-500';
 
                 return (
                   <div key={emp.id} className="flex items-center hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group/row">
@@ -593,16 +650,25 @@ export const RrhhDashboard = () => {
                       {/* Contador Asuntos Propios */}
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center justify-between text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
-                          <span>Asuntos Propios</span>
-                          <span className={apHoursUsed > apLimit ? 'text-rose-500 font-bold' : ''}>
-                            {apHoursUsed}h / {apLimit}h
+                          <span>A. Propios</span>
+                          <span className={apMinutesUsed > apLimit ? 'text-rose-500 font-bold' : ''}>
+                            {formatMinutes(apMinutesUsed)} / 8h
                           </span>
                         </div>
                         <div className="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${apColor}`}
-                            style={{ width: `${apPct}%` }}
-                          />
+                          <div className={`h-full rounded-full transition-all duration-500 ${apColor}`} style={{ width: `${apPct}%` }} />
+                        </div>
+                      </div>
+                      {/* Contador Días Vacaciones */}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center justify-between text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
+                          <span>Vacaciones</span>
+                          <span className={vacDaysUsed > vacLimit ? 'text-rose-500 font-bold' : ''}>
+                            {vacDaysUsed}d / {vacLimit}d
+                          </span>
+                        </div>
+                        <div className="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all duration-500 ${vacColor}`} style={{ width: `${vacPct}%` }} />
                         </div>
                       </div>
                     </div>
@@ -773,6 +839,42 @@ export const RrhhDashboard = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Duración — solo Asuntos Propios */}
+              {formType === 'Asuntos Propios' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1">
+                    ⏱ Duración (límite anual: 8h)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Horas</span>
+                      <input
+                        type="number"
+                        min="0" max="8"
+                        value={formAPHours}
+                        onChange={(e) => setFormAPHours(Math.max(0, Math.min(8, parseInt(e.target.value) || 0)))}
+                        disabled={!isHR}
+                        className="px-3 py-2 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/50 text-xs font-bold text-amber-700 dark:text-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:opacity-60 text-center"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Minutos</span>
+                      <input
+                        type="number"
+                        min="0" max="59"
+                        value={formAPMinutes}
+                        onChange={(e) => setFormAPMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                        disabled={!isHR}
+                        className="px-3 py-2 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/50 text-xs font-bold text-amber-700 dark:text-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:opacity-60 text-center"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400 italic">
+                    Total: {formatMinutes(formAPHours * 60 + formAPMinutes)} · Fecha de inicio = día del permiso
+                  </p>
+                </div>
+              )}
 
               <div className="flex flex-col gap-1.5">
                 <label className="font-bold text-slate-400 uppercase tracking-wider">Notas / Observaciones</label>

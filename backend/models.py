@@ -119,6 +119,7 @@ class Vacation(Base):
     end_date = Column(DateTime, nullable=False)
     type = Column(String(50), default="Vacaciones") # 'Vacaciones', 'Baja', 'Asuntos Propios'
     notes = Column(String(500), nullable=True)
+    duration_minutes = Column(Integer, nullable=True)  # Solo para 'Asuntos Propios'
     created_at = Column(DateTime, default=datetime.utcnow)
     
     user = relationship("User", backref="vacations")
