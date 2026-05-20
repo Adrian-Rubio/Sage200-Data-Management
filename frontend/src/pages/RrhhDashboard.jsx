@@ -178,7 +178,7 @@ export const RrhhDashboard = () => {
   // Current date view state
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [viewMode, setViewMode] = useState('gantt'); // 'gantt' or 'calendar'
+  const [viewMode, setViewMode] = useState(isHR ? 'gantt' : 'calendar'); // 'gantt' or 'calendar' for regular employees
   
   // Data lists
   const [vacations, setVacations] = useState([]);
@@ -499,29 +499,31 @@ export const RrhhDashboard = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Toggle Vista */}
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60 mr-2">
-              <button
-                onClick={() => setViewMode('gantt')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === 'gantt'
-                    ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
-              >
-                Cronograma
-              </button>
-              <button
-                onClick={() => setViewMode('calendar')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === 'calendar'
-                    ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
-              >
-                Calendario Anual
-              </button>
-            </div>
+            {/* Toggle Vista (Only visible to HR managers / admins) */}
+            {isHR && (
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60 mr-2">
+                <button
+                  onClick={() => setViewMode('gantt')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    viewMode === 'gantt'
+                      ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  Cronograma
+                </button>
+                <button
+                  onClick={() => setViewMode('calendar')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    viewMode === 'calendar'
+                      ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  Calendario Anual
+                </button>
+              </div>
+            )}
 
             {viewMode === 'gantt' ? (
               <>
