@@ -75,6 +75,13 @@ def get_saratur_dashboard(filters: SaraturFilters, db: Session = Depends(get_db)
 
         df = pd.read_sql(text(query), db.bind, params=params)
 
+        if not df.empty:
+            # Exclude Tropicana apartments
+            df = df[
+                ~df['CodigoArticulo'].str.upper().str.contains('TROPICANA', na=False) &
+                ~df['DescripcionArticulo'].str.upper().str.contains('TROPICANA', na=False)
+            ]
+
         if df.empty:
             return {
                 "kpis": {
@@ -100,15 +107,15 @@ def get_saratur_dashboard(filters: SaraturFilters, db: Session = Depends(get_db)
         df['FechaAlbaran'] = pd.to_datetime(df['FechaAlbaran'])
 
         # Calculate occupancy rate
-        # Rentable physical apartments are those starting with ROMANDIE, LA COLINA, or TROPICANA
+        # Rentable physical apartments are those starting with ROMANDIE or LA COLINA
         # and excluding technical/ipc/extra entries
         df_real_apts = df[
-            df['CodigoArticulo'].str.upper().str.startswith(('ROMANDIE', 'LA COLINA', 'TROPICANA'))
+            df['CodigoArticulo'].str.upper().str.startswith(('ROMANDIE', 'LA COLINA'))
             & ~df['DescripcionArticulo'].str.upper().str.contains('SUMINISTROS|PERSONA EXTRA|IPC', na=False)
         ]
         
         # Total rentable physical units
-        total_rentable_apts = 21
+        total_rentable_apts = 20
         
         # Calculate unique active months in the selected period
         df['Periodo'] = df['FechaAlbaran'].dt.strftime('%Y-%m')

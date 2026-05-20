@@ -285,7 +285,7 @@ export default function Home() {
                         <div className="flex items-center gap-2">
                             <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
                             <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                                Venta Cruzada YTD ({new Date().getFullYear()} / {new Date().getFullYear() - 1})
+                                Venta Cruzada ({new Date().getFullYear()} / {new Date().getFullYear() - 1})
                             </h3>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

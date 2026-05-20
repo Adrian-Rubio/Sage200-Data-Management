@@ -57,8 +57,9 @@ const Saratur = () => {
   return (
     <div className="flex flex-col gap-6 min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-300">
       <PageHeader 
-        title="Dashboard Saratur" 
-        subtitle="Analíticas y control del complejo de apartamentos de alquiler"
+        moduleName="Saratur" 
+        showBackMenu={false}
+        showRefresh={false}
       />
 
       {/* Date Filters */}
@@ -132,9 +133,9 @@ const Saratur = () => {
               title="Porcentaje Ocupación" 
               value={data?.kpis?.occupancy_rate} 
               isPercentage={true}
-              subtext="Uso medio de los 21 aptos."
+              subtext="Uso medio de los 20 aptos."
               icon={<Percent size={20} />}
-              tooltip="Porcentaje medio de ocupación de las 21 unidades físicas disponibles en Saratur durante el periodo seleccionado"
+              tooltip="Porcentaje medio de ocupación de las 20 unidades físicas disponibles en Saratur durante el periodo seleccionado"
             />
             <KpiCard 
               title="Huéspedes / Clientes" 
