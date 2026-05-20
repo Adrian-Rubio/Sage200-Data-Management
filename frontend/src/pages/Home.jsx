@@ -4,6 +4,7 @@ import configApi from '../services/configApi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { KpiCard } from '../components/dashboard/KpiCard';
 import { fetchHomeSummary } from '../services/api';
+import { formatUserRole } from '../utils/constants';
 
 export default function Home() {
     const { user, logoutUser } = useAuthStore();
@@ -217,7 +218,7 @@ export default function Home() {
                         <div className="w-px h-8 bg-slate-200 dark:bg-slate-700" />
                         <div className="flex flex-col">
                             <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">Sesión Activa</span>
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{user?.role_name || user?.role}</span>
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{formatUserRole(user?.role_name || user?.role)}</span>
                         </div>
                     </div>
                 </header>
@@ -599,7 +600,7 @@ export default function Home() {
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
                     <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
-                        {user?.role_name || user?.role || 'Personal'}
+                        {formatUserRole(user?.role_name || user?.role)}
                     </span>
                 </div>
 

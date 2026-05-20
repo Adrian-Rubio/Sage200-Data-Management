@@ -40,3 +40,30 @@ export function getDivisionColor(division) {
             return { fill: '#94a3b8', label: '#334155', bg: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400' };
     }
 }
+
+export function formatUserRole(role) {
+    if (!role) return 'Personal';
+    const clean = role.trim();
+    
+    // Clean up encoding anomalies and add proper Spanish accents
+    if (/^direcci[o\u00f3n\ufffd]+n$/i.test(clean) || clean.toLowerCase() === 'direccion' || clean.toLowerCase() === 'dirección') {
+        return 'Dirección';
+    }
+    if (/^gerencia$/i.test(clean)) {
+        return 'Gerencia';
+    }
+    if (/^responsable de divisi[o\u00f3n\ufffd]+n$/i.test(clean) || clean.toLowerCase() === 'responsable de division' || clean.toLowerCase() === 'responsable de división') {
+        return 'Responsable de División';
+    }
+    if (/^log[i\u00edn\ufffd]+stico$/i.test(clean) || clean.toLowerCase() === 'logistico' || clean.toLowerCase() === 'logístico') {
+        return 'Logístico';
+    }
+    if (/^producci[o\u00f3n\ufffd]+n$/i.test(clean) || clean.toLowerCase() === 'produccion' || clean.toLowerCase() === 'producción') {
+        return 'Producción';
+    }
+    if (/^administrador sistemas$/i.test(clean)) {
+        return 'Administrador Sistemas';
+    }
+    return clean;
+}
+

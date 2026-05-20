@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
+import { formatUserRole } from '../utils/constants';
 
 const MainLayout = ({ children }) => {
     const { user, logoutUser } = useAuthStore();
@@ -144,8 +145,8 @@ const MainLayout = ({ children }) => {
                                 <span className="text-xs font-black text-slate-800 dark:text-white uppercase leading-none truncate" title={user?.sub || 'Usuario'}>
                                     {user?.sub || 'Usuario'}
                                 </span>
-                                <span className="text-[9px] text-blue-500 font-black uppercase tracking-widest leading-none mt-1.5 truncate" title={user?.role_name || user?.role || 'Personal'}>
-                                    {user?.role_name || user?.role || 'Personal'}
+                                <span className="text-[9px] text-blue-500 font-black uppercase tracking-widest leading-none mt-1.5 truncate" title={formatUserRole(user?.role_name || user?.role)}>
+                                    {formatUserRole(user?.role_name || user?.role)}
                                 </span>
                             </div>
                         </div>
