@@ -4,8 +4,30 @@ from sqlalchemy import func
 from typing import Optional, List
 import datetime
 from dubes import models, database_cache, sync_data
+from auth import get_current_user
+from fastapi import status
 
-router = APIRouter()
+def check_restauracion_access(current_user = Depends(get_current_user)):
+    is_it_dept = current_user.department and current_user.department.name.lower() in ["departamento de it", "it"]
+    is_true_admin = (
+        current_user.username == "adrian.rubio"
+        or is_it_dept
+        or current_user.role == "admin"
+        or (current_user.role_obj and current_user.role_obj.name == "admin")
+    )
+    dept_name_lower = current_user.department.name.lower() if current_user.department else ""
+    is_allowed = is_true_admin or any(
+        d in dept_name_lower
+        for d in ["contabilidad", "dirección", "direccion"]
+    )
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado a Restauración."
+        )
+    return current_user
+
+router = APIRouter(dependencies=[Depends(check_restauracion_access)])
 
 def get_db():
     db = database_cache.SessionLocal()

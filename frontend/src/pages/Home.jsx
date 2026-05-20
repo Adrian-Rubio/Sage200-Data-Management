@@ -118,7 +118,7 @@ export default function Home() {
         {
             name: 'Restauración',
             path: '/dubes',
-            permission: 'direccion',
+            permission: 'restauracion',
             color: 'bg-[#ff9f1c]',
             hover: 'hover:bg-[#e88a0b]',
             icon: <img src="/restauracion.png" alt="Restauración" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform" />
@@ -141,10 +141,10 @@ export default function Home() {
         const isManagementLocal = isAdmin || isDireccion || username === 'joseluis.martin' || username === 'sara';
 
         // Lógica de permisos:
-        // 1. Restauración & Almacén: Solo admin/dirección
+        // 1. Almacén: Solo admin/dirección
         // 2. Otros: Sus permisos específicos o ser admin
         let hasPermission = false;
-        if (mod.name === 'Restauración' || mod.name === 'Almacén') {
+        if (mod.name === 'Almacén') {
             hasPermission = isManagementLocal;
         } else {
             hasPermission = user?.permissions?.[mod.permission] || (user?.role === 'admin') || (mod.permission === 'admin' && user?.role === 'admin');

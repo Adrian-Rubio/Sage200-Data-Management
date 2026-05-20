@@ -8,6 +8,8 @@ import {
 import { dashboardService } from '../services/dubesApi';
 import { PageHeader } from '../components/common/PageHeader';
 import { KpiCard } from '../components/dashboard/KpiCard';
+import { Navigate } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 
 // --- Formateadores Europeos ---
 const formatEuro = (val) => {
@@ -210,6 +212,12 @@ const InvitationsModal = ({ isOpen, invitations, onClose }) => {
 };
 
 const DubesDashboard = () => {
+  const { user } = useAuthStore();
+
+  if (user && !user.permissions?.restauracion && user.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
   const [activeTab, setActiveTab] = useState('dashboard');
   const [kpis, setKpis] = useState(null);
   const [trends, setTrends] = useState([]);

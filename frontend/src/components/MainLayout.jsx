@@ -83,7 +83,7 @@ const MainLayout = ({ children }) => {
             name: 'Restauración', 
             path: '/dubes', 
             icon: <Coffee size={20} />, 
-            permission: 'ventas' 
+            permission: 'restauracion' 
         },
         { 
             name: 'Saratur', 

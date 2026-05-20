@@ -37,6 +37,10 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
             d in dept_name_lower
             for d in ["contabilidad", "marketing", "dirección", "direccion", "saratur"]
         )
+        can_see_restauracion = is_true_admin or any(
+            d in dept_name_lower
+            for d in ["contabilidad", "dirección", "direccion"]
+        )
         perms = {
             "ventas":      True if is_it_dept else user.position.can_view_ventas,
             "compras":     True if is_it_dept else user.position.can_view_compras,
@@ -47,6 +51,7 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
             "rrhh":        True if is_it_dept else user.position.can_view_rrhh,
             "calidad":     True if is_it_dept else user.position.can_view_calidad,
             "saratur":     can_see_saratur,
+            "restauracion": can_see_restauracion,
             "admin":       is_true_admin,
         }
         role_name = user.position.name
@@ -57,7 +62,7 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
         perms = {
             "ventas": False, "compras": False, "produccion": False, 
             "finanzas": False, "almacen": False, "inventario": True, "admin": False,
-            "rrhh": False, "calidad": False, "saratur": False
+            "rrhh": False, "calidad": False, "saratur": False, "restauracion": False
         }
         role_name = user.user_type
         is_responsable = False
@@ -67,7 +72,7 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
         perms = {
             "ventas": True, "compras": True, "produccion": True, 
             "finanzas": True, "almacen": True, "inventario": True, "admin": True,
-            "rrhh": True, "calidad": True, "saratur": True
+            "rrhh": True, "calidad": True, "saratur": True, "restauracion": True
         }
         role_name = "Administrador"
         is_responsable = True
@@ -90,6 +95,9 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
             "rrhh": False, "calidad": False,
             "saratur": True if is_true_admin else (
                 user.department and any(d in user.department.name.lower() for d in ["contabilidad", "marketing", "dirección", "direccion"])
+            ),
+            "restauracion": True if is_true_admin else (
+                user.department and any(d in user.department.name.lower() for d in ["contabilidad", "dirección", "direccion"])
             )
         }
         role_name = user.role_obj.name if user.role_obj else user.role
