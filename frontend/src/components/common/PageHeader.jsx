@@ -1,9 +1,21 @@
 
 import { Link } from 'react-router-dom';
 
-export function PageHeader({ moduleName, showRefresh = true, onRefresh, children, showBackMenu = true }) {
+export function PageHeader({ moduleName, showRefresh = true, onRefresh, children, showBackMenu = true, className = "" }) {
+    const hasCustomMargin = className.includes("mb-") || className.includes("m-");
+    const hasCustomRounded = className.includes("rounded-");
+    const hasCustomBorder = className.includes("border-") || className.includes("border ");
+    const hasCustomShadow = className.includes("shadow-") || className.includes("shadow ");
+
+    const defaultClass = `flex justify-between items-center bg-white dark:bg-slate-900 p-4 animate-fadeIn transition-colors 
+        ${hasCustomMargin ? "" : "mb-4"} 
+        ${hasCustomRounded ? "" : "rounded-xl"} 
+        ${hasCustomShadow ? "" : "shadow-sm"} 
+        ${hasCustomBorder ? "" : "border border-slate-100 dark:border-slate-800"} 
+        ${className}`;
+
     return (
-        <div className="flex justify-between items-center mb-4 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 animate-fadeIn transition-colors">
+        <div className={defaultClass}>
             <div className="flex items-center gap-4">
                 <div className="flex flex-col">
                     <h1 className="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">

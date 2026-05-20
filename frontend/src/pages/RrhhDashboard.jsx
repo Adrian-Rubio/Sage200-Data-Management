@@ -152,23 +152,33 @@ const EMPLOYEE_COLORS = [
 ];
 
 const getMonthDays = (year, monthIndex) => {
-  const firstDay = new Date(year, monthIndex, 1);
-  let startOffset = firstDay.getDay();
-  startOffset = startOffset === 0 ? 6 : startOffset - 1; // Lunes = 0, Domingo = 6
-  
   const totalDays = new Date(year, monthIndex + 1, 0).getDate();
-  
   const days = [];
-  // Celdas vacías de inicio
-  for (let i = 0; i < startOffset; i++) {
-    days.push({ day: null, dateStr: null });
-  }
-  // Días del mes
+  
+  // Días del mes (excluyendo fines de semana)
   for (let d = 1; d <= totalDays; d++) {
-    const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    days.push({ day: d, dateStr });
+    const date = new Date(year, monthIndex, d);
+    const dayOfWeek = date.getDay(); // 0 = Domingo, 6 = Sábado
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ day: d, dateStr });
+    }
   }
-  return days;
+  
+  // Calcular el desfase inicial (Lunes = 0, Martes = 1, etc.)
+  const firstDayOfWeek = new Date(year, monthIndex, 1).getDay();
+  let startOffset = 0;
+  if (firstDayOfWeek >= 1 && firstDayOfWeek <= 5) {
+    startOffset = firstDayOfWeek - 1;
+  } else {
+    startOffset = 0; // Si empieza en fin de semana, el primer lunes laborable no tiene desfase
+  }
+  
+  const result = [];
+  for (let i = 0; i < startOffset; i++) {
+    result.push({ day: null, dateStr: null });
+  }
+  return [...result, ...days];
 };
 
 export const RrhhDashboard = () => {
@@ -470,13 +480,7 @@ export const RrhhDashboard = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-300">
-      <PageHeader 
-        moduleName="Recursos Humanos" 
-        showBackMenu={false}
-        showRefresh={false}
-      />
-
+    <div className="flex flex-col gap-4 min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-300">
       {/* Success Toast */}
       {successMsg && (
         <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-4 py-3 bg-emerald-500 text-white rounded-xl shadow-lg animate-fade-in-down border border-emerald-400">
@@ -485,8 +489,17 @@ export const RrhhDashboard = () => {
         </div>
       )}
 
-      {/* Top Controls & Filters */}
-      <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm">
+      {/* Unified Header & Controls Panel */}
+      <div className="flex flex-col bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm overflow-hidden animate-fadeIn">
+        <PageHeader 
+          moduleName="Recursos Humanos" 
+          showBackMenu={false}
+          showRefresh={false}
+          className="mb-0 rounded-none border-0 shadow-none bg-slate-50/50 dark:bg-slate-950/20"
+        />
+
+        {/* Top Controls & Filters */}
+        <div className="flex flex-col gap-4 p-5 border-t border-slate-100 dark:border-slate-800/40">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
@@ -661,6 +674,7 @@ export const RrhhDashboard = () => {
           </div>
         )}
       </div>
+    </div>
 
       {/* Main Grid View */}
       {loading ? (
@@ -883,18 +897,16 @@ export const RrhhDashboard = () => {
                   </div>
                   
                   {/* Weekdays header */}
-                  <div className="grid grid-cols-7 text-center bg-slate-50 dark:bg-slate-850/50 py-1 border-b border-slate-100 dark:border-slate-800 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
+                  <div className="grid grid-cols-5 text-center bg-slate-50 dark:bg-slate-850/50 py-1 border-b border-slate-100 dark:border-slate-800 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
                     <span>L</span>
                     <span>M</span>
                     <span>X</span>
                     <span>J</span>
                     <span>V</span>
-                    <span>S</span>
-                    <span>D</span>
                   </div>
                   
                   {/* Days grid */}
-                  <div className="grid grid-cols-7 gap-0.5 p-1.5 flex-grow">
+                  <div className="grid grid-cols-5 gap-0.5 p-1.5 flex-grow">
                     {monthDays.map((cell, cellIdx) => {
                       if (!cell.day) {
                         return <div key={`empty-${cellIdx}`} className="aspect-square" />;
