@@ -64,6 +64,14 @@ class JobPosition(Base):
     department = relationship("Department", back_populates="positions")
     users = relationship("User", back_populates="position")
 
+class Company(Base):
+    __tablename__ = "dashboard_companies"
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(50), unique=True, index=True, nullable=False) # 'CENVAL', 'CENVALSA_IND', 'SARATUR'
+    name = Column(String(100), unique=True, index=True, nullable=False)
+    
+    users = relationship("User", back_populates="company")
+
 class User(Base):
     __tablename__ = "dashboard_users"
 
@@ -88,6 +96,9 @@ class User(Base):
     division = relationship("Division", back_populates="users")
     position = relationship("JobPosition", back_populates="users")
     
+    company_id = Column(Integer, ForeignKey("dashboard_companies.id"), nullable=True)
+    company = relationship("Company", back_populates="users")
+    
     # Optional field to link a dashboard user to a specific Sage200 sales representative
     sales_rep_id = Column(String(50), nullable=True)
     
@@ -99,6 +110,19 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     must_change_password = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class Vacation(Base):
+    __tablename__ = "dashboard_vacations"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("dashboard_users.id"), nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+    type = Column(String(50), default="Vacaciones") # 'Vacaciones', 'Baja', 'Asuntos Propios'
+    notes = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User", backref="vacations")
+
 
 class ModuleSetting(Base):
     __tablename__ = "module_settings"

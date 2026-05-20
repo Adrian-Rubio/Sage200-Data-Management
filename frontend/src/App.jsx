@@ -29,6 +29,8 @@ import Marketing from './pages/Marketing';
 import DubesDashboard from './pages/DubesDashboard';
 import Saratur from './pages/Saratur';
 
+import { RrhhDashboard } from './pages/RrhhDashboard';
+
 function App() {
   const { theme } = useThemeStore();
 
@@ -71,6 +73,7 @@ function App() {
           <Route path="/marketing" element={<Marketing />} />
           <Route path="/dubes" element={<DubesDashboard />} />
           <Route path="/saratur" element={<Saratur />} />
+          <Route path="/rrhh" element={<RrhhDashboard />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

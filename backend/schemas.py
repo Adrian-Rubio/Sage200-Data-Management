@@ -112,3 +112,47 @@ class ModuleSetting(ModuleSettingBase):
     last_modified: datetime
     class Config:
         orm_mode = True
+
+class CompanyResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    class Config:
+        orm_mode = True
+
+class VacationBase(BaseModel):
+    user_id: int
+    start_date: datetime
+    end_date: datetime
+    type: str = "Vacaciones"
+    notes: Optional[str] = None
+
+class VacationCreate(VacationBase):
+    pass
+
+class VacationUpdate(BaseModel):
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    type: Optional[str] = None
+    notes: Optional[str] = None
+
+class UserSimpleResponse(BaseModel):
+    id: int
+    username: str
+    company_id: Optional[int] = None
+    department_id: Optional[int] = None
+    class Config:
+        orm_mode = True
+
+class VacationResponse(BaseModel):
+    id: int
+    user_id: int
+    start_date: datetime
+    end_date: datetime
+    type: str
+    notes: Optional[str] = None
+    created_at: datetime
+    user: Optional[UserSimpleResponse] = None
+    class Config:
+        orm_mode = True
+

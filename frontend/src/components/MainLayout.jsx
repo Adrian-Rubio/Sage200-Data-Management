@@ -92,6 +92,12 @@ const MainLayout = ({ children }) => {
             permission: 'saratur' 
         },
         { 
+            name: 'Recursos Humanos', 
+            path: '/rrhh', 
+            icon: <Calendar size={20} />, 
+            permission: null 
+        },
+        { 
             name: 'Rotación', 
             path: '/temporal', 
             icon: <RefreshCw size={20} />, 
