@@ -134,9 +134,42 @@ const formatUsername = (username) => {
 
 const VACATION_TYPES = [
   { value: 'Vacaciones', label: 'Vacaciones', colorClass: 'bg-emerald-500 text-white', borderClass: 'border-emerald-600', textClass: 'text-emerald-500' },
-  { value: 'Baja', label: 'Baja Médica', colorClass: 'bg-rose-500 text-white', borderClass: 'border-rose-600', textClass: 'text-rose-500' },
+  { value: 'Baja', label: 'Ausencia', colorClass: 'bg-rose-500 text-white', borderClass: 'border-rose-600', textClass: 'text-rose-500' },
   { value: 'Asuntos Propios', label: 'Asuntos Propios', colorClass: 'bg-amber-500 text-white', borderClass: 'border-amber-600', textClass: 'text-amber-500' }
 ];
+
+const EMPLOYEE_COLORS = [
+  { bg: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-900/40', dot: 'bg-indigo-500', name: 'Indigo' },
+  { bg: 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-900/40', dot: 'bg-emerald-500', name: 'Esmeralda' },
+  { bg: 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-900/40', dot: 'bg-amber-500', name: 'Ámbar' },
+  { bg: 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/50 dark:border-rose-900/40', dot: 'bg-rose-500', name: 'Rosa' },
+  { bg: 'bg-sky-100 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200/50 dark:border-sky-900/40', dot: 'bg-sky-500', name: 'Cielo' },
+  { bg: 'bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/50 dark:border-purple-900/40', dot: 'bg-purple-500', name: 'Púrpura' },
+  { bg: 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-200/50 dark:border-orange-900/40', dot: 'bg-orange-500', name: 'Naranja' },
+  { bg: 'bg-teal-100 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200/50 dark:border-teal-900/40', dot: 'bg-teal-500', name: 'Teal' },
+  { bg: 'bg-fuchsia-100 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-200/50 dark:border-fuchsia-900/40', dot: 'bg-fuchsia-500', name: 'Fucsia' },
+  { bg: 'bg-pink-100 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300 border border-pink-200/50 dark:border-pink-900/40', dot: 'bg-pink-500', name: 'Pink' }
+];
+
+const getMonthDays = (year, monthIndex) => {
+  const firstDay = new Date(year, monthIndex, 1);
+  let startOffset = firstDay.getDay();
+  startOffset = startOffset === 0 ? 6 : startOffset - 1; // Lunes = 0, Domingo = 6
+  
+  const totalDays = new Date(year, monthIndex + 1, 0).getDate();
+  
+  const days = [];
+  // Celdas vacías de inicio
+  for (let i = 0; i < startOffset; i++) {
+    days.push({ day: null, dateStr: null });
+  }
+  // Días del mes
+  for (let d = 1; d <= totalDays; d++) {
+    const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    days.push({ day: d, dateStr });
+  }
+  return days;
+};
 
 export const RrhhDashboard = () => {
   const { user } = useAuthStore();
@@ -145,6 +178,7 @@ export const RrhhDashboard = () => {
   // Current date view state
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [viewMode, setViewMode] = useState('gantt'); // 'gantt' or 'calendar'
   
   // Data lists
   const [vacations, setVacations] = useState([]);
@@ -465,21 +499,68 @@ export const RrhhDashboard = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button 
-              onClick={handlePrevMonth}
-              className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="text-sm font-bold min-w-[140px] text-center">
-              {monthNames[currentMonth]} {currentYear}
-            </span>
-            <button 
-              onClick={handleNextMonth}
-              className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors"
-            >
-              <ChevronRight size={16} />
-            </button>
+            {/* Toggle Vista */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60 mr-2">
+              <button
+                onClick={() => setViewMode('gantt')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  viewMode === 'gantt'
+                    ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                Cronograma
+              </button>
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  viewMode === 'calendar'
+                    ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                Calendario Anual
+              </button>
+            </div>
+
+            {viewMode === 'gantt' ? (
+              <>
+                <button 
+                  onClick={handlePrevMonth}
+                  className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-sm font-bold min-w-[140px] text-center">
+                  {monthNames[currentMonth]} {currentYear}
+                </span>
+                <button 
+                  onClick={handleNextMonth}
+                  className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  onClick={() => setCurrentYear(currentYear - 1)}
+                  className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-sm font-bold min-w-[100px] text-center">
+                  Año {currentYear}
+                </span>
+                <button 
+                  onClick={() => setCurrentYear(currentYear + 1)}
+                  className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </>
+            )}
+
             <button 
               onClick={handleToday}
               className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/60 transition-colors"
@@ -586,7 +667,7 @@ export const RrhhDashboard = () => {
           <h3 className="text-sm font-bold text-slate-500">No se encontraron empleados</h3>
           <p className="text-xs text-slate-400">Verifique los filtros seleccionados o añada nuevos empleados al sistema.</p>
         </div>
-      ) : (
+      ) : viewMode === 'gantt' ? (
         <div className="flex flex-col bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm overflow-hidden">
           {/* Scrollable Container — overflow-visible para que los tooltips no se corten */}
           <div className="overflow-x-auto w-full">
@@ -750,7 +831,7 @@ export const RrhhDashboard = () => {
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-3.5 h-3.5 rounded bg-rose-500"></span>
-                <span>Baja Médica</span>
+                <span>Ausencia</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-3.5 h-3.5 rounded bg-amber-500"></span>
@@ -763,6 +844,173 @@ export const RrhhDashboard = () => {
                 <Lock size={12} /> Calendario en modo de sólo lectura para tu departamento
               </div>
             )}
+          </div>
+        </div>
+      ) : (
+        /* Calendario Anual de Vacaciones y Ausencias */
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {monthNames.map((monthName, monthIndex) => {
+              const monthDays = getMonthDays(currentYear, monthIndex);
+              
+              // Custom colors for month headers matching beautiful and friendly style
+              const monthHeaderColors = [
+                'bg-sky-500 text-white',      // Enero
+                'bg-teal-500 text-white',     // Febrero
+                'bg-emerald-500 text-white',  // Marzo
+                'bg-lime-500 text-slate-900',  // Abril
+                'bg-green-600 text-white',    // Mayo
+                'bg-amber-400 text-slate-900', // Junio
+                'bg-orange-500 text-white',   // Julio
+                'bg-red-500 text-white',      // Agosto
+                'bg-yellow-500 text-slate-900', // Septiembre
+                'bg-amber-600 text-white',    // Octubre
+                'bg-orange-600 text-white',   // Noviembre
+                'bg-cyan-500 text-white'      // Diciembre
+              ];
+              
+              return (
+                <div key={monthIndex} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+                  {/* Month Name Header */}
+                  <div className={`px-4 py-2.5 text-center font-bold text-sm tracking-wide ${monthHeaderColors[monthIndex]}`}>
+                    {monthName}
+                  </div>
+                  
+                  {/* Weekdays header */}
+                  <div className="grid grid-cols-7 text-center bg-slate-50 dark:bg-slate-850/50 py-1.5 border-b border-slate-100 dark:border-slate-800 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                    <span>L</span>
+                    <span>M</span>
+                    <span>X</span>
+                    <span>J</span>
+                    <span>V</span>
+                    <span>S</span>
+                    <span>D</span>
+                  </div>
+                  
+                  {/* Days grid */}
+                  <div className="grid grid-cols-7 gap-1 p-2 flex-grow">
+                    {monthDays.map((cell, cellIdx) => {
+                      if (!cell.day) {
+                        return <div key={`empty-${cellIdx}`} className="aspect-square" />;
+                      }
+                      
+                      const dateStr = cell.dateStr;
+                      
+                      // Filter employee vacations active on this day
+                      const dayAbsences = vacations.filter(v => {
+                        if (selectedEmployee && v.user_id !== parseInt(selectedEmployee)) return false;
+                        if (selectedType && v.type !== selectedType) return false;
+                        
+                        return dateStr >= v.start_date && dateStr <= v.end_date;
+                      });
+                      
+                      let cellClass = 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300';
+                      
+                      const getEmployeeColor = (empId) => {
+                        const idx = employees.findIndex(e => e.id === empId);
+                        if (idx === -1) return EMPLOYEE_COLORS[0];
+                        return EMPLOYEE_COLORS[idx % EMPLOYEE_COLORS.length];
+                      };
+                      
+                      if (dayAbsences.length === 1) {
+                        const empColor = getEmployeeColor(dayAbsences[0].user_id);
+                        cellClass = empColor.bg;
+                      } else if (dayAbsences.length > 1) {
+                        // Multiple absences on the same day: Neutral colored background and dots inside cell
+                        cellClass = 'bg-slate-100 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700';
+                      }
+                      
+                      // Check if weekend
+                      const isCellWeekend = isWeekend(currentYear, monthIndex, cell.day);
+                      const weekendClass = isCellWeekend && dayAbsences.length === 0 ? 'text-slate-400 dark:text-slate-600 bg-slate-50/30 dark:bg-slate-900/10' : '';
+                      
+                      return (
+                        <div 
+                          key={`day-${cell.day}`}
+                          className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs font-semibold relative group transition-all select-none ${cellClass} ${weekendClass}`}
+                        >
+                          <span className={dayAbsences.length > 1 ? 'mb-0.5' : ''}>{cell.day}</span>
+                          
+                          {/* Colored dots for multiple absences */}
+                          {dayAbsences.length > 1 && (
+                            <div className="flex gap-0.5 items-center justify-center mt-0.5 max-w-full overflow-hidden px-1">
+                              {dayAbsences.map(abs => {
+                                const empColor = getEmployeeColor(abs.user_id);
+                                return (
+                                  <span 
+                                    key={abs.id} 
+                                    className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${empColor.dot}`} 
+                                  />
+                                );
+                              })}
+                            </div>
+                          )}
+                          
+                          {/* Tooltip on Hover */}
+                          {dayAbsences.length > 0 && (
+                            <div className="absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col
+                              bg-slate-900/95 backdrop-blur-sm text-white text-[11px] px-3 py-2 rounded-xl
+                              shadow-2xl z-50 w-56 pointer-events-none gap-2 border border-slate-700/50">
+                              {dayAbsences.map((abs, idx) => {
+                                const emp = employees.find(e => e.id === abs.user_id);
+                                const empName = emp ? formatUsername(emp.username) : 'Desconocido';
+                                const typeObj = VACATION_TYPES.find(t => t.value === abs.type);
+                                const typeLabel = typeObj ? typeObj.label : abs.type;
+                                const typeColor = typeObj?.colorClass || 'bg-indigo-500 text-white';
+                                const durationText = abs.type === 'Asuntos Propios' && abs.duration_minutes
+                                  ? ` (${Math.floor(abs.duration_minutes / 60)}h ${abs.duration_minutes % 60}m)`
+                                  : '';
+                                
+                                return (
+                                  <div key={abs.id} className={`${idx > 0 ? 'border-t border-slate-800/80 pt-1.5' : ''} flex flex-col gap-0.5`}>
+                                    <div className="flex items-center justify-between gap-1.5">
+                                      <span className="font-bold text-slate-100">{empName}</span>
+                                      <span className={`text-[8px] font-black uppercase tracking-widest px-1 py-0.5 rounded-md ${typeColor}`}>
+                                        {typeLabel}
+                                      </span>
+                                    </div>
+                                    <span className="text-slate-400 text-[10px]">
+                                      {new Date(abs.start_date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                                      {' → '}
+                                      {new Date(abs.end_date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                                      {durationText}
+                                    </span>
+                                    {abs.notes && (
+                                      <span className="italic text-slate-400 text-[9px] leading-relaxed">
+                                        {abs.notes}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {/* Arrow */}
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900/95 border-r border-b border-slate-700/50 rotate-45 -mt-1" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Department Legend */}
+          <div className="p-5 bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col gap-3">
+            <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400">Leyenda de Empleados</h5>
+            <div className="flex flex-wrap gap-4">
+              {employees.map(emp => {
+                const idx = employees.findIndex(e => e.id === emp.id);
+                const colorObj = EMPLOYEE_COLORS[idx % EMPLOYEE_COLORS.length];
+                return (
+                  <div key={emp.id} className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-100 dark:border-slate-800/60 text-xs font-semibold">
+                    <span className={`w-2.5 h-2.5 rounded-full ${colorObj.dot}`} />
+                    <span className="text-slate-700 dark:text-slate-200">{formatUsername(emp.username)}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
