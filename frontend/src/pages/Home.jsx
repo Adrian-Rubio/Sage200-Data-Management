@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import useAuthStore from '../store/authStore';
 import configApi from '../services/configApi';
+import { Calendar } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { KpiCard } from '../components/dashboard/KpiCard';
 import { fetchHomeSummary } from '../services/api';
@@ -124,6 +125,14 @@ export default function Home() {
             icon: <img src="/restauracion.png" alt="Restauración" className="w-16 h-16 mb-2 object-contain group-hover:scale-110 transition-transform" />
         },
         {
+            name: 'Recursos Humanos',
+            path: '/rrhh',
+            permission: null,
+            color: 'bg-[#6366f1]',
+            hover: 'hover:bg-[#4f46e5]',
+            icon: <Calendar className="w-16 h-16 mb-2 text-white group-hover:scale-110 transition-transform" />
+        },
+        {
             name: 'Usuarios',
             path: '/usuarios',
             permission: 'admin',
@@ -141,10 +150,13 @@ export default function Home() {
         const isManagementLocal = isAdmin || isDireccion || username === 'joseluis.martin' || username === 'sara';
 
         // Lógica de permisos:
-        // 1. Almacén: Solo admin/dirección
-        // 2. Otros: Sus permisos específicos o ser admin
+        // 1. Recursos Humanos (public): Visible a todos
+        // 2. Almacén: Solo admin/dirección
+        // 3. Otros: Sus permisos específicos o ser admin
         let hasPermission = false;
-        if (mod.name === 'Almacén') {
+        if (mod.permission === null) {
+            hasPermission = true;
+        } else if (mod.name === 'Almacén') {
             hasPermission = isManagementLocal;
         } else {
             hasPermission = user?.permissions?.[mod.permission] || (user?.role === 'admin') || (mod.permission === 'admin' && user?.role === 'admin');
