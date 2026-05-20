@@ -252,10 +252,37 @@ export const RrhhDashboard = () => {
     });
   };
 
-  // Check if a vacation starts on a specific day
+  // Check if a vacation starts on a specific day (considering visible work days)
   const isVacationStart = (userVacations, day) => {
     const checkDateStr = formatDateString(currentYear, currentMonth, day);
     return userVacations.some(v => v.start_date.split('T')[0] === checkDateStr);
+  };
+
+  // Check if a vacation ends on a specific day
+  const isVacationEnd = (userVacations, day) => {
+    const checkDateStr = formatDateString(currentYear, currentMonth, day);
+    return userVacations.some(v => v.end_date.split('T')[0] === checkDateStr);
+  };
+
+  // Check if this is the first visible (non-weekend) day of a block
+  const isFirstVisibleDay = (vacation, day) => {
+    // Walk backwards to see if previous workday is also covered
+    let prev = day - 1;
+    while (prev >= 1 && isWeekend(currentYear, currentMonth, prev)) prev--;
+    if (prev < 1) return true;
+    const prevStr = formatDateString(currentYear, currentMonth, prev);
+    const start = new Date(vacation.start_date.split('T')[0]).getTime();
+    return new Date(prevStr).getTime() < start;
+  };
+
+  // Check if this is the last visible (non-weekend) day of a block
+  const isLastVisibleDay = (vacation, day) => {
+    let next = day + 1;
+    while (next <= daysInMonth && isWeekend(currentYear, currentMonth, next)) next++;
+    if (next > daysInMonth) return true;
+    const nextStr = formatDateString(currentYear, currentMonth, next);
+    const end = new Date(vacation.end_date.split('T')[0]).getTime();
+    return new Date(nextStr).getTime() > end;
   };
 
   const handleCellClick = (empId, day, existingVacation) => {
@@ -513,12 +540,12 @@ export const RrhhDashboard = () => {
         <div className="flex flex-col bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm overflow-hidden">
           {/* Scrollable Container — overflow-visible para que los tooltips no se corten */}
           <div className="overflow-x-auto w-full">
-            <div className="min-w-[900px] divide-y divide-slate-100 dark:divide-slate-800/80">
+            <div className="divide-y divide-slate-100/60 dark:divide-slate-800/40">
 
               {/* Header Days Row */}
               <div className="flex items-stretch bg-slate-50 dark:bg-slate-850/50">
                 {/* User column spacer */}
-                <div className="w-56 flex-shrink-0 p-3 text-xs font-bold text-slate-500 border-r border-slate-150 dark:border-slate-800 flex items-center gap-1.5">
+                <div className="w-56 flex-shrink-0 p-3 text-xs font-bold text-slate-500 border-r border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
                   <Users size={14} /> Empleado
                 </div>
 
@@ -557,9 +584,9 @@ export const RrhhDashboard = () => {
                 const apColor = apHoursUsed > apLimit ? 'bg-rose-500' : apHoursUsed === apLimit ? 'bg-amber-500' : 'bg-emerald-500';
 
                 return (
-                  <div key={emp.id} className="flex items-stretch hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                  <div key={emp.id} className="flex items-center hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group/row">
                     {/* Employee Profile Cell */}
-                    <div className="w-56 flex-shrink-0 p-3 border-r border-slate-150 dark:border-slate-800 flex flex-col justify-center gap-1">
+                    <div className="w-56 flex-shrink-0 px-4 py-3 border-r border-slate-100 dark:border-slate-800/60 flex flex-col justify-center gap-1.5">
                       <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
                         {formatUsername(emp.username)}
                       </span>
@@ -581,48 +608,59 @@ export const RrhhDashboard = () => {
                     </div>
 
                     {/* Timeline Cell — solo días laborables */}
-                    <div className="flex flex-grow">
+                    <div className="flex flex-grow py-2 px-0.5 gap-px">
                       {Array.from({ length: daysInMonth })
                         .map((_, i) => i + 1)
                         .filter(day => !isWeekend(currentYear, currentMonth, day))
                         .map(day => {
                           const dayVacation = getVacationForDay(empVacations, day);
-                          const isStart = dayVacation && isVacationStart([dayVacation], day);
+                          const firstVisible = dayVacation && isFirstVisibleDay(dayVacation, day);
+                          const lastVisible  = dayVacation && isLastVisibleDay(dayVacation, day);
 
-                          let cellClass = '';
-                          if (dayVacation) {
-                            const matchType = VACATION_TYPES.find(t => t.value === dayVacation.type);
-                            cellClass = matchType ? matchType.colorClass : 'bg-indigo-500 text-white';
-                          }
+                          const baseColor = dayVacation
+                            ? (VACATION_TYPES.find(t => t.value === dayVacation.type)?.colorClass || 'bg-indigo-500')
+                            : '';
+
+                          const roundedClass = dayVacation
+                            ? `${firstVisible ? 'rounded-l-lg ml-0.5' : ''} ${lastVisible ? 'rounded-r-lg mr-0.5' : ''}`
+                            : 'rounded-sm';
 
                           return (
                             <div
                               key={day}
                               onClick={() => handleCellClick(emp.id, day, dayVacation)}
-                              className={`flex-1 border-r border-slate-100 dark:border-slate-800/30 min-h-[56px] relative group flex items-center justify-center transition-all ${cellClass} ${
-                                isHR ? 'cursor-pointer hover:brightness-95' : ''
-                              }`}
+                              className={`flex-1 min-h-[44px] relative group flex items-center justify-center transition-all duration-150
+                                ${baseColor} ${roundedClass}
+                                ${!dayVacation ? 'border-r border-slate-100/60 dark:border-slate-800/20' : ''}
+                                ${isHR ? 'cursor-pointer' : ''}
+                                ${dayVacation && isHR ? 'hover:brightness-90 hover:shadow-md' : ''}
+                              `}
                             >
-                              {dayVacation && isStart && (
-                                <div className="absolute left-1 right-1 text-[9px] font-extrabold truncate select-none text-center pointer-events-none drop-shadow-sm">
-                                  {dayVacation.notes || dayVacation.type}
-                                </div>
-                              )}
-
-                              {/* Tooltip — z-50 + isolation para evitar solapamiento */}
+                              {/* Tooltip — aparece solo en hover */}
                               {dayVacation && (
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col bg-slate-900 text-white text-[10px] p-2 rounded-lg shadow-xl z-50 w-44 pointer-events-none gap-0.5">
-                                  <p className="font-bold flex items-center gap-1">
-                                    <Bookmark size={10} className="text-indigo-400" /> {dayVacation.type}
+                                <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col
+                                  bg-slate-900/95 backdrop-blur-sm text-white text-[11px] px-3 py-2.5 rounded-xl
+                                  shadow-2xl z-50 w-48 pointer-events-none gap-1 border border-slate-700/50">
+                                  {/* Indicador de tipo */}
+                                  <div className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md w-fit
+                                    ${VACATION_TYPES.find(t => t.value === dayVacation.type)?.colorClass || 'bg-indigo-500 text-white'}`}>
+                                    {dayVacation.type}
+                                  </div>
+                                  <p className="font-semibold text-slate-200 mt-0.5">
+                                    {formatUsername(emp.username)}
                                   </p>
-                                  <p className="opacity-80">
-                                    {new Date(dayVacation.start_date).toLocaleDateString('es-ES')} al {new Date(dayVacation.end_date).toLocaleDateString('es-ES')}
+                                  <p className="text-slate-400 text-[10px]">
+                                    {new Date(dayVacation.start_date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                                    {' → '}
+                                    {new Date(dayVacation.end_date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
                                   </p>
                                   {dayVacation.notes && (
-                                    <p className="border-t border-slate-700 mt-1 pt-1 italic text-slate-300">
-                                      "{dayVacation.notes}"
+                                    <p className="border-t border-slate-700/60 mt-1 pt-1 italic text-slate-400 text-[10px] leading-relaxed">
+                                      {dayVacation.notes}
                                     </p>
                                   )}
+                                  {/* Arrow */}
+                                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900/95 border-r border-b border-slate-700/50 rotate-45 -mt-1" />
                                 </div>
                               )}
                             </div>
