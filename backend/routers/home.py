@@ -107,14 +107,56 @@ def get_home_summary(db: Session = Depends(get_db), current_user: models.User = 
         alerts.append({"id": "pwd_change", "type": "warning", "title": "SEGURIDAD", "message": f"{pwd_count} usuarios pendientes de clave."})
     alerts.append({"id": "etl_sync", "type": "success", "title": "SISTEMA", "message": "Sincronización OK."})
 
-    # --- VENTA CRUZADA (AÑO ACTUAL) ---
+    # --- DIVISIONS DEFINITION ---
     divisions = {
         'Conectrónica': ['JOSE CESPEDES BLANCO', 'ANTONIO MACHO MACHO', 'JESUS COLLADO ARAQUE', 'ADRIÁN ROMERO JIMENEZ'],
         'Sismecánica': ['JUAN CARLOS BENITO RAMOS', 'JAVIER ALLEN PERKINS'],
         'Informática Industrial': ['JUAN CARLOS VALDES ANTON']
     }
     rep_to_div = {rep.upper(): div for div, reps in divisions.items() for rep in reps}
+
+    # --- MARGEN DEL MES ACTUAL ---
+    margin_global = 0.0
+    margins_by_div = {
+        'Conectrónica': 0.0,
+        'Sismecánica': 0.0,
+        'Informática Industrial': 0.0
+    }
     
+    try:
+        q_margin_data = """
+            SELECT Comisionista, BaseImponible, ImporteCoste
+            FROM VIS_CEN_LinAlbFacSD WITH (NOLOCK)
+            WHERE CodigoEmpresa = 2 
+              AND EjercicioFactura = :year 
+              AND MONTH(FechaFactura) = :month
+        """
+        df_m = pd.read_sql(text(q_margin_data), db.bind, params={"year": current_year, "month": current_month})
+        
+        if not df_m.empty:
+            df_m.columns = [c.strip() for c in df_m.columns]
+            df_m['BaseImponible'] = pd.to_numeric(df_m['BaseImponible'], errors='coerce').fillna(0)
+            df_m['ImporteCoste'] = pd.to_numeric(df_m['ImporteCoste'], errors='coerce').fillna(0)
+            
+            sum_base = df_m['BaseImponible'].sum()
+            sum_cost = df_m['ImporteCoste'].sum()
+            if sum_base > 0:
+                margin_global = round(float((sum_base - sum_cost) / sum_base * 100), 2)
+                
+            df_m['Comisionista'] = df_m['Comisionista'].str.strip().str.upper()
+            df_m['Division'] = df_m['Comisionista'].map(rep_to_div).fillna('Otros')
+            
+            for div in margins_by_div.keys():
+                df_div = df_m[df_m['Division'] == div]
+                if not df_div.empty:
+                    div_base = df_div['BaseImponible'].sum()
+                    div_cost = df_div['ImporteCoste'].sum()
+                    if div_base > 0:
+                        margins_by_div[div] = round(float((div_base - div_cost) / div_base * 100), 2)
+    except Exception as e:
+        print(f"Error calculating margin for home summary: {e}")
+
+    # --- VENTA CRUZADA (AÑO ACTUAL) ---
     cross_selling = []
     try:
         q_cross = """
@@ -172,6 +214,10 @@ def get_home_summary(db: Session = Depends(get_db), current_user: models.User = 
             "budget": {
                 "bruto": fact_bruta, "abonos": abonos, "neto": fact_neta,
                 "objetivo": objetivo, "cumplimiento": cumplimiento
+            },
+            "margin": {
+                "global": margin_global,
+                "by_division": margins_by_div
             }
         },
         "alerts": alerts,

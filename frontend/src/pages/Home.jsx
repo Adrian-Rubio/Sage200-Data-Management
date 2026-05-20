@@ -11,6 +11,7 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [homeSummary, setHomeSummary] = useState(null);
     const [activeCross, setActiveCross] = useState(null);
+    const [selectedMarginTab, setSelectedMarginTab] = useState('global');
 
     const isManagement = (() => {
         const username = (user?.sub || user?.username || '').toLowerCase();
@@ -356,32 +357,101 @@ export default function Home() {
 
                 {/* Bottom Section: Alerts, Budget & Purchases */}
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-grow pb-4">
-                    {/* Alerts Panel */}
-                    <div className="lg:col-span-1 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-h-[350px]">
+                    {/* Margen del Mes Panel */}
+                    <div className="lg:col-span-1 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-h-[350px] transition-colors">
                         <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-800/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
-                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Alertas del Mes</h3>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Margen del Mes</h3>
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         </div>
-                        <div className="p-4 space-y-3 overflow-y-auto">
-                            {homeSummary?.alerts?.length > 0 ? (
-                                homeSummary.alerts.map((alert) => (
-                                    <div key={alert.id} className={`p-4 rounded-2xl border ${alert.type === 'warning'
-                                            ? 'bg-amber-50/50 border-amber-100 dark:bg-amber-900/10 dark:border-amber-900/30 text-amber-800 dark:text-amber-400'
-                                            : 'bg-emerald-50/50 border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400'
-                                        } flex gap-3 items-start`}>
-                                        <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${alert.type === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                                        <div>
-                                            <div className="text-[10px] font-black uppercase tracking-wider mb-0.5">{alert.title}</div>
-                                            <div className="text-[11px] font-medium leading-tight">{alert.message}</div>
-                                        </div>
+                        <div className="p-6 flex-1 flex flex-col justify-between items-center gap-4">
+                            {/* Selected value & visual circle */}
+                            <div className="flex flex-col items-center justify-center relative w-full mt-2">
+                                <div className="relative w-36 h-36 flex items-center justify-center">
+                                    {/* Background Circle */}
+                                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                        <circle 
+                                            cx="50" 
+                                            cy="50" 
+                                            r="40" 
+                                            stroke="currentColor" 
+                                            strokeWidth="8" 
+                                            fill="transparent" 
+                                            className="text-slate-100 dark:text-slate-800"
+                                        />
+                                        <circle 
+                                            cx="50" 
+                                            cy="50" 
+                                            r="40" 
+                                            stroke="url(#marginGrad)" 
+                                            strokeWidth="8" 
+                                            fill="transparent" 
+                                            strokeDasharray={`${2 * Math.PI * 40}`}
+                                            strokeDashoffset={`${2 * Math.PI * 40 * (1 - Math.max(0, Math.min(100, (selectedMarginTab === 'global' ? homeSummary?.kpis?.margin?.global : homeSummary?.kpis?.margin?.by_division?.[selectedMarginTab]) || 0)) / 100)}`}
+                                            strokeLinecap="round"
+                                            className="transition-all duration-1000 ease-out"
+                                        />
+                                        <defs>
+                                            <linearGradient id="marginGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" stopColor="#3b82f6" />
+                                                <stop offset="100%" stopColor="#10b981" />
+                                            </linearGradient>
+                                        </defs>
+                                    </svg>
+                                    <div className="absolute flex flex-col items-center justify-center">
+                                        <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">
+                                            {((selectedMarginTab === 'global' ? homeSummary?.kpis?.margin?.global : homeSummary?.kpis?.margin?.by_division?.[selectedMarginTab]) || 0).toFixed(1)}%
+                                        </span>
+                                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
+                                            {selectedMarginTab === 'global' ? 'Global' : selectedMarginTab.split(' ')[0]}
+                                        </span>
                                     </div>
-                                ))
-                            ) : (
-                                <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 py-10">
-                                    <svg className="w-8 h-8 mb-2 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    <p className="text-xs font-bold uppercase tracking-widest">Sin alertas pendientes</p>
                                 </div>
-                            )}
+                            </div>
+
+                            {/* Option buttons */}
+                            <div className="w-full grid grid-cols-2 gap-2 mt-2">
+                                <button
+                                    onClick={() => setSelectedMarginTab('global')}
+                                    className={`px-2 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 border text-center whitespace-nowrap truncate ${
+                                        selectedMarginTab === 'global'
+                                            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 shadow-sm font-black'
+                                            : 'bg-slate-50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-850 font-bold'
+                                    }`}
+                                >
+                                    Global
+                                </button>
+                                <button
+                                    onClick={() => setSelectedMarginTab('Conectrónica')}
+                                    className={`px-2 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 border text-center whitespace-nowrap truncate ${
+                                        selectedMarginTab === 'Conectrónica'
+                                            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 shadow-sm font-black'
+                                            : 'bg-slate-50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-850 font-bold'
+                                    }`}
+                                >
+                                    Conectrónica
+                                </button>
+                                <button
+                                    onClick={() => setSelectedMarginTab('Sismecánica')}
+                                    className={`px-2 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 border text-center whitespace-nowrap truncate ${
+                                        selectedMarginTab === 'Sismecánica'
+                                            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 shadow-sm font-black'
+                                            : 'bg-slate-50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-850 font-bold'
+                                    }`}
+                                >
+                                    Sismecánica
+                                </button>
+                                <button
+                                    onClick={() => setSelectedMarginTab('Informática Industrial')}
+                                    className={`px-2 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 border text-center whitespace-nowrap truncate ${
+                                        selectedMarginTab === 'Informática Industrial'
+                                            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 shadow-sm font-black'
+                                            : 'bg-slate-50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-850 font-bold'
+                                    }`}
+                                    title="Informática Industrial"
+                                >
+                                    Informática Ind.
+                                </button>
+                            </div>
                         </div>
                     </div>
 
