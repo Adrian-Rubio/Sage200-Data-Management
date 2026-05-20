@@ -33,6 +33,27 @@ const formatDateString = (year, month, day) => {
   return `${year}-${m}-${d}`;
 };
 
+// Count working days (Mon-Fri) between two ISO date strings (inclusive)
+const countWorkingDays = (startIso, endIso) => {
+  const start = new Date(startIso.split('T')[0]);
+  const end   = new Date(endIso.split('T')[0]);
+  let count = 0;
+  const cur = new Date(start);
+  while (cur <= end) {
+    const dow = cur.getDay();
+    if (dow !== 0 && dow !== 6) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+};
+
+// Compute Asuntos Propios hours used for an employee in a given year
+const computeAPHours = (empVacations, year) => {
+  return empVacations
+    .filter(v => v.type === 'Asuntos Propios' && new Date(v.start_date).getFullYear() === year)
+    .reduce((sum, v) => sum + countWorkingDays(v.start_date, v.end_date) * 8, 0);
+};
+
 const nameMap = {
   "jose.cespedes": "José Céspedes",
   "adrian.romero": "Adrián Romero",
@@ -108,6 +129,7 @@ export const RrhhDashboard = () => {
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState('');
+  const [selectedType, setSelectedType] = useState('');  // nuevo: filtro por tipo
   
   // Loading & UI States
   const [loading, setLoading] = useState(true);
@@ -400,7 +422,7 @@ export const RrhhDashboard = () => {
         </div>
 
         {/* Filter Inputs Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-100 dark:border-slate-800/80">
           <div className="flex flex-col gap-1.5">
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
               <Building2 size={12} /> Empresa
@@ -456,6 +478,23 @@ export const RrhhDashboard = () => {
               ))}
             </select>
           </div>
+
+          {/* Tipo de ausencia filter */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <Filter size={12} /> Tipo
+            </label>
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="px-3 py-2 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            >
+              <option value="">Todos los tipos</option>
+              {VACATION_TYPES.map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -472,105 +511,123 @@ export const RrhhDashboard = () => {
         </div>
       ) : (
         <div className="flex flex-col bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm overflow-hidden">
-          {/* Scrollable Container */}
+          {/* Scrollable Container — overflow-visible para que los tooltips no se corten */}
           <div className="overflow-x-auto w-full">
             <div className="min-w-[900px] divide-y divide-slate-100 dark:divide-slate-800/80">
-              
+
               {/* Header Days Row */}
               <div className="flex items-stretch bg-slate-50 dark:bg-slate-850/50">
                 {/* User column spacer */}
                 <div className="w-56 flex-shrink-0 p-3 text-xs font-bold text-slate-500 border-r border-slate-150 dark:border-slate-800 flex items-center gap-1.5">
                   <Users size={14} /> Empleado
                 </div>
-                
-                {/* Days column */}
-                <div className="flex flex-grow justify-between">
-                  {Array.from({ length: daysInMonth }).map((_, i) => {
-                    const day = i + 1;
-                    const weekend = isWeekend(currentYear, currentMonth, day);
-                    const dayName = getDayName(currentYear, currentMonth, day);
-                    return (
-                      <div 
-                        key={day} 
-                        className={`flex-grow flex flex-col items-center justify-center p-1.5 text-center border-r border-slate-100 dark:border-slate-800/40 text-[10px] font-bold ${
-                          weekend ? 'bg-slate-100/70 dark:bg-slate-800/50 text-slate-400' : 'text-slate-500 dark:text-slate-400'
-                        }`}
-                        style={{ width: `${100 / daysInMonth}%` }}
-                      >
-                        <span className="opacity-60">{dayName}</span>
-                        <span className="text-xs mt-0.5">{day}</span>
-                      </div>
-                    );
-                  })}
+
+                {/* Days column — solo días laborables */}
+                <div className="flex flex-grow">
+                  {Array.from({ length: daysInMonth })
+                    .map((_, i) => i + 1)
+                    .filter(day => !isWeekend(currentYear, currentMonth, day))
+                    .map(day => {
+                      const dayName = getDayName(currentYear, currentMonth, day);
+                      return (
+                        <div
+                          key={day}
+                          className="flex-1 flex flex-col items-center justify-center p-1.5 text-center border-r border-slate-100 dark:border-slate-800/40 text-[10px] font-bold text-slate-500 dark:text-slate-400"
+                        >
+                          <span className="opacity-60">{dayName}</span>
+                          <span className="text-xs mt-0.5">{day}</span>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
 
               {/* Employee Rows */}
               {employees.map(emp => {
-                const empVacations = vacations.filter(v => v.user_id === emp.id);
+                const allEmpVacations = vacations.filter(v => v.user_id === emp.id);
+                // Aplicar filtro de tipo en cliente
+                const empVacations = selectedType
+                  ? allEmpVacations.filter(v => v.type === selectedType)
+                  : allEmpVacations;
+
+                // Asuntos Propios counter
+                const apHoursUsed = computeAPHours(allEmpVacations, currentYear);
+                const apLimit = 8;
+                const apPct = Math.min((apHoursUsed / apLimit) * 100, 100);
+                const apColor = apHoursUsed > apLimit ? 'bg-rose-500' : apHoursUsed === apLimit ? 'bg-amber-500' : 'bg-emerald-500';
+
                 return (
                   <div key={emp.id} className="flex items-stretch hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
                     {/* Employee Profile Cell */}
-                    <div className="w-56 flex-shrink-0 p-3 border-r border-slate-150 dark:border-slate-800 flex flex-col justify-center gap-0.5">
+                    <div className="w-56 flex-shrink-0 p-3 border-r border-slate-150 dark:border-slate-800 flex flex-col justify-center gap-1">
                       <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
                         {formatUsername(emp.username)}
                       </span>
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase">
-                        ID: {emp.id}
-                      </span>
+                      {/* Contador Asuntos Propios */}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center justify-between text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
+                          <span>Asuntos Propios</span>
+                          <span className={apHoursUsed > apLimit ? 'text-rose-500 font-bold' : ''}>
+                            {apHoursUsed}h / {apLimit}h
+                          </span>
+                        </div>
+                        <div className="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${apColor}`}
+                            style={{ width: `${apPct}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Timeline Cell */}
-                    <div className="flex flex-grow justify-between relative">
-                      {Array.from({ length: daysInMonth }).map((_, i) => {
-                        const day = i + 1;
-                        const weekend = isWeekend(currentYear, currentMonth, day);
-                        const dayVacation = getVacationForDay(empVacations, day);
-                        const isStart = dayVacation && isVacationStart([dayVacation], day);
-                        
-                        // Select color scheme
-                        let cellClass = '';
-                        if (dayVacation) {
-                          const matchType = VACATION_TYPES.find(t => t.value === dayVacation.type);
-                          cellClass = matchType ? matchType.colorClass : 'bg-indigo-500 text-white';
-                        } else if (weekend) {
-                          cellClass = 'bg-slate-50/60 dark:bg-slate-800/30';
-                        }
+                    {/* Timeline Cell — solo días laborables */}
+                    <div className="flex flex-grow">
+                      {Array.from({ length: daysInMonth })
+                        .map((_, i) => i + 1)
+                        .filter(day => !isWeekend(currentYear, currentMonth, day))
+                        .map(day => {
+                          const dayVacation = getVacationForDay(empVacations, day);
+                          const isStart = dayVacation && isVacationStart([dayVacation], day);
 
-                        return (
-                          <div 
-                            key={day}
-                            onClick={() => handleCellClick(emp.id, day, dayVacation)}
-                            className={`flex-grow border-r border-slate-100 dark:border-slate-800/30 min-h-[48px] relative group flex items-center justify-center transition-all ${cellClass} ${
-                              isHR ? 'cursor-pointer hover:brightness-95 hover:scale-[0.98]' : ''
-                            }`}
-                            style={{ width: `${100 / daysInMonth}%` }}
-                          >
-                            {dayVacation && isStart && (
-                              <div className="absolute left-1 right-1 text-[9px] font-extrabold truncate select-none text-center pointer-events-none drop-shadow-sm">
-                                {dayVacation.notes || dayVacation.type}
-                              </div>
-                            )}
+                          let cellClass = '';
+                          if (dayVacation) {
+                            const matchType = VACATION_TYPES.find(t => t.value === dayVacation.type);
+                            cellClass = matchType ? matchType.colorClass : 'bg-indigo-500 text-white';
+                          }
 
-                            {/* Cell Info Tooltip */}
-                            {dayVacation && (
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:flex flex-col bg-slate-900 text-white text-[10px] p-2 rounded-lg shadow-xl z-10 w-44 pointer-events-none gap-0.5">
-                                <p className="font-bold flex items-center gap-1">
-                                  <Bookmark size={10} className="text-indigo-400" /> {dayVacation.type}
-                                </p>
-                                <p className="opacity-80">
-                                  {new Date(dayVacation.start_date).toLocaleDateString('es-ES')} al {new Date(dayVacation.end_date).toLocaleDateString('es-ES')}
-                                </p>
-                                {dayVacation.notes && (
-                                  <p className="border-t border-slate-700 mt-1 pt-1 italic text-slate-300">
-                                    "{dayVacation.notes}"
+                          return (
+                            <div
+                              key={day}
+                              onClick={() => handleCellClick(emp.id, day, dayVacation)}
+                              className={`flex-1 border-r border-slate-100 dark:border-slate-800/30 min-h-[56px] relative group flex items-center justify-center transition-all ${cellClass} ${
+                                isHR ? 'cursor-pointer hover:brightness-95' : ''
+                              }`}
+                            >
+                              {dayVacation && isStart && (
+                                <div className="absolute left-1 right-1 text-[9px] font-extrabold truncate select-none text-center pointer-events-none drop-shadow-sm">
+                                  {dayVacation.notes || dayVacation.type}
+                                </div>
+                              )}
+
+                              {/* Tooltip — z-50 + isolation para evitar solapamiento */}
+                              {dayVacation && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col bg-slate-900 text-white text-[10px] p-2 rounded-lg shadow-xl z-50 w-44 pointer-events-none gap-0.5">
+                                  <p className="font-bold flex items-center gap-1">
+                                    <Bookmark size={10} className="text-indigo-400" /> {dayVacation.type}
                                   </p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                                  <p className="opacity-80">
+                                    {new Date(dayVacation.start_date).toLocaleDateString('es-ES')} al {new Date(dayVacation.end_date).toLocaleDateString('es-ES')}
+                                  </p>
+                                  {dayVacation.notes && (
+                                    <p className="border-t border-slate-700 mt-1 pt-1 italic text-slate-300">
+                                      "{dayVacation.notes}"
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 );
