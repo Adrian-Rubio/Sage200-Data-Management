@@ -112,6 +112,10 @@ def clean_and_seed():
             "Departamento Logístico": {
                 "divisions": ["Logística"],
                 "positions": ["Logístico"]
+            },
+            "Departamento de Saratur": {
+                "divisions": ["Saratur"],
+                "positions": ["Gerencia Saratur"]
             }
         }
 
@@ -146,7 +150,7 @@ def clean_and_seed():
                 is_cont    = d_name == "Departamento de Contabilidad"
                 is_mkt     = d_name == "Departamento de Marketing"
                 is_rrhh    = d_name == "Departamento de RRHH"
-                is_saratr  = d_name == "SARATUR"  # por si acaso
+                is_saratur = d_name == "Departamento de Saratur"  # Solo acceso Saratur (via dept en users.py)
 
                 pos = JobPosition(
                     name=pos_name,
@@ -154,16 +158,21 @@ def clean_and_seed():
                     is_responsable=is_resp,
                     is_asistente=is_asist,
                     # Permisos estrictos por departamento
+                    # Dirección: acceso completo excepto admin/usuarios
                     can_view_ventas    = is_it or is_dir or is_ventas,
                     can_view_compras   = is_it or is_dir or is_ventas or is_compras or is_prod,
-                    can_view_produccion= is_it or is_dir or is_prod,
+                    # Ventas también tiene producción (sol. #3)
+                    can_view_produccion= is_it or is_dir or is_prod or is_ventas,
                     can_view_finanzas  = is_it or is_dir or is_cont,
-                    can_view_almacen   = is_it or is_dir or is_prod or is_logis,
+                    # Producción pierde almacen (sol. #4); Dirección lo conserva
+                    can_view_almacen   = is_it or is_dir or is_logis,
                     can_view_inventario= is_it or is_dir or is_ventas or is_compras or is_prod or is_logis,
-                    can_view_rrhh      = is_it or is_rrhh,
+                    # Dirección y IT tienen RRHH (sol. #1)
+                    can_view_rrhh      = is_it or is_rrhh or is_dir,
                     can_view_calidad   = is_it,
-                    # Saratur solo: IT, Dirección, Contabilidad, Marketing
-                    # (gestionado en users.py al construir el token)
+                    # Saratur: solo acceso a su módulo (gestionado en users.py via departamento)
+                    # Marketing: acceso a Saratur via departamento en users.py (no requiere campo)
+                    # Saratur dept: cero permisos de módulos — solo saratur via dept check en token
                     can_manage_users   = is_it,  # SOLO IT gestiona usuarios
                 )
                 db.add(pos)
@@ -216,8 +225,8 @@ def clean_and_seed():
             ("sara", "Departamento de Dirección", "Dirección", "Gerencia"),
             # Logistico
             ("ismael.gutierrez", "Departamento Logístico", "Logística", "Logístico"),
-            # Saratur
-            ("merce.arbona", "Departamento de Dirección", "Dirección", "Gerencia"),
+            # Saratur — departamento propio, sin permisos de otros módulos
+            ("merce.arbona", "Departamento de Saratur", "Saratur", "Gerencia Saratur"),
         ]
 
         dept_to_company = {
@@ -230,6 +239,7 @@ def clean_and_seed():
             "Departamento de Compras y Ventas": "CENVALSA_IND",
             "Departamento de Producción": "CENVALSA_IND",
             "Departamento Logístico": "CENVALSA_IND",
+            "Departamento de Saratur": "SARATUR",
         }
 
         for username, d_name, div_name, pos_name in users_list:
@@ -243,14 +253,11 @@ def clean_and_seed():
                 user.division_id = div.id
                 user.position_id = pos.id
                 
-                # Company assignment
-                if username == "merce.arbona":
-                    user.company_id = company_objects["SARATUR"].id
-                else:
-                    comp_code = dept_to_company.get(d_name)
-                    if comp_code:
-                        user.company_id = company_objects[comp_code].id
-                
+                # Company assignment — ya está en dept_to_company para todos
+                comp_code = dept_to_company.get(d_name)
+                if comp_code:
+                    user.company_id = company_objects[comp_code].id
+
                 print(f"Asignado: {username} -> {d_name} ({pos_name}) [Company: {user.company_id}]")
             else:
                 print(f"ADVERTENCIA: Usuario no encontrado en DB: {username}")
