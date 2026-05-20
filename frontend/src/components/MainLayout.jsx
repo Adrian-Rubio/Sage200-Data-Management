@@ -95,7 +95,7 @@ const MainLayout = ({ children }) => {
             name: 'Recursos Humanos', 
             path: '/rrhh', 
             icon: <Calendar size={20} />, 
-            permission: null 
+            permission: 'rrhh' 
         },
         { 
             name: 'Rotación', 

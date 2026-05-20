@@ -26,43 +26,31 @@ def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestF
     # Priority 1: New Position-based structure
     if user.position:
         is_it_dept = user.department and user.department.name.lower() in ["departamento de it", "it"]
+        # is_true_admin: ONLY IT department or the master admin user
         is_true_admin = (
-            user.username == "adrian.rubio" 
-            or "administrador" in user.position.name.lower()
-            or "admin" in user.position.name.lower()
-            or user.role == "admin"
+            user.username == "adrian.rubio"
+            or is_it_dept
+        )
+        # saratur: visible only for specific departments
+        dept_name_lower = user.department.name.lower() if user.department else ""
+        can_see_saratur = is_true_admin or any(
+            d in dept_name_lower
+            for d in ["contabilidad", "marketing", "dirección", "direccion", "saratur"]
         )
         perms = {
-            "ventas": True if is_it_dept else user.position.can_view_ventas,
-            "compras": True if is_it_dept else user.position.can_view_compras,
-            "produccion": True if is_it_dept else user.position.can_view_produccion,
-            "finanzas": True if is_it_dept else user.position.can_view_finanzas,
-            "almacen": True if is_it_dept else user.position.can_view_almacen,
-            "inventario": True if is_it_dept else (
-                user.position.can_view_inventario 
-                and user.department 
-                and (
-                    user.department.name.lower() in [
-                        "departamento de ventas", "ventas", 
-                        "departamento de compras y ventas", "compras y ventas", 
-                        "departamento de producción", "producción", 
-                        "departamento logístico", "logística", 
-                        "departamento de dirección", "dirección", 
-                        "departamento de it", "it"
-                    ]
-                    or user.position.is_responsable
-                )
-            ),
-            "rrhh": True if is_it_dept else user.position.can_view_rrhh,
-            "calidad": True if is_it_dept else user.position.can_view_calidad,
-            "saratur": True if is_it_dept else (
-                is_true_admin 
-                or (user.department and any(d in user.department.name.lower() for d in ["contabilidad", "marketing", "dirección", "direccion"]))
-            ),
-            "admin": True if is_true_admin else False
+            "ventas":      True if is_it_dept else user.position.can_view_ventas,
+            "compras":     True if is_it_dept else user.position.can_view_compras,
+            "produccion":  True if is_it_dept else user.position.can_view_produccion,
+            "finanzas":    True if is_it_dept else user.position.can_view_finanzas,
+            "almacen":     True if is_it_dept else user.position.can_view_almacen,
+            "inventario":  True if is_it_dept else user.position.can_view_inventario,
+            "rrhh":        True if is_it_dept else user.position.can_view_rrhh,
+            "calidad":     True if is_it_dept else user.position.can_view_calidad,
+            "saratur":     can_see_saratur,
+            "admin":       is_true_admin,
         }
         role_name = user.position.name
-        is_responsable = True if is_it_dept else user.position.is_responsable
+        is_responsable = is_it_dept or user.position.is_responsable
         is_asistente = user.position.is_asistente
     # Priority 2: Legacy user types
     elif user.user_type in ["DISTRIBUIDOR", "SOCIO"]:

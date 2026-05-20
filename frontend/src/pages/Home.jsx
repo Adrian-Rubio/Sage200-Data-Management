@@ -16,18 +16,11 @@ export default function Home() {
 
     const isManagement = (() => {
         const username = (user?.sub || user?.username || '').toLowerCase();
-        const role = (user?.role_name || user?.role || '').toLowerCase();
-        const dept = (user?.department || '').toLowerCase();
-        return (
-            username === 'joseluis.martin' ||
-            username === 'sara.macho' ||
-            username === 'sara' ||
-            username === 'adrian.rubio' ||
-            role.includes('admin') ||
-            role.includes('direc') ||
-            role.includes('geren') ||
-            dept.includes('direc')
-        );
+        // Usamos los permisos del token JWT, no el nombre del cargo
+        // Solo IT (admin=true) y Dirección (ventas+finanzas+saratur) acceden al Centro de Mando
+        const isAdmin = user?.permissions?.admin === true;
+        const isDireccion = (user?.department || '').toLowerCase().includes('direcci');
+        return isAdmin || isDireccion || username === 'joseluis.martin' || username === 'sara';
     })();
 
     // Real-time clock for Executive Dashboard
@@ -143,23 +136,16 @@ export default function Home() {
     // We show all modules, but some will be "locked" if no permissions
     const modules = allModules.map(mod => {
         const username = (user?.sub || user?.username || '').toLowerCase();
-        const userRole = (user?.role_name || user?.role || '').toLowerCase();
-        const isManagement = (
-            username === 'joseluis.martin' ||
-            username === 'sara.macho' ||
-            username === 'sara' ||
-            username === 'adrian.rubio' ||
-            userRole.includes('admin') ||
-            userRole.includes('direc') ||
-            userRole.includes('geren')
-        );
+        const isAdmin = user?.permissions?.admin === true;
+        const isDireccion = (user?.department || '').toLowerCase().includes('direcci');
+        const isManagementLocal = isAdmin || isDireccion || username === 'joseluis.martin' || username === 'sara';
 
         // Lógica de permisos:
         // 1. Restauración & Almacén: Solo admin/dirección
         // 2. Otros: Sus permisos específicos o ser admin
         let hasPermission = false;
         if (mod.name === 'Restauración' || mod.name === 'Almacén') {
-            hasPermission = isManagement;
+            hasPermission = isManagementLocal;
         } else {
             hasPermission = user?.permissions?.[mod.permission] || (user?.role === 'admin') || (mod.permission === 'admin' && user?.role === 'admin');
         }

@@ -124,22 +124,38 @@ def clean_and_seed():
                 div_objects[f"{d_name}/{div_name}"] = div
 
             for pos_name in details["positions"]:
-                is_resp = "Responsable" in pos_name or "Gerencia" in pos_name or "Dirección" in pos_name
+                is_resp = "Responsable" in pos_name or "Gerencia" in pos_name or "Director" in pos_name
                 is_asist = "Asistente" in pos_name or "Soporte" in pos_name
-                
+
+                # Permisos por departamento — explícitos, sin escalado por is_responsable
+                is_it      = d_name == "Departamento de IT"
+                is_dir     = d_name == "Departamento de Dirección"
+                is_ventas  = d_name == "Departamento de Ventas"
+                is_compras = d_name == "Departamento de Compras y Ventas"
+                is_prod    = d_name == "Departamento de Producción"
+                is_logis   = d_name == "Departamento Logístico"
+                is_cont    = d_name == "Departamento de Contabilidad"
+                is_mkt     = d_name == "Departamento de Marketing"
+                is_rrhh    = d_name == "Departamento de RRHH"
+                is_saratr  = d_name == "SARATUR"  # por si acaso
+
                 pos = JobPosition(
-                    name=pos_name, 
+                    name=pos_name,
                     department_id=dept.id,
                     is_responsable=is_resp,
                     is_asistente=is_asist,
-                    # Default permissions based on Dept
-                    can_view_ventas=(d_name == "Departamento de Ventas" or is_resp or d_name == "Departamento de IT"),
-                    can_view_compras=(d_name in ["Departamento de Ventas", "Departamento de Compras y Ventas", "Departamento de Producción"] or is_resp or d_name == "Departamento de IT"),
-                    can_view_produccion=(d_name == "Departamento de Producción" or is_resp or d_name == "Departamento de IT"),
-                    can_view_finanzas=(d_name == "Departamento de Contabilidad" or is_resp or d_name == "Departamento de IT"),
-                    can_view_almacen=(d_name == "Departamento Logístico" or d_name == "Departamento de Producción" or is_resp or d_name == "Departamento de IT"),
-                    can_view_inventario=(d_name in ["Departamento de Ventas", "Departamento de Compras y Ventas", "Departamento de Producción", "Departamento Logístico", "Departamento de Dirección", "Departamento de IT"] or is_resp),
-                    can_manage_users=(is_resp and d_name in ["Departamento de IT", "Departamento de RRHH"]) or d_name == "Departamento de IT"
+                    # Permisos estrictos por departamento
+                    can_view_ventas    = is_it or is_dir or is_ventas,
+                    can_view_compras   = is_it or is_dir or is_ventas or is_compras or is_prod,
+                    can_view_produccion= is_it or is_dir or is_prod,
+                    can_view_finanzas  = is_it or is_dir or is_cont,
+                    can_view_almacen   = is_it or is_dir or is_prod or is_logis,
+                    can_view_inventario= is_it or is_dir or is_ventas or is_compras or is_prod or is_logis,
+                    can_view_rrhh      = is_it or is_rrhh,
+                    can_view_calidad   = is_it,
+                    # Saratur solo: IT, Dirección, Contabilidad, Marketing
+                    # (gestionado en users.py al construir el token)
+                    can_manage_users   = is_it,  # SOLO IT gestiona usuarios
                 )
                 db.add(pos)
                 db.flush()
